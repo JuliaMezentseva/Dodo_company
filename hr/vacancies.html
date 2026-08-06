@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Вакансии — Skillaz Start</title>
+<link rel="stylesheet" href="../assets/styles.css" />
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" crossorigin="anonymous"></script>
+<script src="../assets/ds_bundle.js"></script>
+<script src="../assets/data.js"></script>
+<script type="text/babel" src="../assets/shell.js"></script>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { Card, Tag, Table, Switch, Input, Select, Textarea, Button, Tooltip, Modal, Snackbar, Alert } = window.SkillazCoreDesignSystem_bf9566;
+const { AppShell, Icons } = window.Site;
+const { IconPlusSm, IconUpload, IconSearch, IconEdit, IconMapPin, IconBriefcase, IconFileText } = Icons;
+
+const D = window.SITE_DATA;
+function fmtMoney(n) { return n.toLocaleString("ru-RU"); }
+function splitLines(text) { return text.split("\n").map((s) => s.trim()).filter(Boolean); }
+function splitCsv(text) { return text.split(",").map((s) => s.trim()).filter(Boolean); }
+
+const emptyForm = {
+  title: "", direction: D.directions[0], department: "", city: D.cities[0], format: D.workFormats[0],
+  grade: "", employment: D.employmentTypes[0], salaryFrom: "", salaryTo: "", experience: D.experienceOptions[0],
+  responsibilities: "", requirements: "", conditions: "", requiredSkills: "",
+};
+
+function VacancyFormModal({ initial, onClose, onSave }) {
+  const [form, setForm] = React.useState(initial || emptyForm);
+  const set = (k) => (v) => setForm((f) => ({ ...f, [k]: v }));
+  const valid = form.title.trim() && form.department.trim() && form.salaryFrom && form.salaryTo;
+  return (
+    <Modal open title={initial ? "Редактировать вакансию" : "Новая вакансия"} onClose={onClose} size="m"
+      secondary={<Button mode="secondary" onClick={onClose}>Отмена</Button>}
+      primary={<Button variant="accent" disabled={!valid} onClick={() => onSave(form)}>{initial ? "Сохранить" : "Создать"}</Button>}>
+      <div className="sk-col sk-gap-3 sk-modal-scroll">
+        <Input label="Название вакансии" required value={form.title} onChange={(e) => set("title")(e.target.value || "")} />
+        <div className="sk-row sk-gap-3">
+          <Select label="Направление" value={form.direction} options={D.directions.map((d) => ({ value: d, label: d }))} onChange={set("direction")} style={{ flex: 1 }} />
+          <Input label="Подразделение" required value={form.department} onChange={(e) => set("department")(e.target.value || "")} style={{ flex: 1 }} />
+        </div>
+        <div className="sk-row sk-gap-3">
+          <Select label="Город" value={form.city} options={D.cities.map((c) => ({ value: c, label: c }))} onChange={set("city")} style={{ flex: 1 }} />
+          <Select label="Формат работы" value={form.format} options={D.workFormats.map((f) => ({ value: f, label: f }))} onChange={set("format")} style={{ flex: 1 }} />
+        </div>
+        <div className="sk-row sk-gap-3">
+          <Input label="Грейд" placeholder="Junior / Middle / Senior" value={form.grade} onChange={(e) => set("grade")(e.target.value || "")} style={{ flex: 1 }} />
+          <Select label="Тип занятости" value={form.employment} options={D.employmentTypes.map((e) => ({ value: e, label: e }))} onChange={set("employment")} style={{ flex: 1 }} />
+        </div>
+        <div className="sk-row sk-gap-3">
+          <Input label="Оклад от" required type="number" value={form.salaryFrom} onChange={(e) => set("salaryFrom")(e.target.value)} style={{ flex: 1 }} />
+          <Input label="Оклад до" required type="number" value={form.salaryTo} onChange={(e) => set("salaryTo")(e.target.value)} style={{ flex: 1 }} />
+          <Select label="Опыт" value={form.experience} options={D.experienceOptions.map((e) => ({ value: e, label: e }))} onChange={set("experience")} style={{ flex: 1 }} />
+        </div>
+        <Textarea label="Обязанности" helper="Каждый пункт — с новой строки" rows={3} value={form.responsibilities} onChange={(e) => set("responsibilities")(e.target.value || "")} />
+        <Textarea label="Требования" helper="Каждый пункт — с новой строки" rows={3} value={form.requirements} onChange={(e) => set("requirements")(e.target.value || "")} />
+        <Textarea label="Условия" helper="Каждый пункт — с новой строки" rows={2} value={form.conditions} onChange={(e) => set("conditions")(e.target.value || "")} />
+        <Input label="Ключевые навыки" helper="Через запятую" value={form.requiredSkills} onChange={(e) => set("requiredSkills")(e.target.value || "")} />
+      </div>
+    </Modal>
+  );
+}
+
+function Page() {
+  const [vacancies, setVacancies] = React.useState(D.vacancies);
+  const [q, setQ] = React.useState("");
+  const [formModal, setFormModal] = React.useState(null); // null | { mode: "create" } | { mode: "edit", vacancy }
+  const [toast, setToast] = React.useState(null);
+
+  function showToast(msg) { setToast(msg); window.setTimeout(() => setToast(null), 2600); }
+
+  function togglePublish(v) {
+    setVacancies((list) => list.map((x) => x.id === v.id ? { ...x, visibleToEmployees: !x.visibleToEmployees } : x));
+    showToast(v.visibleToEmployees ? "Вакансия скрыта от сотрудников" : "Вакансия опубликована для сотрудников");
+  }
+
+  function saveForm(form) {
+    if (formModal.mode === "edit") {
+      setVacancies((list) => list.map((x) => x.id === formModal.vacancy.id ? {
+        ...x, title: form.title, direction: form.direction, department: form.department, city: form.city,
+        format: form.format, grade: form.grade, employment: form.employment,
+        salaryFrom: Number(form.salaryFrom) || 0, salaryTo: Number(form.salaryTo) || 0, experience: form.experience,
+        responsibilities: splitLines(form.responsibilities), requirements: splitLines(form.requirements),
+        conditions: splitLines(form.conditions), requiredSkills: splitCsv(form.requiredSkills),
+      } : x));
+      showToast("Вакансия обновлена");
+    } else {
+      const id = "v_hr" + (vacancies.length + 1);
+      setVacancies((list) => [{
+        id, title: form.title, direction: form.direction, department: form.department, city: form.city,
+        format: form.format, grade: form.grade || "—", employment: form.employment, schedule: "5/2",
+        salaryFrom: Number(form.salaryFrom) || 0, salaryTo: Number(form.salaryTo) || 0, experience: form.experience,
+        status: "open", postedDate: "сегодня",
+        requiredSkills: splitCsv(form.requiredSkills), responsibilities: splitLines(form.responsibilities),
+        requirements: splitLines(form.requirements), conditions: splitLines(form.conditions),
+        recruiter: { name: "Ольга Соколова", role: "HR-Админ", email: "o.sokolova@skillaz.com", phone: "+7 916 000 0000" },
+        visibleToEmployees: false, source: "manual", createdAt: "сегодня",
+      }, ...list]);
+      showToast("Вакансия создана. Не забудьте опубликовать её для сотрудников.");
+    }
+    setFormModal(null);
+  }
+
+  const needle = q.trim().toLowerCase();
+  const filtered = needle ? vacancies.filter((v) => v.title.toLowerCase().includes(needle) || v.department.toLowerCase().includes(needle)) : vacancies;
+
+  const columns = [
+    { key: "title", title: "Вакансия", render: (v) => (
+      <div className="sk-col" style={{ gap: 2 }}>
+        <span className="sk-label-3">{v.title}</span>
+        <span className="sk-row sk-gap-2 sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>
+          <IconMapPin size={13} />{v.city} <IconBriefcase size={13} style={{ marginLeft: 6 }} />{v.department}
+        </span>
+      </div>
+    ) },
+    { key: "direction", title: "Направление", render: (v) => <Tag size="s" hue="neutral">{v.direction}</Tag> },
+    { key: "salary", title: "Оклад", render: (v) => fmtMoney(v.salaryFrom) + "–" + fmtMoney(v.salaryTo) + " ₽" },
+    { key: "status", title: "Статус", render: (v) => <Tag size="s" hue={v.status === "open" ? "positive" : "neutral"}>{v.status === "open" ? "Идёт поиск" : "Закрыта"}</Tag> },
+    { key: "responses", title: "Отклики", render: (v) => (
+      v.responsesCount > 0 ? (
+        <a href="#" onClick={(e) => e.preventDefault()} style={{ color: "var(--sk-text-accent)", font: "var(--sk-label-3)" }}>{v.responsesCount}</a>
+      ) : (
+        <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>0</span>
+      )
+    ) },
+    { key: "visible", title: "Публикация", render: (v) => (
+      <div className="sk-row sk-gap-2" onClick={(e) => e.stopPropagation()}>
+        <Switch checked={!!v.visibleToEmployees} onChange={() => togglePublish(v)} />
+        <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{v.visibleToEmployees ? "Опубликована" : "Скрыта"}</span>
+      </div>
+    ) },
+    { key: "actions", title: "", width: 56, render: (v) => (
+      v.source === "manual" && (
+        <Tooltip content="Редактировать">
+          <Button size="s" mode="tertiary" onClick={(e) => { e.stopPropagation(); setFormModal({ mode: "edit", vacancy: v }); }}><IconEdit size={15} /></Button>
+        </Tooltip>
+      )
+    ) },
+  ];
+
+  function exportResponsesCsv() {
+    const header = ["Вакансия", "Направление", "Подразделение", "Статус", "Отклики"];
+    const rows = vacancies.map((v) => [v.title, v.direction, v.department, v.status === "open" ? "Идёт поиск" : "Закрыта", v.responsesCount]);
+    const csv = "\uFEFF" + [header, ...rows].map((r) => r.map((c) => '"' + String(c).replace(/"/g, '""') + '"').join(";")).join("\r\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = "otkliki-vakansii.csv";
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast("Файл со сводкой откликов скачан");
+  }
+
+  return (
+    <AppShell role="hr" active="vacancies" base="..">
+      <div className="sk-row" style={{ justifyContent: "space-between", alignItems: "flex-start" }}>
+        <div className="sk-col sk-gap-2">
+          <div className="sk-title-4">Вакансии</div>
+        </div>
+        <div className="sk-row sk-gap-2">
+          <Button mode="secondary" icon={<IconFileText size={16} />} onClick={exportResponsesCsv}>Выгрузить отклики в Excel</Button>
+          <Tooltip content="Импорт из Excel — вне текущей итерации прототипа.">
+            <Button mode="secondary" icon={<IconUpload size={16} />} disabled>Импортировать из Excel</Button>
+          </Tooltip>
+          <Button variant="accent" icon={<IconPlusSm size={16} />} onClick={() => setFormModal({ mode: "create" })}>Создать вакансию</Button>
+        </div>
+      </div>
+
+      <Input icon={<IconSearch size={20} />} placeholder="Поиск по названию или подразделению" value={q} onChange={(e) => setQ(e.target.value || "")} style={{ maxWidth: 420 }} />
+
+      <div className="sk-scroll" style={{ overflowX: "auto" }}>
+        <Table columns={columns} rows={filtered} />
+      </div>
+      {filtered.length === 0 && (
+        <Card><div className="sk-muted" style={{ textAlign: "center", padding: "16px 0" }}>Ничего не нашлось по запросу «{q}».</div></Card>
+      )}
+
+      {formModal && (
+        <VacancyFormModal
+          initial={formModal.mode === "edit" ? {
+            title: formModal.vacancy.title, direction: formModal.vacancy.direction, department: formModal.vacancy.department,
+            city: formModal.vacancy.city, format: formModal.vacancy.format, grade: formModal.vacancy.grade,
+            employment: formModal.vacancy.employment, salaryFrom: String(formModal.vacancy.salaryFrom), salaryTo: String(formModal.vacancy.salaryTo),
+            experience: formModal.vacancy.experience, responsibilities: (formModal.vacancy.responsibilities || []).join("\n"),
+            requirements: (formModal.vacancy.requirements || []).join("\n"), conditions: (formModal.vacancy.conditions || []).join("\n"),
+            requiredSkills: (formModal.vacancy.requiredSkills || []).join(", "),
+          } : null}
+          onClose={() => setFormModal(null)} onSave={saveForm} />
+      )}
+
+      {toast && (
+        <div style={{ position: "fixed", bottom: 24, left: "50%", transform: "translateX(-50%)", zIndex: 100 }}>
+          <Snackbar>{toast}</Snackbar>
+        </div>
+      )}
+    </AppShell>
+  );
+}
+ReactDOM.createRoot(document.getElementById("root")).render(<Page />);
+</script>
+</body>
+</html>

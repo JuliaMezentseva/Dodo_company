@@ -1,0 +1,22 @@
+/* Skillaz Core — minimal base for specimens & kits */
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font: var(--sk-label-3-regular);
+  letter-spacing: 0.005em;
+  color: var(--sk-text-primary);
+  background: var(--sk-surface-page);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Loader spin + Skeleton shimmer (Data Display spec) */
+@keyframes sk-loader-spin { to { transform: rotate(360deg); } }
+@keyframes sk-skeleton-shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+.sk-skeleton {
+  background: linear-gradient(90deg, var(--graphite-graphite-95) 25%, var(--graphite-graphite-97) 37%, var(--graphite-graphite-95) 63%);
+  background-size: 200% 100%;
+  animation: sk-skeleton-shimmer 1.4s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .sk-skeleton { animation: none; }
+}

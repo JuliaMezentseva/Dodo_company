@@ -1,0 +1,403 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Индивидуальный план — Skillaz Start</title>
+<link rel="stylesheet" href="../assets/styles.css" />
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" crossorigin="anonymous"></script>
+<script src="../assets/ds_bundle.js"></script>
+<script src="../assets/data.js"></script>
+<script type="text/babel" src="../assets/shell.js"></script>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { Card, Tag, Tabs, SegmentedControl, Checkbox, Avatar, Divider, ProgressBar, ProgressCircle, Button, Input, Modal, Textarea, Snackbar, Alert } = window.SkillazCoreDesignSystem_bf9566;
+const { AppShell, StatusTag, Icons, personPhoto } = window.Site;
+const {
+  IconArrowLeft, IconClock, IconCheck, IconChevronUp, IconChevronDown, IconMessageCircle, IconHelpCircle,
+  IconTarget, IconSend, IconPlusSm, IconUsers, IconClipboard,
+} = Icons;
+
+const D = window.SITE_DATA;
+const templatesById = Object.fromEntries(D.templates.map((t) => [t.id, t]));
+
+const MIN_TAB_NOTE = "Этот чек-лист — формальный порог входа сотрудника в роль: доступы, культура и регламенты компании. Он одинаков для всех на этой позиции и не требует чьего-либо подтверждения.";
+const MAX_TAB_NOTE = "Персональный план сотрудника на результат в роли. Цели ставит руководитель, подцели проверяются им же, а прогресс сверяется на контрольных точках.";
+
+// В наборе иконок ДС нет иконки "сотрудник + галочка" для карточки "Мои задачи" — добавляем
+// локально, тем же приёмом, что и другие одноразовые иконки на HR-экранах.
+function IconUserCheck({ size = 22, color = "var(--sk-icon-accent)" }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" style={{ color, flexShrink: 0 }}>
+      <circle cx="10" cy="8.3" r="3.3" stroke="currentColor" strokeWidth="1.5" />
+      <path d="M3.5 19.5c.8-3.2 3.2-5 6.5-5 1 0 1.9.17 2.7.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+      <path d="M15.5 15.5l2 2 3.5-3.5" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function recordFromUrl() {
+  const id = new URLSearchParams(window.location.search).get("id");
+  return D.hrAssignedPlans.find((p) => p.id === id) || D.hrAssignedPlans[0];
+}
+
+function CollapsibleSection({ title, children, defaultOpen = true }) {
+  const [open, setOpen] = React.useState(defaultOpen);
+  return (
+    <div className="sk-col sk-gap-3">
+      <div className="sk-row sk-clickable" style={{ justifyContent: "space-between" }} onClick={() => setOpen((o) => !o)}>
+        <div className="sk-label-3">{title}</div>
+        {open ? <IconChevronUp size={16} color="var(--sk-icon-secondary)" /> : <IconChevronDown size={16} color="var(--sk-icon-secondary)" />}
+      </div>
+      {open && children}
+    </div>
+  );
+}
+
+// ---------------- Таб "Мои задачи" (HR) ----------------
+function TaskAddModal({ onClose, onAdd }) {
+  const [title, setTitle] = React.useState("");
+  const [date, setDate] = React.useState("");
+  const [required, setRequired] = React.useState(true);
+  return (
+    <Modal open title="Новая задача" onClose={onClose} size="s"
+      secondary={<Button mode="secondary" onClick={onClose}>Отмена</Button>}
+      primary={<Button variant="accent" disabled={!title.trim()} onClick={() => onAdd({ title, date: date || "—", required })}>Добавить</Button>}>
+      <div className="sk-col sk-gap-3">
+        <Input label="Название задачи" required value={title} onChange={(e) => setTitle(e.target.value || "")} placeholder="Например, выдать доступы к CRM" />
+        <Input label="Дата" placeholder="дд.мм.гг" value={date} onChange={(e) => setDate(e.target.value || "")} />
+        <Checkbox label="Обязательная задача" checked={required} onChange={() => setRequired((v) => !v)} style={{ alignSelf: "flex-start" }} />
+      </div>
+    </Modal>
+  );
+}
+
+function HrTasksTab({ record, tasks, onToggle, onAdd }) {
+  const requiredTasks = tasks.filter((t) => t.required);
+  const doneRequired = requiredTasks.filter((t) => t.done).length;
+  const allRequiredDone = requiredTasks.length > 0 && doneRequired === requiredTasks.length;
+  const [addOpen, setAddOpen] = React.useState(false);
+
+  return (
+    <div className="sk-col sk-gap-4">
+      <Card style={{ background: "var(--sk-surface-secondary)", boxShadow: "none" }}>
+        <div className="sk-row sk-gap-3" style={{ alignItems: "flex-start" }}>
+          <span style={{ width: 40, height: 40, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "var(--sk-accent-secondary)" }}>
+            <IconUserCheck size={20} />
+          </span>
+          <div className="sk-col sk-gap-3" style={{ flex: 1 }}>
+            <div className="sk-col sk-gap-1">
+              <div className="sk-label-2">Добавьте задачи в план адаптации сотрудника</div>
+              <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Задачи помогут сотруднику быстрее войти в рабочий ритм — они должны быть развивающими и выполнимыми.</div>
+            </div>
+            <div className="sk-row sk-gap-5" style={{ flexWrap: "wrap" }}>
+              <div className="sk-row sk-gap-2">
+                <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Кол-во задач</span>
+                <span className="sk-label-4">{tasks.length}</span>
+              </div>
+              {record.tasksDeadline && (
+                <div className="sk-row sk-gap-1">
+                  <IconClock size={14} color="var(--sk-icon-secondary)" />
+                  <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Дедлайн</span>
+                  <span className="sk-label-4">{record.tasksDeadline}</span>
+                </div>
+              )}
+              <div className="sk-row sk-gap-1">
+                <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Статус</span>
+                <Tag size="s" hue={allRequiredDone ? "positive" : tasks.length ? "blue" : "neutral"} icon={allRequiredDone ? <IconCheck size={11} /> : undefined}>
+                  {allRequiredDone ? "Завершено" : tasks.length ? "В процессе" : "Не начато"}
+                </Tag>
+              </div>
+            </div>
+          </div>
+        </div>
+      </Card>
+
+      {tasks.length === 0 ? (
+        <Card><div className="sk-muted" style={{ textAlign: "center", padding: "16px 0" }}>Задачи ещё не добавлены.</div></Card>
+      ) : (
+        <div className="sk-col sk-gap-1">
+          {tasks.map((t) => (
+            <div key={t.id} className="sk-check-row">
+              <Checkbox checked={t.done} onChange={() => onToggle(t.id)} style={{ alignSelf: "flex-start", marginTop: 2 }} />
+              <div className="sk-col sk-gap-1" style={{ flex: 1 }}>
+                <div className="sk-label-3-regular" style={{ textDecoration: t.done ? "line-through" : "none", color: t.done ? "var(--sk-text-tertiary)" : "var(--sk-text-primary)" }}>{t.title}</div>
+                <div className="sk-row sk-gap-3 sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>
+                  <span className="sk-row sk-gap-1"><IconClock size={13} />{t.date}</span>
+                  <span className="sk-row sk-gap-1"><IconCheck size={13} />Задача</span>
+                </div>
+              </div>
+              {t.required && <span style={{ color: "var(--sk-text-negative)", font: "var(--sk-label-4-regular)", flexShrink: 0 }}>* Обязательный</span>}
+            </div>
+          ))}
+        </div>
+      )}
+
+      <button className="sk-link-btn sk-row sk-gap-1 sk-label-3" onClick={() => setAddOpen(true)} style={{ alignSelf: "flex-start" }}>
+        <IconPlusSm size={16} />Добавить
+      </button>
+
+      {addOpen && <TaskAddModal onClose={() => setAddOpen(false)} onAdd={(t) => { onAdd(t); setAddOpen(false); }} />}
+    </div>
+  );
+}
+
+// ---------------- Таб "План адаптации" (только просмотр — постановка целей у HR отдельным
+// экраном в "Редакторе адаптации"; здесь HR видит план так же, как сотрудник/руководитель) ----------------
+function GoalReadRow({ goal }) {
+  const doneCount = goal.subgoals.filter((s) => s.status === "done").length;
+  return (
+    <div className="sk-col sk-gap-2" style={{ padding: "12px 0", borderBottom: "1px solid var(--sk-stroke-divider)" }}>
+      <div className="sk-row" style={{ justifyContent: "space-between" }}>
+        <div className="sk-label-3">{goal.title}</div>
+        <StatusTag status={goal.status} />
+      </div>
+      <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{doneCount} из {goal.subgoals.length} подцелей выполнено · срок {goal.dueLabel}</div>
+    </div>
+  );
+}
+
+function ChecklistReadStage({ stage, index }) {
+  const [open, setOpen] = React.useState(stage.status !== "locked" && stage.status !== "completed");
+  const done = stage.items.filter((i) => i.kind !== "checkpoint" && i.done).length;
+  const total = stage.items.filter((i) => i.kind !== "checkpoint").length;
+  return (
+    <div className="sk-col sk-gap-2">
+      <div className="sk-row sk-clickable" style={{ justifyContent: "space-between" }} onClick={() => setOpen((o) => !o)}>
+        <div className="sk-col" style={{ gap: 0 }}>
+          <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Этап {index}</span>
+          <div className="sk-row sk-gap-2"><span className="sk-label-3">{stage.title}</span><span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{done}/{total}</span></div>
+        </div>
+        {open ? <IconChevronUp size={16} color="var(--sk-icon-secondary)" /> : <IconChevronDown size={16} color="var(--sk-icon-secondary)" />}
+      </div>
+      {open && (
+        <div className="sk-col sk-gap-1" style={{ paddingLeft: 8 }}>
+          {stage.items.filter((i) => i.kind !== "checkpoint").map((i) => (
+            <div key={i.id} className="sk-row sk-gap-2" style={{ padding: "6px 0" }}>
+              <Checkbox checked={i.done} disabled style={{ alignSelf: "flex-start" }} />
+              <span className="sk-label-4-regular" style={{ textDecoration: i.done ? "line-through" : "none", color: i.done ? "var(--sk-text-tertiary)" : "var(--sk-text-primary)" }}>{i.title}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function PlanTab({ record, view }) {
+  const plan = record.planId ? D.plans[record.planId] : null;
+
+  if (!plan) {
+    return (
+      <Card bordered>
+        <div className="sk-col sk-gap-3">
+          <div className="sk-title-5">Чек-лист {record.checklistProgress}%</div>
+          <ProgressBar value={record.checklistProgress} hue="accent" />
+          <div className="sk-muted">Детальный состав чек-листа и целей для этого плана — вне текущей итерации прототипа (нет связанного объекта плана).</div>
+        </div>
+      </Card>
+    );
+  }
+
+  const totalChecklist = plan.stages.flatMap((s) => s.items.filter((i) => i.kind !== "checkpoint"));
+  const doneChecklist = totalChecklist.filter((i) => i.done).length;
+  const checklistPct = totalChecklist.length ? Math.round((doneChecklist / totalChecklist.length) * 100) : 0;
+  const goalsDoneCount = plan.goals.filter((g) => g.subgoals.length && g.subgoals.every((s) => s.status === "done")).length;
+  const goalsPct = plan.goals.length ? Math.round((goalsDoneCount / plan.goals.length) * 100) : 0;
+
+  return (
+    <div className="sk-col sk-gap-4">
+      {(!plan.hasGoals || view === "min") && (
+        <React.Fragment>
+          <Alert hue="neutral" style={{ background: "var(--sk-surface-page)", boxShadow: "inset 0 0 0 1px var(--sk-stroke)" }}>{MIN_TAB_NOTE}</Alert>
+          <Card bordered>
+            <div className="sk-col sk-gap-4">
+              <div className="sk-title-5">Чек-лист {doneChecklist} из {totalChecklist.length}</div>
+              {plan.stages.map((s, i) => <ChecklistReadStage key={s.id} stage={s} index={i + 1} />)}
+            </div>
+          </Card>
+        </React.Fragment>
+      )}
+
+      {plan.hasGoals && view === "max" && (
+        <React.Fragment>
+          <Alert hue="neutral" style={{ background: "var(--sk-surface-page)", boxShadow: "inset 0 0 0 1px var(--sk-stroke)" }}>{MAX_TAB_NOTE}</Alert>
+          <Card bordered>
+            <div className="sk-col sk-gap-2">
+              <div className="sk-row" style={{ justifyContent: "space-between" }}>
+                <div className="sk-row sk-gap-2">
+                  <div className="sk-title-5">Цели</div>
+                  <ProgressCircle value={goalsPct} size={24} thickness={3} showValue={false} hue="accent" />
+                  <span className="sk-label-3-regular">{goalsDoneCount} из {plan.goals.length}</span>
+                </div>
+                <a href={"plan.html?kind=assigned&id=" + record.planId} className="sk-row sk-gap-1" style={{ color: "var(--sk-text-accent)", font: "var(--sk-label-4)" }}>Настроить блок целей</a>
+              </div>
+              {plan.goals.length === 0 ? (
+                <div className="sk-muted">Руководитель ещё не создал цели по этому плану.</div>
+              ) : (
+                <div>{plan.goals.map((g) => <GoalReadRow key={g.id} goal={g} />)}</div>
+              )}
+            </div>
+          </Card>
+        </React.Fragment>
+      )}
+    </div>
+  );
+}
+
+// ---------------- Таб "Чат" ----------------
+function ChatTab({ record }) {
+  return (
+    <Card bordered>
+      <div className="sk-col sk-gap-3">
+        <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Общий чат участников плана. В этой версии прототипа сообщения не отправляются.</div>
+        <div className="sk-col sk-gap-2" style={{ padding: 10, background: "var(--sk-surface-secondary)", borderRadius: "var(--sk-radius-3)" }}>
+          <div className="sk-row sk-gap-2"><Avatar src={personPhoto(record.name)} name={record.name} size={24} /><div className="sk-label-4-regular">{record.name.split(" ")[0]}: Подскажите, пожалуйста, куда обращаться по доступам?</div></div>
+        </div>
+        <div className="sk-row sk-gap-2">
+          <Textarea placeholder="Написать сообщение…" style={{ flex: 1 }} rows={2} />
+          <Button size="s" icon={<IconSend size={16} />} />
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+// ---------------- Таб "FAQ" ----------------
+function FaqTab({ record }) {
+  const plan = record.planId ? D.plans[record.planId] : null;
+  const faq = (plan && plan.faq) || [];
+  if (!faq.length) return <Card bordered><div className="sk-muted">Для этого плана вопросов пока нет.</div></Card>;
+  return (
+    <Card bordered>
+      <div className="sk-col sk-gap-3">
+        {faq.map((f, i) => (
+          <div key={i} className="sk-col sk-gap-1">
+            <div className="sk-label-3">{f.q}</div>
+            <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{f.a}</div>
+          </div>
+        ))}
+      </div>
+    </Card>
+  );
+}
+
+// ---------------- Правая колонка ----------------
+function RightPanel({ record }) {
+  const template = templatesById[record.templateId];
+  return (
+    <div className="sk-col sk-gap-5">
+      <div style={{ position: "relative", marginTop: 20 }}>
+        <Card bordered padding={0} style={{ paddingTop: 34, paddingBottom: 16, paddingLeft: 16, paddingRight: 16 }}>
+          <div className="sk-col sk-gap-1" style={{ alignItems: "center", textAlign: "center" }}>
+            <div className="sk-title-5">{record.name}</div>
+            <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{record.position}</div>
+            <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{record.department}</div>
+          </div>
+        </Card>
+        <div style={{ position: "absolute", top: -20, left: "50%", transform: "translateX(-50%)" }}>
+          <Avatar src={personPhoto(record.name)} name={record.name} size={56} style={{ boxShadow: "0 0 0 3px var(--sk-surface-page)" }} />
+        </div>
+      </div>
+
+      <Card bordered>
+        <CollapsibleSection title="Сроки плана">
+          <div className="sk-col sk-gap-3">
+            <div className="sk-row sk-gap-2">
+              <span className="sk-label-4-regular">{record.assignedDate} – {record.plannedEndDate}</span>
+            </div>
+            <div className="sk-col sk-gap-2">
+              <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Прогресс новичка</div>
+              <div className="sk-row sk-gap-3"><ProgressBar value={record.checklistProgress} style={{ flex: 1 }} hue="accent" /><span className="sk-label-4">{record.checklistProgress}%</span></div>
+            </div>
+            {template && <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Шаблон: {template.name}</div>}
+          </div>
+        </CollapsibleSection>
+      </Card>
+
+      <Card bordered>
+        <CollapsibleSection title="Руководитель">
+          <div className="sk-row sk-gap-3">
+            <Avatar src={personPhoto(record.manager)} name={record.manager} size={36} />
+            <div className="sk-label-3">{record.manager}</div>
+          </div>
+        </CollapsibleSection>
+      </Card>
+
+      {record.helper && (
+        <Card bordered>
+          <CollapsibleSection title="Помощники по адаптации">
+            <div className="sk-row sk-gap-3">
+              <Avatar src={personPhoto(record.helper)} name={record.helper} size={36} />
+              <div className="sk-col" style={{ gap: 2 }}>
+                <div className="sk-label-3">{record.helper}</div>
+                <Tag size="s" hue="neutral" style={{ alignSelf: "flex-start" }}>Помощник</Tag>
+              </div>
+            </div>
+          </CollapsibleSection>
+        </Card>
+      )}
+    </div>
+  );
+}
+
+function Page() {
+  const record0 = recordFromUrl();
+  const [tab, setTab] = React.useState("tasks");
+  const [tasks, setTasks] = React.useState(record0.hrTasks);
+  const [toast, setToast] = React.useState(null);
+
+  function showToast(msg) { setToast(msg); window.setTimeout(() => setToast(null), 2200); }
+  function toggleTask(id) { setTasks((list) => list.map((t) => t.id === id ? { ...t, done: !t.done } : t)); }
+  function addTask(t) {
+    setTasks((list) => [...list, { id: "t" + Date.now(), title: t.title, date: t.date, required: t.required, done: false }]);
+    showToast("Задача добавлена");
+  }
+
+  const plan0 = record0.planId ? D.plans[record0.planId] : null;
+  const totalChecklist0 = plan0 ? plan0.stages.flatMap((s) => s.items.filter((i) => i.kind !== "checkpoint")) : [];
+  const checklistPct0 = totalChecklist0.length ? Math.round((totalChecklist0.filter((i) => i.done).length / totalChecklist0.length) * 100) : (record0.checklistProgress || 0);
+  const goalsDoneCount0 = plan0 ? plan0.goals.filter((g) => g.subgoals.length && g.subgoals.every((s) => s.status === "done")).length : 0;
+  const goalsPct0 = plan0 && plan0.goals.length ? Math.round((goalsDoneCount0 / plan0.goals.length) * 100) : 0;
+
+  const tabItems = [
+    { id: "tasks", label: "Мои задачи", count: tasks.filter((t) => t.done).length + "/" + tasks.length },
+    { id: "min", label: <span className="sk-row sk-gap-1"><IconClipboard size={16} />Базовый минимум {checklistPct0}%</span> },
+    ...(plan0 && plan0.hasGoals ? [{ id: "max", label: <span className="sk-row sk-gap-1"><IconTarget size={16} />Роскошный максимум {goalsPct0}%</span> }] : []),
+    { id: "chat", label: "Чат" },
+    { id: "faq", label: "FAQ" },
+  ];
+
+  return (
+    <AppShell role="hr" active="hr-plans" base=".."
+      breadcrumb={<a href="plans.html" className="sk-row sk-gap-1" style={{ color: "var(--sk-text-secondary)" }}><IconArrowLeft size={14} /> Планы сотрудников</a>}>
+      <div className="sk-row" style={{ alignItems: "flex-start", gap: 24 }}>
+        <div className="sk-col sk-gap-4" style={{ flex: 1, minWidth: 0 }}>
+          <Tabs items={tabItems} active={tab} onChange={setTab} />
+          {tab === "tasks" && <HrTasksTab record={record0} tasks={tasks} onToggle={toggleTask} onAdd={addTask} />}
+          {tab === "min" && <PlanTab record={record0} view="min" />}
+          {tab === "max" && <PlanTab record={record0} view="max" />}
+          {tab === "chat" && <ChatTab record={record0} />}
+          {tab === "faq" && <FaqTab record={record0} />}
+        </div>
+        <div style={{ width: 300, flexShrink: 0 }}>
+          <RightPanel record={record0} />
+        </div>
+      </div>
+
+      {toast && (
+        <div style={{ position: "fixed", bottom: 24, left: "50%", transform: "translateX(-50%)", zIndex: 100 }}>
+          <Snackbar>{toast}</Snackbar>
+        </div>
+      )}
+    </AppShell>
+  );
+}
+ReactDOM.createRoot(document.getElementById("root")).render(<Page />);
+</script>
+</body>
+</html>

@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Шаблоны планов — Skillaz Start</title>
+<link rel="stylesheet" href="../assets/styles.css" />
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" crossorigin="anonymous"></script>
+<script src="../assets/ds_bundle.js"></script>
+<script src="../assets/data.js"></script>
+<script type="text/babel" src="../assets/shell.js"></script>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { Card, Tag, Table, Input, Select, Button, Tooltip, Modal, Snackbar, Alert } = window.SkillazCoreDesignSystem_bf9566;
+const { AppShell, Icons } = window.Site;
+const { IconPlusSm, IconSearch, IconTrash, IconFilter } = Icons;
+// В наборе иконок ДС нет "копировать" — добавляем локально, по тому же принципу, что и
+// одноразовые иконки в shell.js для ролей "Руководитель"/"HR-Админ".
+function IconCopyLocal({ size = 16, color = "currentColor" }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" style={{ color, flexShrink: 0 }}>
+      <rect x="9" y="9" width="11" height="11" rx="2" stroke="currentColor" strokeWidth="1.5" />
+      <path d="M15 9V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h3" stroke="currentColor" strokeWidth="1.5" />
+    </svg>
+  );
+}
+
+const STATUS_META = {
+  active: { label: "Активный", hue: "positive" },
+  draft: { label: "Черновик", hue: "neutral" },
+  archived: { label: "Архивный", hue: "gray" },
+};
+
+const emptyFilters = { status: "", planType: "", department: "", func: "", author: "", usage: "" };
+
+function Page() {
+  const D = window.SITE_DATA;
+  const [templates, setTemplates] = React.useState(D.templates);
+  const [q, setQ] = React.useState("");
+  const [filtersOpen, setFiltersOpen] = React.useState(false);
+  const [filters, setFilters] = React.useState(emptyFilters);
+  const [archiveConfirm, setArchiveConfirm] = React.useState(null);
+  const [deleteConfirm, setDeleteConfirm] = React.useState(null);
+  const [toast, setToast] = React.useState(null);
+
+  function showToast(msg) { setToast(msg); window.setTimeout(() => setToast(null), 2600); }
+
+  const planTypes = [...new Set(D.templates.map((t) => t.planType))];
+  const departments = [...new Set(D.templates.map((t) => t.department))];
+  const functions = [...new Set(D.templates.map((t) => t.function))];
+  const authors = [...new Set(D.templates.map((t) => t.author))];
+  const hasActiveFilters = !!(filters.status || filters.planType || filters.department || filters.func || filters.author || filters.usage);
+  const activeFilterCount = Object.values(filters).filter(Boolean).length;
+
+  const needle = q.trim().toLowerCase();
+  let list = templates.filter((t) => {
+    if (needle && !(t.name.toLowerCase().includes(needle) || (t.description || "").toLowerCase().includes(needle)
+      || t.author.toLowerCase().includes(needle) || t.department.toLowerCase().includes(needle) || t.function.toLowerCase().includes(needle))) return false;
+    if (filters.status && t.status !== filters.status) return false;
+    if (filters.planType && t.planType !== filters.planType) return false;
+    if (filters.department && t.department !== filters.department) return false;
+    if (filters.func && t.function !== filters.func) return false;
+    if (filters.author && t.author !== filters.author) return false;
+    if (filters.usage === "used" && t.usageCount === 0) return false;
+    if (filters.usage === "unused" && t.usageCount > 0) return false;
+    return true;
+  });
+
+  function duplicate(t) {
+    const id = "tpl_copy" + Date.now();
+    const copy = { ...t, id, name: t.name + " (копия)", status: "draft", usageCount: 0, createdAt: "сегодня", updatedAt: "сегодня" };
+    setTemplates((list) => [copy, ...list]);
+    showToast("Шаблон скопирован как черновик");
+  }
+  function archive(t) {
+    setTemplates((list) => list.map((x) => x.id === t.id ? { ...x, status: "archived" } : x));
+    setArchiveConfirm(null);
+    showToast("Шаблон перенесён в архив");
+  }
+  function remove(t) {
+    setTemplates((list) => list.filter((x) => x.id !== t.id));
+    setDeleteConfirm(null);
+    showToast("Шаблон удалён");
+  }
+
+  const columns = [
+    { key: "name", title: "Название и описание", render: (t) => (
+      <a href={"template.html?tpl=" + t.id} style={{ textDecoration: "none" }}>
+        <div className="sk-col" style={{ gap: 2, maxWidth: 320 }}>
+          <span className="sk-label-3" style={{ color: "var(--sk-text-accent)" }}>{t.name}</span>
+          <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{t.description}</span>
+        </div>
+      </a>
+    ) },
+    { key: "planType", title: "Тип плана", render: (t) => <Tag size="s" hue="neutral">{t.planType}</Tag> },
+    { key: "status", title: "Статус", render: (t) => <Tag size="s" hue={STATUS_META[t.status].hue}>{STATUS_META[t.status].label}</Tag> },
+    { key: "department", title: "Подразделение" },
+    { key: "function", title: "Функция" },
+    { key: "author", title: "Автор" },
+    { key: "createdAt", title: "Дата создания" },
+    { key: "updatedAt", title: "Дата изменения" },
+    { key: "usageCount", title: "Использований", align: "right" },
+    { key: "actions", title: "", render: (t) => (
+      <div className="sk-row sk-gap-1" onClick={(e) => e.stopPropagation()}>
+        <Tooltip content="Копировать">
+          <Button size="s" mode="tertiary" onClick={() => duplicate(t)}><IconCopyLocal size={15} /></Button>
+        </Tooltip>
+        {t.status !== "archived" && (
+          <Tooltip content="Архивировать">
+            <Button size="s" mode="tertiary" onClick={() => setArchiveConfirm(t)}>Архив</Button>
+          </Tooltip>
+        )}
+        {t.usageCount > 0 ? (
+          <Tooltip content={"Шаблон используется в " + t.usageCount + " планах — удаление недоступно"}>
+            <Button size="s" mode="tertiary" disabled><IconTrash size={15} /></Button>
+          </Tooltip>
+        ) : (
+          <Button size="s" mode="tertiary" onClick={() => setDeleteConfirm(t)}><IconTrash size={15} /></Button>
+        )}
+      </div>
+    ) },
+  ];
+
+  return (
+    <AppShell role="hr" active="hr-templates" base="..">
+      <div className="sk-row" style={{ justifyContent: "space-between", alignItems: "flex-start" }}>
+        <div className="sk-col sk-gap-2">
+          <div className="sk-title-4">Шаблоны планов</div>
+          <div className="sk-muted">Заготовки будущих индивидуальных планов — задают этапы, элементы и настройки, которые сотрудник получит при назначении.</div>
+        </div>
+        <Tooltip content="Создание нового шаблона с нуля — вне текущей итерации прототипа, используйте «Копировать» у существующего.">
+          <Button variant="accent" icon={<IconPlusSm size={16} />} disabled>Создать шаблон</Button>
+        </Tooltip>
+      </div>
+
+      <div className="sk-col sk-gap-3">
+        <div className="sk-row sk-gap-2">
+          <Input icon={<IconSearch size={20} />} placeholder="Название, описание, автор, подразделение, функция" value={q}
+            onChange={(e) => setQ(e.target.value || "")} style={{ flex: 1 }} />
+          <Button mode="secondary" icon={<IconFilter size={16} />} onClick={() => setFiltersOpen((o) => !o)}>
+            Фильтры{activeFilterCount ? " · " + activeFilterCount : ""}
+          </Button>
+        </div>
+        {filtersOpen && (
+          <div className="sk-row sk-gap-2" style={{ flexWrap: "wrap", alignItems: "flex-end" }}>
+            <Select label="Статус" placeholder="Все" value={filters.status || null}
+              options={Object.entries(STATUS_META).map(([v, m]) => ({ value: v, label: m.label }))}
+              onChange={(v) => setFilters((f) => ({ ...f, status: v || "" }))} style={{ width: 160 }} />
+            <Select label="Тип плана" placeholder="Все" value={filters.planType || null} options={planTypes.map((v) => ({ value: v, label: v }))}
+              onChange={(v) => setFilters((f) => ({ ...f, planType: v || "" }))} style={{ width: 170 }} />
+            <Select label="Подразделение" placeholder="Все" value={filters.department || null} options={departments.map((v) => ({ value: v, label: v }))}
+              onChange={(v) => setFilters((f) => ({ ...f, department: v || "" }))} style={{ width: 200 }} />
+            <Select label="Функция" placeholder="Все" value={filters.func || null} options={functions.map((v) => ({ value: v, label: v }))}
+              onChange={(v) => setFilters((f) => ({ ...f, func: v || "" }))} style={{ width: 170 }} />
+            <Select label="Автор" placeholder="Все" value={filters.author || null} options={authors.map((v) => ({ value: v, label: v }))}
+              onChange={(v) => setFilters((f) => ({ ...f, author: v || "" }))} style={{ width: 170 }} />
+            <Select label="Используется" placeholder="Все" value={filters.usage || null}
+              options={[{ value: "used", label: "Используется" }, { value: "unused", label: "Не используется" }]}
+              onChange={(v) => setFilters((f) => ({ ...f, usage: v || "" }))} style={{ width: 170 }} />
+            {(hasActiveFilters || q) && <button className="sk-link-btn sk-label-4-regular" style={{ height: 48 }} onClick={() => { setFilters(emptyFilters); setQ(""); }}>Сбросить</button>}
+          </div>
+        )}
+      </div>
+
+      <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Найдено шаблонов: {list.length}</div>
+
+      <div className="sk-scroll" style={{ overflowX: "auto" }}>
+        <Table columns={columns} rows={list} />
+      </div>
+      {list.length === 0 && (
+        <Card><div className="sk-muted" style={{ textAlign: "center", padding: "16px 0" }}>Ничего не нашлось — попробуйте изменить запрос или фильтры.</div></Card>
+      )}
+
+      <Alert hue="neutral" title="В этой итерации прототипа">
+        Не отрисованы: создание шаблона с нуля, фильтры по датам создания/изменения и по компании (в демо-данных она одна). Остальное по п. 4 описания прототипа — работает.
+      </Alert>
+
+      {archiveConfirm && (
+        <Modal open title={null} onClose={() => setArchiveConfirm(null)} size="s"
+          secondary={<Button mode="secondary" onClick={() => setArchiveConfirm(null)}>Отменить</Button>}
+          primary={<Button variant="negative" onClick={() => archive(archiveConfirm)}>Архивировать</Button>}>
+          <div className="sk-col sk-gap-2" style={{ alignItems: "center", textAlign: "center", padding: "8px 0" }}>
+            <div className="sk-label-2">Архивировать шаблон «{archiveConfirm.name}»?</div>
+            <div className="sk-muted">Он станет недоступен для назначения новых планов. Уже назначенные по нему планы не изменятся.</div>
+          </div>
+        </Modal>
+      )}
+      {deleteConfirm && (
+        <Modal open title={null} onClose={() => setDeleteConfirm(null)} size="s"
+          secondary={<Button mode="secondary" onClick={() => setDeleteConfirm(null)}>Отменить</Button>}
+          primary={<Button variant="negative" onClick={() => remove(deleteConfirm)}>Удалить шаблон</Button>}>
+          <div className="sk-col sk-gap-2" style={{ alignItems: "center", textAlign: "center", padding: "8px 0" }}>
+            <div className="sk-label-2">Удалить шаблон «{deleteConfirm.name}»?</div>
+            <div className="sk-muted">Действие необратимо.</div>
+          </div>
+        </Modal>
+      )}
+
+      {toast && (
+        <div style={{ position: "fixed", bottom: 24, left: "50%", transform: "translateX(-50%)", zIndex: 100 }}>
+          <Snackbar>{toast}</Snackbar>
+        </div>
+      )}
+    </AppShell>
+  );
+}
+ReactDOM.createRoot(document.getElementById("root")).render(<Page />);
+</script>
+</body>
+</html>

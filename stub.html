@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Скоро — Skillaz Start</title>
+<link rel="stylesheet" href="./assets/styles.css" />
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" crossorigin="anonymous"></script>
+<script src="./assets/ds_bundle.js"></script>
+<script src="./assets/data.js"></script>
+<script type="text/babel" src="./assets/shell.js"></script>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { Card, Button } = window.SkillazCoreDesignSystem_bf9566;
+const { AppShell, ROLES } = window.Site;
+
+function Page() {
+  const params = new URLSearchParams(window.location.search);
+  const role = params.get("role") || "candidate";
+  const roleLabel = (ROLES.find(r => r.id === role) || {}).label || role;
+  return (
+    <AppShell role={role} active={params.get("section") || ""} base=".">
+      <Card>
+        <div className="sk-col sk-gap-3" style={{ alignItems: "flex-start" }}>
+          <div className="sk-title-5">Экран роли «{roleLabel}» пока не отрисован</div>
+          <div className="sk-muted">
+            Мы собираем прототип по ролям и экранам последовательно. Сейчас в прототипе полностью готова
+            только роль «Сотрудник» — раздел «Моя адаптация» и переход в план. Остальные роли появятся
+            в следующих итерациях.
+          </div>
+          <Button onClick={() => window.location.href = "./employee/adaptation.html"}>Перейти к роли «Сотрудник»</Button>
+        </div>
+      </Card>
+    </AppShell>
+  );
+}
+ReactDOM.createRoot(document.getElementById("root")).render(<Page />);
+</script>
+</body>
+</html>

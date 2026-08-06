@@ -1,0 +1,372 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Планы сотрудников — Skillaz Start</title>
+<link rel="stylesheet" href="../assets/styles.css" />
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" crossorigin="anonymous"></script>
+<script src="../assets/ds_bundle.js"></script>
+<script src="../assets/data.js"></script>
+<script type="text/babel" src="../assets/shell.js"></script>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { Card, Tag, Table, Tabs, Input, Select, ProgressBar, Button, Tooltip, Modal, Textarea, Snackbar, Alert } = window.SkillazCoreDesignSystem_bf9566;
+const { AppShell, Icons } = window.Site;
+const {
+  IconSearch, IconPlusSm, IconAlertCircle, IconTarget, IconClock, IconCheck, IconFlag, IconUsers,
+  IconChevronDown, IconChevronRight, IconCalendar,
+} = Icons;
+
+const D = window.SITE_DATA;
+const templatesById = Object.fromEntries(D.templates.map((t) => [t.id, t]));
+
+const STATUS_META = {
+  not_started: { label: "Не начат", hue: "neutral" },
+  in_progress: { label: "В процессе", hue: "blue" },
+  on_review: { label: "Ожидает проверки", hue: "warning" },
+  completed: { label: "Завершён", hue: "positive" },
+  failed: { label: "Неуспешно завершён", hue: "negative" },
+  cancelled: { label: "Отменён", hue: "gray" },
+};
+const HIDDEN_BY_DEFAULT = ["completed", "failed", "cancelled"];
+
+const QUICK_INDICATORS = [
+  { id: "active", label: "Активные", icon: IconTarget, bg: "var(--sk-accent-secondary)", fg: "var(--sk-icon-accent)", test: (p) => p.status === "in_progress" || p.status === "not_started" },
+  { id: "risk", label: "С риском", icon: IconAlertCircle, bg: "var(--sk-negative-secondary)", fg: "var(--sk-icon-negative)", test: (p) => p.risks.length > 0 },
+  { id: "no_goals", label: "Без целей", icon: IconFlag, bg: "var(--sk-warning-secondary)", fg: "var(--sk-text-warning-dark)", test: (p) => !p.goalsPublished },
+  { id: "overdue_cp", label: "С просроченными КТ", icon: IconClock, bg: "var(--sk-special-secondary)", fg: "var(--sk-special)", test: (p) => p.overdueCheckpoint },
+  { id: "review", label: "Ожидают финального ревью", icon: IconCheck, bg: "var(--sk-positive-secondary)", fg: "var(--sk-icon-positive)", test: (p) => p.finalReview === "pending" },
+  { id: "ending_soon", label: "Завершаются скоро", icon: IconCalendar, bg: "var(--sk-warning-secondary)", fg: "var(--sk-text-warning-dark)", test: (p) => !!p.endingSoon },
+];
+
+const GROUP_OPTIONS = [
+  { value: "", label: "Без группировки" },
+  { value: "templateId", label: "По шаблону" },
+  { value: "department", label: "По подразделению" },
+  { value: "position", label: "По должности" },
+  { value: "manager", label: "По руководителю" },
+  { value: "responsible", label: "По ответственному" },
+  { value: "planType", label: "По типу плана" },
+  { value: "name", label: "По сотруднику" },
+  { value: "status", label: "По статусу" },
+];
+
+// Кнопка-переключатель группировки с плавающей панелью радио-кнопок — см. референс
+// (список планов/целей с группировкой "По статусу" и т.п.).
+function GroupByMenu({ value, onChange }) {
+  const { Radio } = window.SkillazCoreDesignSystem_bf9566;
+  const [open, setOpen] = React.useState(false);
+  const ref = React.useRef(null);
+  React.useEffect(() => {
+    function onDocClick(e) { if (ref.current && !ref.current.contains(e.target)) setOpen(false); }
+    document.addEventListener("mousedown", onDocClick);
+    return () => document.removeEventListener("mousedown", onDocClick);
+  }, []);
+  const current = GROUP_OPTIONS.find((o) => o.value === value) || GROUP_OPTIONS[0];
+  return (
+    <div ref={ref} style={{ position: "relative" }}>
+      <Button mode="secondary" icon={<Icons.IconLayers size={16} />} onClick={() => setOpen((o) => !o)}>{current.label}</Button>
+      {open && (
+        <div className="sk-scroll" style={{
+          position: "absolute", top: "calc(100% + 6px)", right: 0, zIndex: 50, background: "var(--sk-surface-page)",
+          borderRadius: "var(--sk-radius-3)", boxShadow: "var(--sk-shadow-m)", padding: 8, minWidth: 220, maxHeight: 320, overflowY: "auto",
+        }}>
+          <div className="sk-col sk-gap-1">
+            {GROUP_OPTIONS.map((o) => (
+              <div key={o.value || "none"} style={{ padding: "8px 10px", borderRadius: "var(--sk-radius-2)" }}>
+                <Radio checked={value === o.value} onChange={() => { onChange(o.value); setOpen(false); }} label={o.label} />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function groupLabel(key, value) {
+  if (key === "templateId") return value ? (templatesById[value] ? templatesById[value].name : value) : "Без шаблона";
+  if (key === "status") return STATUS_META[value] ? STATUS_META[value].label : value;
+  return value || "—";
+}
+
+const emptyFilters = { status: "", planType: "", department: "", template: "", manager: "", assignMethod: "", risk: "" };
+
+function DraftCard({ d }) {
+  return (
+    <a href={"plan.html?kind=draft&id=" + d.id} style={{ textDecoration: "none" }}>
+      <Card bordered style={{ cursor: "pointer" }}>
+        <div className="sk-col sk-gap-2">
+          <div className="sk-row sk-gap-2">
+            <Tag size="s" hue="neutral">{d.type}</Tag>
+            <Tag size="s" hue="gray">Черновик</Tag>
+          </div>
+          <div className="sk-title-5">{d.title}</div>
+          <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>По шаблону «{d.templateName}» · создан {d.createdAt}</div>
+        </div>
+      </Card>
+    </a>
+  );
+}
+
+function CancelModal({ plan, onClose, onConfirm }) {
+  const [reason, setReason] = React.useState("");
+  return (
+    <Modal open title={"Отменить план «" + plan.planTitle + "»?"} onClose={onClose} size="s"
+      secondary={<Button mode="secondary" onClick={onClose}>Отмена</Button>}
+      primary={<Button variant="negative" disabled={!reason.trim()} onClick={() => onConfirm(reason)}>Отменить план</Button>}>
+      <div className="sk-col sk-gap-3">
+        <div className="sk-muted">Сотрудник и руководитель получат уведомление об отмене. Действие необратимо.</div>
+        <Textarea label="Причина отмены" required rows={3} value={reason} onChange={(e) => setReason(e.target.value || "")} placeholder="Например: кандидат отказался от оффера" />
+      </div>
+    </Modal>
+  );
+}
+
+function AssignedTable() {
+  const [q, setQ] = React.useState("");
+  const [activeIndicator, setActiveIndicator] = React.useState(null);
+  const [filters, setFilters] = React.useState(emptyFilters);
+  const [filtersOpen, setFiltersOpen] = React.useState(false);
+  const [showHiddenStatuses, setShowHiddenStatuses] = React.useState(false);
+  const [groupBy, setGroupBy] = React.useState("");
+  const [collapsedGroups, setCollapsedGroups] = React.useState(() => new Set());
+  const [cancelPlan, setCancelPlan] = React.useState(null);
+  const [toast, setToast] = React.useState(null);
+  const [plans, setPlans] = React.useState(D.hrAssignedPlans);
+
+  function showToast(msg) { setToast(msg); window.setTimeout(() => setToast(null), 2600); }
+
+  const departments = [...new Set(D.hrAssignedPlans.map((p) => p.department))];
+  const managers = [...new Set(D.hrAssignedPlans.map((p) => p.manager))];
+  const planTypes = [...new Set(D.hrAssignedPlans.map((p) => p.planType))];
+  const hasActiveFilters = !!(filters.status || filters.planType || filters.department || filters.template || filters.manager || filters.assignMethod || filters.risk);
+  const activeFilterCount = Object.values(filters).filter(Boolean).length;
+
+  const needle = q.trim().toLowerCase();
+  let list = plans.filter((p) => {
+    if (!showHiddenStatuses && HIDDEN_BY_DEFAULT.includes(p.status) && !filters.status) return false;
+    if (needle && !(p.name.toLowerCase().includes(needle) || p.planTitle.toLowerCase().includes(needle)
+      || p.position.toLowerCase().includes(needle) || p.manager.toLowerCase().includes(needle)
+      || (templatesById[p.templateId] && templatesById[p.templateId].name.toLowerCase().includes(needle)))) return false;
+    if (activeIndicator && !QUICK_INDICATORS.find((i) => i.id === activeIndicator).test(p)) return false;
+    if (filters.status && p.status !== filters.status) return false;
+    if (filters.planType && p.planType !== filters.planType) return false;
+    if (filters.department && p.department !== filters.department) return false;
+    if (filters.template && p.templateId !== filters.template) return false;
+    if (filters.manager && p.manager !== filters.manager) return false;
+    if (filters.assignMethod && p.assignMethod !== filters.assignMethod) return false;
+    if (filters.risk === "risk" && p.risks.length === 0) return false;
+    if (filters.risk === "no_risk" && p.risks.length > 0) return false;
+    return true;
+  });
+
+  function cancelPlanConfirm(reason) {
+    setPlans((list) => list.map((x) => x.id === cancelPlan.id ? { ...x, status: "cancelled", risks: [...x.risks, "Отменено HR: " + reason] } : x));
+    showToast("План отменён");
+    setCancelPlan(null);
+  }
+
+  const columns = [
+    { key: "name", title: "Сотрудник", width: 260, render: (p) => (
+      <a href={"plan-detail.html?id=" + p.id} style={{ textDecoration: "none" }}>
+        <div className="sk-col" style={{ gap: 2 }}>
+          <span className="sk-label-3" style={{ color: "var(--sk-text-accent)" }}>{p.name}</span>
+          <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{p.position} · {p.department}</span>
+        </div>
+      </a>
+    ) },
+    { key: "plan", title: "План", width: 280, render: (p) => (
+      <div className="sk-col" style={{ gap: 2 }}>
+        <span className="sk-label-4">{p.planTitle}</span>
+        <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{p.planType} · {templatesById[p.templateId] ? templatesById[p.templateId].name : "без шаблона"}</span>
+      </div>
+    ) },
+    { key: "status", title: "Статус", width: 150, render: (p) => (
+      <div className="sk-col sk-gap-1" style={{ alignItems: "flex-start" }}>
+        <Tag size="s" hue={STATUS_META[p.status].hue}>{STATUS_META[p.status].label}</Tag>
+        {p.risks.length > 0 && <Tag size="s" hue="negative" icon={<IconAlertCircle size={11} />}>Риск</Tag>}
+      </div>
+    ) },
+    { key: "progress", title: "Прогресс", width: 220, render: (p) => (
+      <div className="sk-col sk-gap-1" style={{ minWidth: 170 }}>
+        <div className="sk-row sk-gap-2"><span className="sk-muted" style={{ font: "var(--sk-label-4-regular)", width: 46 }}>Чек-лист</span><ProgressBar value={p.checklistProgress} style={{ flex: 1 }} hue="accent" /><span className="sk-label-4" style={{ width: 32, textAlign: "right" }}>{p.checklistProgress}%</span></div>
+        {p.goalsProgress !== null && (
+          <div className="sk-row sk-gap-2"><span className="sk-muted" style={{ font: "var(--sk-label-4-regular)", width: 46 }}>Цели</span><ProgressBar value={p.goalsProgress} style={{ flex: 1 }} hue="positive" /><span className="sk-label-4" style={{ width: 32, textAlign: "right" }}>{p.goalsProgress}%</span></div>
+        )}
+      </div>
+    ) },
+    { key: "manager", title: "Руководитель", width: 180 },
+    { key: "dates", title: "Сроки", width: 180, render: (p) => (
+      <div className="sk-col" style={{ gap: 2 }}>
+        <span className="sk-label-4-regular">{p.assignedDate} → {p.plannedEndDate}</span>
+        {p.actualEndDate && <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Факт: {p.actualEndDate}</span>}
+      </div>
+    ) },
+    { key: "assignMethod", title: "Способ назначения", width: 190 },
+    { key: "lastActivity", title: "Активность", width: 140 },
+    { key: "actions", title: "", width: 110, render: (p) => (
+      <div onClick={(e) => e.stopPropagation()}>
+        {p.status !== "cancelled" && p.status !== "completed" && (
+          <Button size="s" mode="tertiary" onClick={() => setCancelPlan(p)}>Отменить</Button>
+        )}
+      </div>
+    ) },
+  ];
+
+  function renderTable(rows) {
+    return (
+      <div className="sk-scroll" style={{ overflowX: "auto" }}>
+        <Table columns={columns} rows={rows} style={{ minWidth: 1720 }} />
+      </div>
+    );
+  }
+
+  return (
+    <div className="sk-col sk-gap-4">
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
+        {QUICK_INDICATORS.map((ind) => {
+          const count = plans.filter((p) => (!HIDDEN_BY_DEFAULT.includes(p.status) || showHiddenStatuses) && ind.test(p)).length;
+          const active = activeIndicator === ind.id;
+          return (
+            <Card key={ind.id} bordered padding={12}
+              style={{ cursor: "pointer", flex: "0 0 190px", minHeight: 78, outline: active ? "2px solid var(--sk-stroke-accent)" : "none" }}>
+              <div className="sk-row sk-gap-2 sk-clickable" onClick={() => setActiveIndicator(active ? null : ind.id)} style={{ alignItems: "flex-start", height: "100%" }}>
+                <span style={{ width: 28, height: 28, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", background: ind.bg, color: ind.fg }}>
+                  <ind.icon size={15} />
+                </span>
+                <div className="sk-col" style={{ gap: 0, minWidth: 0 }}>
+                  <div className="sk-label-2">{count}</div>
+                  <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)", lineHeight: 1.3 }}>{ind.label}</div>
+                </div>
+              </div>
+            </Card>
+          );
+        })}
+      </div>
+
+      <div className="sk-col sk-gap-3">
+        <div className="sk-row sk-gap-2">
+          <Input icon={<IconSearch size={20} />} placeholder="Сотрудник, план, должность, руководитель, шаблон" value={q}
+            onChange={(e) => setQ(e.target.value || "")} style={{ flex: 1 }} />
+          <Button mode="secondary" icon={<Icons.IconFilter size={16} />} onClick={() => setFiltersOpen((o) => !o)}>
+            Фильтры{hasActiveFilters ? " · " + activeFilterCount : ""}
+          </Button>
+        </div>
+        {filtersOpen && (
+          <div className="sk-row sk-gap-2" style={{ flexWrap: "wrap", alignItems: "flex-end" }}>
+            <Select label="Статус" placeholder="Все" value={filters.status || null}
+              options={Object.entries(STATUS_META).map(([v, m]) => ({ value: v, label: m.label }))}
+              onChange={(v) => setFilters((f) => ({ ...f, status: v || "" }))} style={{ width: 180 }} />
+            <Select label="Тип плана" placeholder="Все" value={filters.planType || null} options={planTypes.map((v) => ({ value: v, label: v }))}
+              onChange={(v) => setFilters((f) => ({ ...f, planType: v || "" }))} style={{ width: 170 }} />
+            <Select label="Подразделение" placeholder="Все" value={filters.department || null} options={departments.map((v) => ({ value: v, label: v }))}
+              onChange={(v) => setFilters((f) => ({ ...f, department: v || "" }))} style={{ width: 220 }} />
+            <Select label="Шаблон" placeholder="Все" value={filters.template || null} options={D.templates.map((t) => ({ value: t.id, label: t.name }))}
+              onChange={(v) => setFilters((f) => ({ ...f, template: v || "" }))} style={{ width: 200 }} />
+            <Select label="Руководитель" placeholder="Все" value={filters.manager || null} options={managers.map((v) => ({ value: v, label: v }))}
+              onChange={(v) => setFilters((f) => ({ ...f, manager: v || "" }))} style={{ width: 180 }} />
+            <Select label="Способ назначения" placeholder="Все" value={filters.assignMethod || null}
+              options={["Вручную", "Очередь назначения", "Автособытие", "Создан с нуля"].map((v) => ({ value: v, label: v }))}
+              onChange={(v) => setFilters((f) => ({ ...f, assignMethod: v || "" }))} style={{ width: 190 }} />
+            <Select label="Риск" placeholder="Все" value={filters.risk || null}
+              options={[{ value: "risk", label: "С риском" }, { value: "no_risk", label: "Без риска" }]}
+              onChange={(v) => setFilters((f) => ({ ...f, risk: v || "" }))} style={{ width: 150 }} />
+            {(hasActiveFilters || q || activeIndicator) && (
+              <button className="sk-link-btn sk-label-4-regular" style={{ height: 48 }} onClick={() => { setFilters(emptyFilters); setQ(""); setActiveIndicator(null); }}>Сбросить</button>
+            )}
+          </div>
+        )}
+      </div>
+
+      <div className="sk-row" style={{ justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
+        <div className="sk-row sk-gap-4" style={{ alignItems: "center" }}>
+          <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Найдено планов: {list.length}</span>
+
+          <label className="sk-row sk-gap-2 sk-clickable" style={{ font: "var(--sk-label-4-regular)", color: "var(--sk-text-secondary)" }}>
+            <input type="checkbox" checked={showHiddenStatuses} onChange={(e) => setShowHiddenStatuses(e.target.checked)} />
+            Показывать завершённые / неуспешные / отменённые
+          </label>
+        </div>
+        <div className="sk-row sk-gap-2" style={{ alignItems: "center" }}>
+          <GroupByMenu value={groupBy} onChange={setGroupBy} />
+          <Tooltip content="Переход в раздел отчётов по планам адаптации.">
+            <Button mode="secondary" disabled>Отчёты</Button>
+          </Tooltip>
+        </div>
+      </div>
+
+      {list.length === 0 ? (
+        <Card><div className="sk-muted" style={{ textAlign: "center", padding: "16px 0" }}>Ничего не нашлось — попробуйте изменить запрос или фильтры.</div></Card>
+      ) : !groupBy ? (
+        renderTable(list)
+      ) : (
+        <div className="sk-col sk-gap-3">
+          {Object.entries(list.reduce((acc, p) => {
+            const key = groupLabel(groupBy, p[groupBy]);
+            (acc[key] = acc[key] || []).push(p);
+            return acc;
+          }, {})).map(([key, rows], i) => {
+            const collapsed = collapsedGroups.has(key);
+            return (
+              <div key={key} className="sk-col sk-gap-2">
+                <div className="sk-row sk-gap-2 sk-clickable" style={{ alignItems: "center", padding: "6px 4px" }}
+                  onClick={() => setCollapsedGroups((s) => { const n = new Set(s); n.has(key) ? n.delete(key) : n.add(key); return n; })}>
+                  {collapsed ? <IconChevronRight size={16} color="var(--sk-icon-secondary)" /> : <IconChevronDown size={16} color="var(--sk-icon-secondary)" />}
+                  <span className="sk-label-2">{key}</span>
+                  <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{rows.length}</span>
+                </div>
+                {!collapsed && renderTable(rows)}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {cancelPlan && <CancelModal plan={cancelPlan} onClose={() => setCancelPlan(null)} onConfirm={cancelPlanConfirm} />}
+      {toast && (
+        <div style={{ position: "fixed", bottom: 24, left: "50%", transform: "translateX(-50%)", zIndex: 100 }}>
+          <Snackbar>{toast}</Snackbar>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function Page() {
+  const [tab, setTab] = React.useState("assigned");
+  return (
+    <AppShell role="hr" active="hr-plans" base="..">
+      <div className="sk-row" style={{ justifyContent: "space-between", alignItems: "flex-start" }}>
+        <div className="sk-col sk-gap-2">
+          <div className="sk-title-4">Планы сотрудников</div>
+          <div className="sk-muted">Индивидуальные планы, назначенные сотрудникам, и черновики, которые ещё не назначены.</div>
+        </div>
+        <Button variant="accent" icon={<IconPlusSm size={16} />} disabled>Создать план</Button>
+      </div>
+
+      <Tabs items={[{ id: "assigned", label: "Назначенные планы", count: D.hrAssignedPlans.length }, { id: "drafts", label: "Черновики", count: D.planDrafts.length }]}
+        active={tab} onChange={setTab} />
+
+      {tab === "assigned" ? <AssignedTable /> : (
+        <div className="sk-col sk-gap-4">
+          {D.planDrafts.map((d) => <DraftCard key={d.id} d={d} />)}
+        </div>
+      )}
+
+      <Alert hue="neutral" title="В этой итерации прототипа">
+        Массовые изменения назначенных планов не прорабатываются (как и в ТЗ). Действие «Открыть»/«Редактировать» ведёт в настройку блока целей — это единственный полностью
+        отрисованный сценарий редактора адаптации в этой версии прототипа.
+      </Alert>
+    </AppShell>
+  );
+}
+ReactDOM.createRoot(document.getElementById("root")).render(<Page />);
+</script>
+</body>
+</html>

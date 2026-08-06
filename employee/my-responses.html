@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Мои отклики — Skillaz Start</title>
+<link rel="stylesheet" href="../assets/styles.css" />
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" crossorigin="anonymous"></script>
+<script src="../assets/ds_bundle.js"></script>
+<script src="../assets/data.js"></script>
+<script type="text/babel" src="../assets/shell.js"></script>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { Card } = window.SkillazCoreDesignSystem_bf9566;
+const { AppShell, StatusTag, Icons } = window.Site;
+const { IconArrowLeft, IconMapPin, IconBriefcase } = Icons;
+const D = window.SITE_DATA;
+
+function ResponseRow({ r }) {
+  const v = D.vacancies.find(x => x.id === r.vacancyId);
+  if (!v) return null;
+  return (
+    <a href={"vacancy.html?id=" + v.id} style={{ textDecoration: "none" }}>
+      <Card bordered style={{ cursor: "pointer" }}>
+        <div className="sk-row" style={{ justifyContent: "space-between", alignItems: "flex-start" }}>
+          <div className="sk-col sk-gap-1">
+            <div className="sk-label-2">{v.title}</div>
+            <div className="sk-row sk-gap-2 sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>
+              <IconBriefcase size={14} />{v.department}
+              <IconMapPin size={14} style={{ marginLeft: 8 }} />{v.city}
+            </div>
+            <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Отклик отправлен {r.date}</div>
+          </div>
+          <StatusTag status={r.status} />
+        </div>
+      </Card>
+    </a>
+  );
+}
+
+function Page() {
+  const responses = D.myResponses;
+  return (
+    <AppShell role="employee" active="vacancies" base=".."
+      breadcrumb={<a href="vacancies.html" className="sk-row sk-gap-1" style={{ color: "var(--sk-text-secondary)" }}><IconArrowLeft size={14} /> Вакансии</a>}>
+      <div className="sk-col sk-gap-2">
+        <div className="sk-title-4">Мои отклики</div>
+        <div className="sk-muted">Отклики на внутренние вакансии и их текущий статус. Дальнейшая обработка — на стороне рекрутера.</div>
+      </div>
+      <div className="sk-col sk-gap-3">
+        {responses.length === 0 && (
+          <Card><div className="sk-muted" style={{ textAlign: "center", padding: "16px 0" }}>Вы пока не откликались ни на одну вакансию.</div></Card>
+        )}
+        {responses.map((r, i) => <ResponseRow key={i} r={r} />)}
+      </div>
+    </AppShell>
+  );
+}
+ReactDOM.createRoot(document.getElementById("root")).render(<Page />);
+</script>
+</body>
+</html>

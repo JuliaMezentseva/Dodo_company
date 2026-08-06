@@ -1,0 +1,128 @@
+/* Skillaz Core — semantic alias layer (--sk-*)
+   Built on tokens/fig/fig-tokens.css (raw Figma Variables).
+   Colors reference the semantic fig tokens so brand modes ([data-mode="skillaz"|"unirus"|"nestle"]) retheme everything. */
+
+:root {
+  /* ---------- text ---------- */
+  --sk-text-primary: var(--text-text-primary);
+  --sk-text-secondary: var(--text-text-secondary);
+  --sk-text-tertiary: var(--text-text-tertyari);
+  --sk-text-placeholder: var(--text-text-placeholders);
+  --sk-text-contrast: var(--text-text-contrast);
+  --sk-text-accent: var(--text-text-accent);
+  --sk-text-link: var(--text-text-blue);
+  --sk-text-negative: var(--text-text-negative);
+  --sk-text-positive: var(--text-text-positive);
+  --sk-text-warning-dark: var(--text-text-warning-dark);
+  --sk-text-disabled: var(--text-text-state-primary-disabled);
+
+  /* ---------- icon ---------- */
+  --sk-icon-primary: var(--icon-icon-primary);
+  --sk-icon-secondary: var(--icon-icon-secondary);
+  --sk-icon-accent: var(--icon-icon-accent);
+  --sk-icon-negative: var(--icon-icon-negative);
+  --sk-icon-positive: var(--icon-icon-positive);
+
+  /* ---------- surfaces ---------- */
+  --sk-surface-page: var(--bg-bg-primary);            /* white */
+  --sk-surface-secondary: var(--bg-bg-secondary);     /* #F1F4F9 app chrome */
+  --sk-surface-tertiary: var(--bg-bg-tertyari);       /* #DCE3EB */
+  --sk-surface-card: var(--bg-bg-primary);
+  --sk-surface-dark: var(--bg-bg-dark);
+  --sk-surface-overlay: var(--bg-bg-overlay);
+  --sk-surface-disabled: var(--bg-bg-state-bg-disabled);
+
+  --sk-accent: var(--bg-bg-accent);
+  --sk-accent-hover: var(--bg-bg-state-accent-hover-press);
+  --sk-accent-secondary: var(--bg-bg-accent-secondary);
+  --sk-accent-secondary-hover: var(--bg-bg-state-accent-secondary-hover-press);
+  --sk-negative: var(--bg-bg-negative);
+  --sk-negative-hover: var(--bg-bg-state-negative-hover-press);
+  --sk-negative-secondary: var(--bg-bg-negative-secondary);
+  --sk-positive: var(--bg-bg-positive);
+  --sk-positive-hover: var(--bg-bg-state-positive-hover-press);
+  --sk-positive-secondary: var(--bg-bg-positive-secondary);
+  --sk-warning: var(--bg-bg-warning);
+  --sk-warning-secondary: var(--bg-bg-warning-secondary);
+  --sk-special: var(--bg-bg-special);
+  --sk-special-secondary: var(--bg-bg-special-secondary);
+  --sk-neutral: var(--bg-bg-neutral);
+
+  --sk-hover-nav: var(--bg-bg-state-bg-nav-item-hover);          /* rgba(220,227,235,.5) */
+  --sk-hover-table: var(--bg-bg-state-bg-table-hover);           /* graphite-98 */
+  --sk-hover-neutral-secondary: var(--bg-bg-state-button-neutral-secondary-hovered); /* graphite-97 */
+
+  /* ---------- strokes ---------- */
+  --sk-stroke: var(--stroke-stroke-neutral);          /* #DCE3EB */
+  --sk-stroke-divider: var(--stroke-stroke-divider);
+  --sk-stroke-accent: var(--stroke-stroke-accent);
+  --sk-stroke-negative: var(--stroke-stroke-negative);
+  --sk-stroke-hover: var(--stroke-stroke-state-stroke-neutral-hover-press); /* graphite-85 */
+  --sk-stroke-disabled: var(--stroke-stroke-state-stroke-disabled-2);
+
+  /* ---------- avatars ---------- */
+  --sk-avatar-blue: var(--bg-avatar-avatar-blue);
+  --sk-avatar-green: var(--bg-avatar-avatar-green);
+  --sk-avatar-orange: var(--bg-avatar-avatar-orange);
+  --sk-avatar-pink: var(--bg-avatar-avatar-pink);
+  --sk-avatar-red: var(--bg-avatar-avatar-red);
+  --sk-avatar-sky: var(--bg-avatar-avatar-sky);
+  --sk-avatar-violet: var(--bg-avatar-avatar-violet);
+  --sk-avatar-yellow: var(--bg-avatar-avatar-yellow);
+  --sk-avatar-gray: var(--bg-avatar-avatar-gray);
+
+  /* ---------- spacing (4px grid) ---------- */
+  --sk-space-05: 2px;
+  --sk-space-1: 4px;
+  --sk-space-15: 6px;
+  --sk-space-2: 8px;
+  --sk-space-3: 12px;
+  --sk-space-4: 16px;
+  --sk-space-5: 20px;
+  --sk-space-6: 24px;
+  --sk-space-7: 28px;
+  --sk-space-8: 32px;
+  --sk-space-10: 40px;
+  --sk-space-12: 48px;
+  --sk-space-14: 56px;
+  --sk-space-16: 64px;
+  --sk-space-18: 72px;
+
+  /* ---------- radii ---------- */
+  --sk-radius-1: 4px;
+  --sk-radius-2: 8px;
+  --sk-radius-3: 12px;   /* buttons, inputs, cards */
+  --sk-radius-4: 16px;
+  --sk-radius-5: 24px;
+  --sk-radius-form: 12px;
+  --sk-radius-full: 999px;
+
+  /* ---------- shadows (cool blue-gray, never black) ---------- */
+  --sk-shadow-s: 0 2px 12px rgba(112,144,176,0.16);  /* cards, banners */
+  --sk-shadow-m: 0 3px 16px rgba(112,144,176,0.24);  /* dropdowns, menus, tooltips */
+  --sk-shadow-l: 0 6px 24px rgba(112,144,176,0.32);  /* modals, notifications, snackbars */
+
+  /* ---------- motion ---------- */
+  --sk-ease: cubic-bezier(0.4, 0, 0.2, 1); /* @kind other */
+  --sk-duration: 150ms; /* @kind other */
+
+  /* ---------- layout ---------- */
+  --sk-sidebar-width: 280px;
+  --sk-sidebar-width-collapsed: 64px;
+  --sk-header-height: 64px;
+
+  /* container breakpoints (Container spec) */
+  --sk-bp-xxl: 1920px;
+  --sk-bp-xl: 1536px;
+  --sk-bp-l: 1280px;
+  --sk-bp-m: 1024px;
+  --sk-bp-s: 600px;
+  --sk-bp-xs: 360px;
+  --sk-bp-xxs: 320px;
+
+  /* overlays (Modal/Drawer spec) */
+  --sk-modal-s: 480px;
+  --sk-modal-m: 620px;
+  --sk-modal-l: 800px;
+  --sk-drawer-inset: 12px;
+}

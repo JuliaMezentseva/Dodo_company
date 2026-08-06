@@ -1,0 +1,19 @@
+/* Skillaz Core — custom scrollbar (Scroll-bar spec):
+   12px gutter, 8px thumb, radius 12, graphite alpha; hover darkens. */
+.sk-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scroll-bar-foreground, rgba(52,60,67,0.32)) transparent;
+}
+.sk-scroll::-webkit-scrollbar { width: 12px; height: 12px; }
+.sk-scroll::-webkit-scrollbar-track { background: transparent; }
+.sk-scroll::-webkit-scrollbar-thumb {
+  background: var(--scroll-bar-foreground, rgba(52,60,67,0.32));
+  border-radius: 12px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+.sk-scroll::-webkit-scrollbar-thumb:hover {
+  background: var(--scroll-bar-foreground-hovered, rgba(63,72,80,0.48));
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}

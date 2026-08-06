@@ -1,0 +1,60 @@
+/* Skillaz Core — typography
+   Product UI uses Inter exclusively; Roboto Mono for code/IDs.
+   hh sans / TT Hoves Pro are not bundled (commercial) — Inter substitutes. */
+
+:root {
+  --sk-font-ui: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --sk-font-mono: "Roboto Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /* titles — SemiBold 600 */
+  --sk-title-1: 600 48px/64px var(--sk-font-ui);
+  --sk-title-2: 600 36px/48px var(--sk-font-ui);
+  --sk-title-3: 600 28px/40px var(--sk-font-ui);
+  --sk-title-4: 600 22px/32px var(--sk-font-ui);
+  --sk-title-5: 600 18px/26px var(--sk-font-ui);
+
+  /* subtitles — SemiBold 600 */
+  --sk-subtitle-1: 600 16px/22px var(--sk-font-ui);
+  --sk-subtitle-2: 600 14px/20px var(--sk-font-ui);
+  --sk-subtitle-3: 600 12px/18px var(--sk-font-ui);
+
+  /* labels — Medium 500 / Regular 400 (UI workhorse: label-3 = 14/20) */
+  --sk-label-1: 500 18px/26px var(--sk-font-ui);
+  --sk-label-2: 500 16px/22px var(--sk-font-ui);
+  --sk-label-3: 500 14px/20px var(--sk-font-ui);
+  --sk-label-4: 500 12px/18px var(--sk-font-ui);
+  --sk-label-2-regular: 400 16px/22px var(--sk-font-ui);
+  --sk-label-3-regular: 400 14px/20px var(--sk-font-ui);
+  --sk-label-4-regular: 400 12px/18px var(--sk-font-ui);
+
+  /* paragraphs — Regular 400, tall line-height */
+  --sk-paragraph-1: 400 18px/28px var(--sk-font-ui);
+  --sk-paragraph-2: 400 16px/26px var(--sk-font-ui);
+  --sk-paragraph-3: 400 14px/24px var(--sk-font-ui);
+  --sk-paragraph-4: 400 12px/22px var(--sk-font-ui);
+}
+
+.sk-title-1 { font: var(--sk-title-1); letter-spacing: -0.02em; }
+.sk-title-2 { font: var(--sk-title-2); letter-spacing: -0.0175em; }
+.sk-title-3 { font: var(--sk-title-3); letter-spacing: -0.0125em; }
+.sk-title-4 { font: var(--sk-title-4); letter-spacing: -0.0075em; }
+.sk-title-5 { font: var(--sk-title-5); }
+
+.sk-subtitle-1 { font: var(--sk-subtitle-1); }
+.sk-subtitle-2 { font: var(--sk-subtitle-2); letter-spacing: 0.005em; }
+.sk-subtitle-3 { font: var(--sk-subtitle-3); letter-spacing: 0.01em; }
+
+.sk-label-1 { font: var(--sk-label-1); }
+.sk-label-2 { font: var(--sk-label-2); }
+.sk-label-3 { font: var(--sk-label-3); letter-spacing: 0.005em; }
+.sk-label-4 { font: var(--sk-label-4); letter-spacing: 0.01em; }
+.sk-label-2-regular { font: var(--sk-label-2-regular); }
+.sk-label-3-regular { font: var(--sk-label-3-regular); letter-spacing: 0.005em; }
+.sk-label-4-regular { font: var(--sk-label-4-regular); letter-spacing: 0.01em; }
+
+.sk-paragraph-1 { font: var(--sk-paragraph-1); }
+.sk-paragraph-2 { font: var(--sk-paragraph-2); letter-spacing: 0.005em; }
+.sk-paragraph-3 { font: var(--sk-paragraph-3); letter-spacing: 0.01em; }
+.sk-paragraph-4 { font: var(--sk-paragraph-4); letter-spacing: 0.015em; }
+
+.sk-mono { font-family: var(--sk-font-mono); }

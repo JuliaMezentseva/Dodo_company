@@ -1,0 +1,392 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Шаблон плана — Редактор адаптации — Skillaz Start</title>
+<link rel="stylesheet" href="../assets/styles.css" />
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" crossorigin="anonymous"></script>
+<script src="../assets/ds_bundle.js"></script>
+<script src="../assets/data.js"></script>
+<script type="text/babel" src="../assets/shell.js"></script>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { Card, Tag, Switch, Input, Textarea, Select, Checkbox, Tooltip, Divider, Button, IconButton, Modal, Snackbar } = window.SkillazCoreDesignSystem_bf9566;
+const { AppShell, Icons } = window.Site;
+const {
+  IconInfo, IconTarget, IconCheck, IconClipboard, IconSettings,
+  IconHelpCircle, IconTrash, IconArrowLeft, IconClock, IconFileText, IconLink2, IconGraduationCap, IconMessageCircle,
+  IconPlusSm, IconEdit,
+} = Icons;
+
+const TEMPLATE_SECTIONS = [
+  { id: "description", label: "Описание", icon: IconInfo },
+  { id: "goals", label: "План достижения цели адаптации", icon: IconTarget },
+  { id: "checklist", label: "Чек-лист", icon: IconCheck },
+  { id: "tasks", label: "Задачи", icon: IconClipboard },
+  { id: "faq", label: "FAQ", icon: IconMessageCircle },
+  { id: "settings", label: "Настройки", icon: IconSettings },
+];
+
+// Кликабельны только разделы, отрисованные в этой итерации — остальные пункты навигации
+// показывают заглушку NotBuiltSection (см. Флоу_HRАдмина_настройка_шаблона).
+const BUILT_SECTIONS = ["goals", "checklist"];
+
+const TEMPLATE_STATUS = {
+  active: { label: "Активный", hue: "positive" },
+  draft: { label: "Черновик", hue: "neutral" },
+  archived: { label: "Архивный", hue: "gray" },
+};
+
+function SectionNavItem({ item, active, disabled, onClick }) {
+  const [hover, setHover] = React.useState(false);
+  const Icon = item.icon;
+  return (
+    <div onClick={disabled ? undefined : onClick}
+      onMouseEnter={() => !disabled && setHover(true)} onMouseLeave={() => setHover(false)}
+      className={disabled ? "" : "sk-clickable"} style={{
+      display: "flex", alignItems: "flex-start", gap: 10, minHeight: 40, padding: "9px 12px", borderRadius: "var(--sk-radius-3)",
+      background: active || hover ? "var(--sk-hover-nav)" : "transparent",
+      color: disabled ? "var(--sk-text-tertiary)" : "var(--sk-text-primary)", font: active ? "var(--sk-label-3)" : "var(--sk-label-3-regular)",
+      cursor: disabled ? "default" : "pointer",
+    }}>
+      <Icon size={18} color={disabled ? "var(--sk-icon-tertiary)" : "var(--sk-icon-secondary)"} style={{ flexShrink: 0, marginTop: 1 }} />
+      <span style={{ flex: 1, lineHeight: 1.35 }}>{item.label}</span>
+    </div>
+  );
+}
+
+function PlanSectionsNav({ section, onChange }) {
+  return (
+    <div style={{ width: 224, flexShrink: 0 }}>
+      <Card bordered>
+        <div className="sk-col sk-gap-1">
+          <div className="sk-label-4" style={{ color: "var(--sk-text-tertiary)", textTransform: "uppercase", padding: "0 12px 4px" }}>Разделы плана</div>
+          {TEMPLATE_SECTIONS.map((s) => {
+            const disabled = !BUILT_SECTIONS.includes(s.id);
+            return (
+              <SectionNavItem key={s.id} item={s} active={section === s.id} disabled={disabled}
+                onClick={() => onChange(s.id)} />
+            );
+          })}
+        </div>
+      </Card>
+    </div>
+  );
+}
+
+// Разделы, которые по ТЗ существуют в шаблоне, но не входят в эту итерацию прототипа —
+// в фокусе сейчас только настройка блока целей (см. Флоу_HRАдмина_настройка_шаблона).
+function NotBuiltSection({ label }) {
+  return (
+    <Card bordered>
+      <div className="sk-col sk-gap-2" style={{ alignItems: "center", textAlign: "center", padding: "32px 16px" }}>
+        <div style={{ width: 40, height: 40, borderRadius: "50%", background: "var(--sk-surface-secondary)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <IconClipboard size={18} color="var(--sk-icon-secondary)" />
+        </div>
+        <div className="sk-label-2">Раздел «{label}»</div>
+        <div className="sk-muted" style={{ maxWidth: 360 }}>
+          Не входит в текущую итерацию прототипа — сейчас в фокусе только настройка блока целей адаптации.
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+// Контрольные точки шаблона — нумерованные кружки (стиль из RightPanel employee/plan.html),
+// но, в отличие от превью прошлой итерации, полноценно редактируемые: HR может добавить,
+// изменить или удалить КТ прямо в шаблоне. По умолчанию для новых шаблонов предзаполнены
+// стандартные 30/60 дней (см. tpl_sales в данных), но состав не зафиксирован жёстко.
+const emptyCpForm = { title: "", agenda: "", required: true, dueDays: 30, surveyId: "" };
+
+function CheckpointFormModal({ initial, onClose, onSave }) {
+  const D = window.SITE_DATA;
+  const [form, setForm] = React.useState(initial || emptyCpForm);
+  const set = (k) => (v) => setForm((f) => ({ ...f, [k]: v }));
+  const valid = form.title.trim() && form.agenda.trim() && form.dueDays;
+  return (
+    <Modal open title={initial ? "Редактировать контрольную точку" : "Новая контрольная точка"} onClose={onClose} size="s"
+      secondary={<Button mode="secondary" onClick={onClose}>Отмена</Button>}
+      primary={<Button variant="accent" disabled={!valid} onClick={() => onSave(form)}>{initial ? "Сохранить" : "Добавить"}</Button>}>
+      <div className="sk-col sk-gap-3">
+        <Input label="Название" required value={form.title} onChange={(e) => set("title")(e.target.value || "")} placeholder="Например, Контрольная точка по итогам 30 дней" />
+        <Textarea label="Повестка" required helper="Каждый пункт — с новой строки" rows={3} value={form.agenda} onChange={(e) => set("agenda")(e.target.value || "")} />
+        <Input label="Срок (дней от начала плана)" required type="number" min={1} value={form.dueDays} onChange={(e) => set("dueDays")(Math.max(1, Number(e.target.value) || 1))} />
+        <Select label="Опрос" placeholder="Без опроса" value={form.surveyId || null}
+          options={D.surveyCatalog.map((s) => ({ value: s.id, label: s.name }))}
+          onChange={(v) => set("surveyId")(v || "")} />
+        <Checkbox label="Обязательный элемент" checked={form.required} onChange={() => set("required")(!form.required)} style={{ alignSelf: "flex-start" }} />
+      </div>
+    </Modal>
+  );
+}
+
+function TemplateCheckpointRow({ index, cp, onEdit, onDelete }) {
+  const [hover, setHover] = React.useState(false);
+  return (
+    <div onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)} style={{
+      display: "flex", alignItems: "flex-start", gap: 10, padding: 10, borderRadius: "var(--sk-radius-3)",
+      border: "1px solid var(--sk-stroke)", background: "var(--sk-surface-page)",
+    }}>
+      <span style={{
+        width: 28, height: 28, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center",
+        font: "var(--sk-label-3)", color: "var(--sk-text-tertiary)", boxShadow: "inset 0 0 0 1.5px var(--sk-stroke)",
+      }}>{index}</span>
+      <div className="sk-col sk-gap-1" style={{ flex: 1, minWidth: 0 }}>
+        <div className="sk-row sk-gap-2">
+          <span className="sk-label-4">{cp.title}</span>
+          {cp.required && <Tag size="s" hue="negative">Обязательная</Tag>}
+        </div>
+        <div className="sk-row sk-gap-1 sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>
+          <IconClock size={13} />День {cp.dueDays} от начала плана
+        </div>
+      </div>
+      <div className="sk-row sk-gap-1" style={{ flexShrink: 0, opacity: hover ? 1 : 0, transition: "opacity .12s ease" }}>
+        <Button size="s" mode="tertiary" onClick={onEdit}><IconEdit size={15} /></Button>
+        <Button size="s" mode="tertiary" onClick={onDelete}><IconTrash size={15} /></Button>
+      </div>
+    </div>
+  );
+}
+
+function TemplateCheckpointsSection({ checkpoints, onAdd, onEdit, onDelete }) {
+  const [formModal, setFormModal] = React.useState(null); // null | { mode: "create" } | { mode: "edit", cp }
+  return (
+    <div className="sk-col sk-gap-3">
+      {checkpoints.length > 0 && (
+        <div className="sk-col sk-gap-2">
+          {checkpoints.map((cp, i) => (
+            <TemplateCheckpointRow key={cp.id} index={i + 1} cp={cp}
+              onEdit={() => setFormModal({ mode: "edit", cp })} onDelete={() => onDelete(cp.id)} />
+          ))}
+        </div>
+      )}
+      <Button mode="secondary" size="s" icon={<IconPlusSm size={16} />} style={{ alignSelf: "flex-start" }}
+        onClick={() => setFormModal({ mode: "create" })}>
+        Добавить контрольную точку
+      </Button>
+
+      {formModal && (
+        <CheckpointFormModal
+          initial={formModal.mode === "edit" ? { title: formModal.cp.title, agenda: formModal.cp.agenda, required: formModal.cp.required, dueDays: formModal.cp.dueDays, surveyId: formModal.cp.surveyId || "" } : null}
+          onClose={() => setFormModal(null)}
+          onSave={(form) => { formModal.mode === "edit" ? onEdit(formModal.cp.id, form) : onAdd(form); setFormModal(null); }} />
+      )}
+    </div>
+  );
+}
+
+function GoalsSettingsCard({ template, enabled, deadlineDays, checkpoints, onToggle, onDeadlineChange, onAddCheckpoint, onEditCheckpoint, onDeleteCheckpoint }) {
+  return (
+    <div className="sk-col sk-gap-4">
+      <Card bordered>
+        <div className="sk-col sk-gap-4">
+          <div className="sk-title-5">План достижения цели адаптации</div>
+          <div className="sk-col sk-gap-3">
+            <div className="sk-row" style={{ justifyContent: "space-between" }}>
+              <div className="sk-row sk-gap-1">
+                <span className="sk-label-3">Включить план с целями</span>
+                <Tooltip content="Это план достижения целей в рамках адаптации: в нём сотруднику можно поставить цели, шаги к ним и полезные материалы. С этим планом сотрудник не просто проходит чек-лист, а приближается к тому, чтобы перформить в своей роли.">
+                  <IconHelpCircle size={16} color="var(--sk-icon-secondary)" />
+                </Tooltip>
+              </div>
+              <Switch checked={enabled} onChange={onToggle} />
+            </div>
+            {enabled && (
+              <div className="sk-row" style={{ justifyContent: "space-between", alignItems: "center", paddingLeft: 4 }}>
+                <div className="sk-row sk-gap-1" style={{ color: "var(--sk-text-secondary)" }}>
+                  <span style={{ marginRight: 2 }}>↳</span>
+                  <span className="sk-label-3-regular">Срок постановки целей руководителем после назначения плана (дней)</span>
+                  <Tooltip content="После назначения плана руководитель получит уведомление о необходимости поставить цели. Цели создаются уже в индивидуальном плане сотрудника.">
+                    <IconHelpCircle size={16} color="var(--sk-icon-secondary)" />
+                  </Tooltip>
+                </div>
+                <Input type="number" min={1} max={30} value={deadlineDays}
+                  onChange={(e) => onDeadlineChange(Math.max(1, Math.min(30, Number(e.target.value) || 1)))}
+                  style={{ width: 88 }} />
+              </div>
+            )}
+          </div>
+        </div>
+      </Card>
+
+      {enabled && (
+        <Card bordered>
+          <div className="sk-col sk-gap-3">
+            <div className="sk-row sk-gap-1">
+              <span className="sk-title-5">Контрольные точки</span>
+              <Tooltip content="Контрольные точки — точки сверки прогресса с руководителем по датам от начала плана. Настройте состав здесь, в шаблоне, — они автоматически появятся во всех планах, назначенных по нему.">
+                <IconHelpCircle size={16} color="var(--sk-icon-secondary)" />
+              </Tooltip>
+            </div>
+            <TemplateCheckpointsSection checkpoints={checkpoints}
+              onAdd={onAddCheckpoint} onEdit={onEditCheckpoint} onDelete={onDeleteCheckpoint} />
+          </div>
+        </Card>
+      )}
+    </div>
+  );
+}
+
+function InfoPanel({ template, onDelete }) {
+  const st = TEMPLATE_STATUS[template.status];
+  return (
+    <div style={{ width: 280, flexShrink: 0 }}>
+      <div className="sk-col sk-gap-4">
+        <Card bordered>
+          <div className="sk-col sk-gap-3">
+            <div className="sk-label-3" style={{ color: "var(--sk-text-tertiary)", textTransform: "uppercase" }}>Информация</div>
+            <div className="sk-row sk-gap-2 sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>
+              <IconClock size={15} />{template.savedAtLabel}
+            </div>
+            <Divider />
+            <div className="sk-row" style={{ justifyContent: "space-between" }}>
+              <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Статус</span>
+              <Tag size="s" hue={st.hue}>{st.label}</Tag>
+            </div>
+            <div className="sk-row" style={{ justifyContent: "space-between" }}>
+              <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Дата создания</span>
+              <span className="sk-label-4">{template.createdAt}</span>
+            </div>
+            <div className="sk-row" style={{ justifyContent: "space-between" }}>
+              <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Срок плана</span>
+              <span className="sk-label-4">{template.durationDays} дней</span>
+            </div>
+            <div className="sk-row" style={{ justifyContent: "space-between" }}>
+              <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Использован</span>
+              <span className="sk-label-4">{template.usageCount} {template.usageCount === 1 ? "раз" : "раза"}</span>
+            </div>
+          </div>
+        </Card>
+
+        <Card bordered>
+          <div className="sk-col sk-gap-3">
+            <div className="sk-label-3" style={{ color: "var(--sk-text-tertiary)", textTransform: "uppercase" }}>Статистика</div>
+            {[
+              ["Задач", template.stats.tasks, IconCheck],
+              ["Файлов", template.stats.files, IconFileText],
+              ["Ссылок", template.stats.links, IconLink2],
+              ["Обучение", template.stats.courses, IconGraduationCap],
+              ["Опросов", template.stats.surveys, IconMessageCircle],
+            ].map(([label, val, Ic]) => (
+              <div key={label} className="sk-row" style={{ justifyContent: "space-between" }}>
+                <div className="sk-row sk-gap-2 sk-muted" style={{ font: "var(--sk-label-4-regular)" }}><Ic size={15} />{label}</div>
+                <span className="sk-label-4">{val}</span>
+              </div>
+            ))}
+          </div>
+        </Card>
+
+        <div className="sk-row sk-gap-3">
+          <IconButton variant="negative" mode="secondary"
+            style={{ boxShadow: "inset 0 0 0 1px var(--sk-stroke-negative)" }} onClick={onDelete}><IconTrash size={16} /></IconButton>
+          <Button mode="secondary" style={{ flex: 1 }} onClick={() => { window.location.href = "templates.html"; }}>Вернуться</Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ---------------- Раздел "Чек-лист" — в этой итерации заглушка: настройка состава
+// чек-листа Базового минимума вне скоупа текущей итерации (см. Флоу_HRАдмина_настройка_шаблона). ----------------
+function ChecklistSection() {
+  return (
+    <Card bordered>
+      <div className="sk-col sk-gap-2" style={{ alignItems: "center", textAlign: "center", padding: "32px 16px" }}>
+        <div style={{ width: 40, height: 40, borderRadius: "50%", background: "var(--sk-surface-secondary)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <IconCheck size={18} color="var(--sk-icon-secondary)" />
+        </div>
+        <div className="sk-label-2">Чек-лист шаблона</div>
+        <div className="sk-muted" style={{ maxWidth: 380 }}>
+          Здесь будет чек-лист для Базового минимума — обязательный порог входа в роль: доступы, культура, комплаенс. Настройка состава чек-листа не входит в текущую итерацию прототипа.
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+function Page() {
+  const D = window.SITE_DATA;
+  const tplId = new URLSearchParams(window.location.search).get("tpl");
+  const baseTemplate = D.templates.find((t) => t.id === tplId) || D.templates[0];
+  const [section, setSection] = React.useState("goals");
+  const [enabled, setEnabled] = React.useState(baseTemplate.goalsEnabled);
+  const [deadlineDays, setDeadlineDays] = React.useState(baseTemplate.goalsDeadlineDays);
+  const [checkpoints, setCheckpoints] = React.useState(baseTemplate.checkpoints || []);
+  const [deleteConfirm, setDeleteConfirm] = React.useState(false);
+  const [toast, setToast] = React.useState(null);
+
+  function showToast(msg) {
+    setToast(msg);
+    window.setTimeout(() => setToast(null), 2600);
+  }
+
+  function addCheckpoint(form) {
+    setCheckpoints((list) => [...list, { id: "tcp" + Date.now(), ...form }]);
+    showToast("Контрольная точка добавлена");
+  }
+  function editCheckpoint(id, form) {
+    setCheckpoints((list) => list.map((c) => c.id === id ? { ...c, ...form } : c));
+    showToast("Контрольная точка обновлена");
+  }
+  function deleteCheckpoint(id) {
+    setCheckpoints((list) => list.filter((c) => c.id !== id));
+    showToast("Контрольная точка удалена");
+  }
+
+  const template = { ...baseTemplate, goalsEnabled: enabled, goalsDeadlineDays: deadlineDays };
+
+  return (
+    <AppShell role="hr" active="hr-templates" base=".."
+      breadcrumb={<a href="templates.html" className="sk-row sk-gap-1" style={{ color: "var(--sk-text-secondary)" }}><IconArrowLeft size={14} /> Шаблоны планов</a>}>
+      <div className="sk-col sk-gap-1">
+        <div className="sk-title-4">{template.name}</div>
+        <div className="sk-muted">{template.planType} · {template.durationDays} дней · {template.department}</div>
+      </div>
+
+      <div className="sk-row" style={{ alignItems: "flex-start", gap: 24 }}>
+        <PlanSectionsNav section={section} onChange={setSection} />
+
+        <div style={{ flex: 1, minWidth: 0 }}>
+          {section === "goals" ? (
+            <GoalsSettingsCard template={template} enabled={enabled} deadlineDays={deadlineDays} checkpoints={checkpoints}
+              onToggle={(v) => { setEnabled(v); showToast(v ? "План с целями включён" : "План с целями выключен"); }}
+              onDeadlineChange={setDeadlineDays}
+              onAddCheckpoint={addCheckpoint} onEditCheckpoint={editCheckpoint} onDeleteCheckpoint={deleteCheckpoint} />
+          ) : section === "checklist" ? (
+            <ChecklistSection />
+          ) : (
+            <NotBuiltSection label={TEMPLATE_SECTIONS.find((s) => s.id === section).label} />
+          )}
+        </div>
+
+        <InfoPanel template={template} onDelete={() => setDeleteConfirm(true)} />
+      </div>
+
+      {deleteConfirm && (
+        <Modal open title={null} onClose={() => setDeleteConfirm(false)} size="s"
+          secondary={<Button mode="secondary" onClick={() => setDeleteConfirm(false)}>Отменить</Button>}
+          primary={<Button variant="negative" onClick={() => { window.location.href = "templates.html"; }}>Удалить шаблон</Button>}>
+          <div className="sk-col sk-gap-2" style={{ alignItems: "center", textAlign: "center", padding: "8px 0" }}>
+            <div className="sk-label-2">Удалить шаблон «{template.name}»?</div>
+            <div className="sk-muted">Уже назначенные по этому шаблону индивидуальные планы не изменятся — шаблон живёт независимо от них.</div>
+          </div>
+        </Modal>
+      )}
+
+      {toast && (
+        <div style={{ position: "fixed", bottom: 24, left: "50%", transform: "translateX(-50%)", zIndex: 100 }}>
+          <Snackbar>{toast}</Snackbar>
+        </div>
+      )}
+    </AppShell>
+  );
+}
+ReactDOM.createRoot(document.getElementById("root")).render(<Page />);
+</script>
+</body>
+</html>

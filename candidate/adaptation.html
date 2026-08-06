@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Моя адаптация — Skillaz Start</title>
+<link rel="stylesheet" href="../assets/styles.css" />
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" crossorigin="anonymous"></script>
+<script src="../assets/ds_bundle.js"></script>
+<script src="../assets/data.js"></script>
+<script type="text/babel" src="../assets/shell.js"></script>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+// Роль "Кандидат" — та же структура списка, что у роли "Сотрудник"
+// (employee/adaptation.html), но всегда ровно одна карточка: план пребординга
+// кандидата (window.SITE_DATA.plans.candidatePreboarding).
+const { Card, ProgressCircle, Tag } = window.SkillazCoreDesignSystem_bf9566;
+const { AppShell, StatusTag } = window.Site;
+const D = window.SITE_DATA;
+
+function progressOf(plan) {
+  const all = plan.stages.flatMap(s => s.items.filter(i => i.kind !== "checkpoint"));
+  const done = all.filter(i => i.done).length;
+  return all.length ? Math.round((done / all.length) * 100) : 0;
+}
+
+function PlanCard({ plan }) {
+  const pct = plan.status === "completed" ? 100 : progressOf(plan);
+  return (
+    <a href={"plan.html"} style={{ textDecoration: "none" }}>
+      <Card bordered style={{ cursor: "pointer" }}>
+        <div className="sk-row sk-gap-4" style={{ justifyContent: "space-between" }}>
+          <div className="sk-col sk-gap-2" style={{ flex: 1 }}>
+            <div className="sk-row sk-gap-2">
+              <Tag size="s" hue="neutral">{plan.type}</Tag>
+              <StatusTag status={plan.status === "completed" ? "completed" : "in_progress_plan"} />
+            </div>
+            <div className="sk-title-5">{plan.title}</div>
+            <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>
+              {plan.dateStart} – {plan.dateEnd}
+            </div>
+          </div>
+          <ProgressCircle value={pct} size={56} hue={plan.status === "completed" ? "positive" : "accent"} />
+        </div>
+      </Card>
+    </a>
+  );
+}
+
+function Page() {
+  const plan = D.plans.candidatePreboarding;
+  return (
+    <AppShell role="candidate" active="candidate-my-adaptation" base="..">
+      <div className="sk-col sk-gap-2">
+        <div className="sk-title-4">Моя адаптация</div>
+        <div className="sk-muted">Ваш план подготовки к первому рабочему дню.</div>
+      </div>
+      <div className="sk-col sk-gap-4">
+        <PlanCard plan={plan} />
+      </div>
+    </AppShell>
+  );
+}
+ReactDOM.createRoot(document.getElementById("root")).render(<Page />);
+</script>
+</body>
+</html>

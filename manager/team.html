@@ -1,0 +1,463 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Моя команда — Skillaz Start</title>
+<link rel="stylesheet" href="../assets/styles.css" />
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" crossorigin="anonymous"></script>
+<script src="../assets/ds_bundle.js"></script>
+<script src="../assets/data.js"></script>
+<script type="text/babel" src="../assets/shell.js"></script>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { Card, Tag, Tabs, Input, Select, Checkbox, Avatar, Divider, Button, Snackbar, Tooltip, SegmentedControl } = window.SkillazCoreDesignSystem_bf9566;
+const { AppShell, StatusTag, Icons, personPhoto } = window.Site;
+const {
+  IconSearch, IconFilter, IconTarget, IconLink2, IconCheck, IconMessageCircle, IconFileText, IconEye,
+  IconCalendar, IconUser, IconAlertCircle, IconChevronRight, IconUsers, IconClock, IconFlag,
+} = Icons;
+const D = window.SITE_DATA;
+const TODAY = D.managerToday; // "2026-03-15"
+
+// ---------------- Справочники ----------------
+const TYPE_META = {
+  goal: { label: "Цель", icon: IconTarget, bg: "var(--sk-special-secondary)", fg: "var(--sk-special)" },
+  approval: { label: "Согласование", icon: IconEye, bg: "var(--sk-accent-secondary)", fg: "var(--sk-icon-accent)" },
+  subgoal: { label: "Подцель", icon: IconLink2, bg: "var(--sk-accent-secondary)", fg: "var(--sk-icon-accent)" },
+  task: { label: "Задача", icon: IconCheck, bg: "var(--sk-surface-secondary)", fg: "var(--sk-icon-secondary)" },
+  checkin: { label: "Контрольная точка", icon: IconFlag, bg: "var(--sk-positive-secondary)", fg: "var(--sk-icon-positive)" },
+  review: { label: "Проверка плана", icon: IconFileText, bg: "var(--sk-warning-secondary)", fg: "var(--sk-text-warning-dark)" },
+};
+const TYPE_ORDER = ["goal", "approval", "subgoal", "task", "checkin", "review"];
+
+const STAT_TILES = [
+  { type: "goal", label: "Создать цели" },
+  { type: "subgoal", label: "Подтвердить результат целей" },
+  { type: "checkin", label: "Пройти контрольные точки" },
+];
+
+const MODES = [
+  { id: "today", label: "Сегодня", icon: IconCalendar },
+  { id: "upcoming", label: "Предстоящие", icon: IconClock },
+  { id: "bytype", label: "По типу действия", icon: IconFilter, divider: true },
+  { id: "byemployee", label: "По сотруднику", icon: IconUser },
+  { id: "done", label: "Выполненные", icon: IconCheck, divider: true },
+];
+
+function classify(item) {
+  if (item.dueSort < TODAY) return "overdue";
+  if (item.dueSort === TODAY) return "today";
+  const diffDays = Math.round((Date.parse(item.dueSort) - Date.parse(TODAY)) / 86400000);
+  return diffDays <= 7 ? "week" : "month";
+}
+
+function employeePlanProgress(m) {
+  if (m.progressPct !== null) return m.progressPct;
+  const plan = D.plans[m.planId];
+  if (!plan) return 0;
+  const goalsDone = plan.goals.filter(g => g.subgoals.length && g.subgoals.every(s => s.status === "done")).length;
+  return plan.goals.length ? Math.round((goalsDone / plan.goals.length) * 100) : 0;
+}
+
+// ---------------- Верхняя неактивная строка разделов портала (кроме "Адаптация" не реализованы в прототипе) ----------------
+function PortalSectionsRow() {
+  const sections = ["Структура", "Обучение", "Адаптация", "Задачи вне планов", "Планы целей", "Оценка", "Планы развития сотрудников"];
+  return (
+    <div className="sk-row sk-gap-2" style={{ flexWrap: "wrap" }}>
+      {sections.map(s => (
+        <Tag key={s} size="m" hue={s === "Адаптация" ? "dark" : "gray"} pill style={s !== "Адаптация" ? { opacity: 0.55 } : undefined}>{s}</Tag>
+      ))}
+    </div>
+  );
+}
+
+// ---------------- Плитки-счётчики (фиксированная высота — не "скачут") ----------------
+function StatTile({ tile, count, active, onClick }) {
+  const meta = TYPE_META[tile.type];
+  return (
+    <Card bordered style={{ cursor: "pointer", flex: "1 1 260px", minWidth: 260, minHeight: 88, outline: active ? "2px solid var(--sk-stroke-accent)" : "none" }}>
+      <div className="sk-row sk-gap-3 sk-clickable" onClick={onClick} style={{ alignItems: "center", minHeight: 40 }}>
+        <span style={{
+          width: 40, height: 40, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center",
+          background: meta.bg, color: meta.fg,
+        }}><meta.icon size={20} /></span>
+        <div className="sk-col" style={{ gap: 2, justifyContent: "center" }}>
+          <div className="sk-label-3-regular sk-muted" style={{ lineHeight: 1.3 }}>{tile.label}</div>
+          <div className="sk-title-5">{count}</div>
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+// ---------------- Переключатель "Я руководитель / Я помощник" ----------------
+function ViewAsSwitch({ showToast }) {
+  const [viewAs, setViewAs] = React.useState("manager");
+  return (
+    <SegmentedControl size="s" active={viewAs}
+      items={[{ id: "manager", label: "Я руководитель" }, { id: "assistant", label: "Я помощник" }]}
+      onChange={(id) => {
+        setViewAs(id);
+        if (id === "assistant") showToast("Роль «Помощник» использует этот же экран — появится в следующей итерации");
+      }} />
+  );
+}
+
+// ---------------- Панель выбора группировки ----------------
+function ModePanel({ mode, onChange }) {
+  return (
+    <div style={{ width: 232, flexShrink: 0 }}>
+      <Card bordered>
+        <div className="sk-col sk-gap-1">
+          {MODES.map(m => (
+            <React.Fragment key={m.id}>
+              {m.divider && <Divider style={{ margin: "4px 0" }} />}
+              <div className="sk-row sk-gap-2 sk-clickable" onClick={() => onChange(m.id)} style={{
+                padding: "10px 12px", borderRadius: "var(--sk-radius-2)",
+                background: mode === m.id ? "var(--sk-hover-nav)" : "transparent",
+                font: mode === m.id ? "var(--sk-label-3)" : "var(--sk-label-3-regular)",
+              }}><m.icon size={16} color="var(--sk-icon-secondary)" />{m.label}</div>
+            </React.Fragment>
+          ))}
+        </div>
+      </Card>
+    </div>
+  );
+}
+
+// ---------------- Строка действия ----------------
+function dueColor(cls) {
+  if (cls === "overdue") return "var(--sk-text-negative)";
+  if (cls === "today") return "var(--sk-text-warning-dark)";
+  return "var(--sk-text-secondary)";
+}
+
+function ActionRow({ item, done, onToggle, onOpenTitle }) {
+  const meta = TYPE_META[item.type];
+  const cls = !done && classify(item);
+  return (
+    <div className="sk-row sk-gap-3" style={{ padding: "12px 4px", alignItems: "flex-start" }}>
+      <div style={{ paddingTop: 2 }}><Checkbox checked={!!done} onChange={() => onToggle(item.id)} /></div>
+      <div className="sk-col sk-gap-1" style={{ flex: 1, minWidth: 0 }}>
+        <div className={"sk-label-3-regular" + (onOpenTitle ? " sk-clickable" : "")} onClick={onOpenTitle}
+          style={{ color: "var(--sk-text-primary)", textDecoration: done ? "line-through" : "none" }}>
+          {item.title}
+        </div>
+        <div className="sk-row sk-gap-3" style={{ flexWrap: "wrap" }}>
+          <span className="sk-row sk-gap-1" style={{ color: done ? "var(--sk-text-positive)" : dueColor(cls), font: "var(--sk-label-4-regular)" }}>
+            {done ? <IconCheck size={13} /> : cls === "overdue" ? <IconAlertCircle size={13} /> : <IconCalendar size={13} />}
+            {done ? item.doneAt : item.due}
+          </span>
+          <span className="sk-row sk-gap-1 sk-muted" style={{ font: "var(--sk-label-4-regular)" }}><IconUser size={13} />{item.employee}</span>
+          <span className="sk-row sk-gap-1 sk-muted" style={{ font: "var(--sk-label-4-regular)" }}><meta.icon size={13} />{meta.label}</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Page() {
+  const [tab, setTab] = React.useState("actions");
+  const [mode, setMode] = React.useState("today");
+  const [search, setSearch] = React.useState("");
+  const [typeFilter, setTypeFilter] = React.useState("");
+  const [employeeFilter, setEmployeeFilter] = React.useState("");
+  const [planSearch, setPlanSearch] = React.useState("");
+  const [planStatusFilter, setPlanStatusFilter] = React.useState("");
+  const [doneIds, setDoneIds] = React.useState(() => new Set(D.managerActions.filter(a => a.doneAt).map(a => a.id)));
+  const [toast, setToast] = React.useState(null);
+
+  function showToast(msg) {
+    setToast(msg);
+    window.clearTimeout(showToast._t);
+    showToast._t = window.setTimeout(() => setToast(null), 3200);
+  }
+  function toggleDone(id) {
+    setDoneIds(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  }
+  function openAction(item) {
+    if (item.employeeId === "yulia" || item.employeeId === "alexey" || item.employeeId === "darya") {
+      const tabParam = item.type === "goal" ? "&tab=max" : "";
+      window.location.href = "plan.html?employee=" + item.employeeId + tabParam; return;
+    }
+    showToast("Экран плана «" + item.employee + "» появится в следующей итерации");
+  }
+
+  const employees = D.team.map(m => m.name);
+  const allActions = D.managerActions;
+  const openActions = allActions.filter(a => !doneIds.has(a.id));
+  const closedActions = allActions.filter(a => doneIds.has(a.id));
+
+  function applyFilters(list) {
+    return list.filter(it => {
+      if (typeFilter && it.type !== typeFilter) return false;
+      if (employeeFilter && it.employee !== employeeFilter) return false;
+      if (search.trim()) {
+        const q = search.trim().toLowerCase();
+        if (!it.title.toLowerCase().includes(q) && !it.employee.toLowerCase().includes(q)) return false;
+      }
+      return true;
+    });
+  }
+
+  const filteredOpen = applyFilters(openActions);
+  const filteredClosed = applyFilters(closedActions);
+
+  const statCounts = {};
+  STAT_TILES.forEach(t => { statCounts[t.type] = openActions.filter(a => a.type === t.type).length; });
+
+  function renderGroups() {
+    const rowProps = { done: false, onToggle: toggleDone };
+    if (mode === "today") {
+      const overdue = filteredOpen.filter(a => classify(a) === "overdue");
+      const today = filteredOpen.filter(a => classify(a) === "today");
+      if (!overdue.length && !today.length) return <EmptyState text="На сегодня действий нет — загляните на вкладку «Предстоящие»." />;
+      return (
+        <div className="sk-col sk-gap-4">
+          <GroupSectionWrap title="Просрочено" tone="negative" items={overdue} openAction={openAction} {...rowProps} />
+          <GroupSectionWrap title="Сегодня" tone="warning" items={today} openAction={openAction} {...rowProps} />
+        </div>
+      );
+    }
+    if (mode === "upcoming") {
+      const week = filteredOpen.filter(a => classify(a) === "week");
+      const month = filteredOpen.filter(a => classify(a) === "month");
+      if (!week.length && !month.length) return <EmptyState text="Предстоящих действий не найдено." />;
+      return (
+        <div className="sk-col sk-gap-4">
+          <GroupSectionWrap title="На этой неделе" tone="neutral" items={week} openAction={openAction} {...rowProps} />
+          <GroupSectionWrap title="Следующий месяц" tone="neutral" items={month} openAction={openAction} {...rowProps} />
+        </div>
+      );
+    }
+    if (mode === "bytype") {
+      const groups = TYPE_ORDER.map(t => ({ t, items: filteredOpen.filter(a => a.type === t) })).filter(g => g.items.length);
+      if (!groups.length) return <EmptyState text="Действий не найдено." />;
+      return (
+        <div className="sk-col sk-gap-4">
+          {groups.map(g => <GroupSectionWrap key={g.t} title={pluralType(g.t)} tone="neutral" items={g.items} openAction={openAction} {...rowProps} />)}
+        </div>
+      );
+    }
+    if (mode === "byemployee") {
+      const groups = D.team.map(m => ({ m, items: filteredOpen.filter(a => a.employeeId === m.id) })).filter(g => g.items.length);
+      if (!groups.length) return <EmptyState text="Действий не найдено." />;
+      return (
+        <div className="sk-col sk-gap-4">
+          {groups.map(g => (
+            <Card key={g.m.id} bordered padding={0}>
+              <div className="sk-row sk-gap-2" style={{ padding: "12px 16px", background: "var(--sk-surface-secondary)", borderRadius: "var(--sk-radius-4) var(--sk-radius-4) 0 0" }}>
+                <Avatar src={personPhoto(g.m.name)} name={g.m.name} size={24} />
+                <span className="sk-label-3">{g.m.name}</span>
+                <span className="sk-muted sk-label-3-regular">{g.items.length}</span>
+              </div>
+              <div style={{ padding: "4px 16px 8px" }}>
+                {g.items.map((it, i) => (
+                  <React.Fragment key={it.id}>
+                    {i > 0 && <Divider />}
+                    <ActionRow item={it} done={false} onToggle={toggleDone} onOpenTitle={() => openAction(it)} />
+                  </React.Fragment>
+                ))}
+              </div>
+            </Card>
+          ))}
+        </div>
+      );
+    }
+    if (mode === "done") {
+      const week = filteredClosed.filter(a => a.doneBucket === "week");
+      const month = filteredClosed.filter(a => a.doneBucket === "month");
+      const other = filteredClosed.filter(a => a.doneBucket === "other" || !a.doneBucket);
+      if (!week.length && !month.length && !other.length) return <EmptyState text="Пока нет выполненных действий." />;
+      return (
+        <div className="sk-col sk-gap-4">
+          <GroupSectionWrap title="На этой неделе" tone="positive" items={week} openAction={openAction} done onToggle={toggleDone} />
+          <GroupSectionWrap title="В этом месяце" tone="positive" items={month} openAction={openAction} done onToggle={toggleDone} />
+          <GroupSectionWrap title="Все остальные" tone="positive" items={other} openAction={openAction} done onToggle={toggleDone} />
+        </div>
+      );
+    }
+    return null;
+  }
+
+  const tabItems = [
+    { id: "actions", label: "Мои действия", count: openActions.length },
+    { id: "plans", label: "Планы сотрудников", count: D.team.length },
+  ];
+
+  return (
+    <AppShell role="manager" active="team" base="..">
+      <div className="sk-col sk-gap-5">
+        <PortalSectionsRow />
+        <div className="sk-row" style={{ justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
+          <Tabs items={tabItems} active={tab} onChange={setTab} />
+          <ViewAsSwitch showToast={showToast} />
+        </div>
+
+        {tab === "actions" && (
+          <div className="sk-col sk-gap-5">
+            <div className="sk-row sk-gap-3" style={{ flexWrap: "wrap" }}>
+              <Input icon={<IconSearch size={20} />} placeholder="Поиск" value={search} onChange={(e) => setSearch(e.target.value || "")} style={{ flex: 1, minWidth: 200 }} />
+              <Select placeholder="Тип действия" value={typeFilter || null}
+                options={TYPE_ORDER.map(t => ({ value: t, label: TYPE_META[t].label }))}
+                onChange={(v) => setTypeFilter(v || "")} style={{ width: 200 }} />
+              <Select placeholder="Сотрудник" value={employeeFilter || null}
+                options={employees.map(e => ({ value: e, label: e }))}
+                onChange={(v) => setEmployeeFilter(v || "")} style={{ width: 200 }} />
+            </div>
+
+            <div className="sk-row" style={{ alignItems: "flex-start", gap: 24 }}>
+              <div style={{ flex: 1, minWidth: 0 }}>{renderGroups()}</div>
+              <ModePanel mode={mode} onChange={setMode} />
+            </div>
+          </div>
+        )}
+
+        {tab === "plans" && (
+          <div className="sk-col sk-gap-5">
+            <div className="sk-row sk-gap-3" style={{ flexWrap: "wrap" }}>
+              {STAT_TILES.map(t => (
+                <StatTile key={t.type} tile={t} count={statCounts[t.type]} active={false}
+                  onClick={() => { setTab("actions"); setTypeFilter(t.type); setMode("bytype"); }} />
+              ))}
+            </div>
+            <div className="sk-row sk-gap-3" style={{ flexWrap: "wrap" }}>
+              <Input icon={<IconSearch size={20} />} placeholder="Поиск" value={planSearch} onChange={(e) => setPlanSearch(e.target.value || "")} style={{ flex: 1, minWidth: 200 }} />
+              <Select placeholder="Статус" value={planStatusFilter || null}
+                options={[{ value: "not_started", label: "Не начат" }, { value: "in_progress", label: "В работе" }, { value: "completed", label: "Завершён" }]}
+                onChange={(v) => setPlanStatusFilter(v || "")} style={{ width: 200 }} />
+            </div>
+            <div className="sk-col sk-gap-4">
+              {D.team
+                .filter(m => !planStatusFilter || m.status === planStatusFilter)
+                .filter(m => !planSearch.trim() || m.name.toLowerCase().includes(planSearch.trim().toLowerCase()))
+                .map(m => <PlanRow key={m.id} m={m} onOpen={() => openAction({ employeeId: m.id, employee: m.name, type: m.action && m.action.type })} />)}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {toast && (
+        <div style={{ position: "fixed", bottom: 24, left: "50%", transform: "translateX(-50%)", zIndex: 100 }}>
+          <Snackbar>{toast}</Snackbar>
+        </div>
+      )}
+    </AppShell>
+  );
+}
+
+function pluralType(t) {
+  const map = { goal: "Цели", approval: "Согласования", subgoal: "Подцели", task: "Задачи", checkin: "Контрольные точки", review: "Проверки планов" };
+  return map[t] || TYPE_META[t].label;
+}
+
+function GroupSectionWrap({ title, tone, items, done, onToggle, openAction }) {
+  if (!items.length) return null;
+  const toneColor = tone === "negative" ? "var(--sk-text-negative)" : tone === "warning" ? "var(--sk-text-warning-dark)" : tone === "positive" ? "var(--sk-text-positive)" : "var(--sk-text-primary)";
+  const toneBg = tone === "negative" ? "var(--sk-negative-secondary)" : tone === "warning" ? "var(--sk-warning-secondary)" : tone === "positive" ? "var(--sk-positive-secondary)" : "var(--sk-surface-secondary)";
+  return (
+    <Card bordered padding={0}>
+      <div style={{ padding: "12px 16px", background: toneBg, borderRadius: "var(--sk-radius-4) var(--sk-radius-4) 0 0" }}>
+        <span className="sk-label-3" style={{ color: toneColor }}>{title} <span style={{ opacity: 0.7 }}>{items.length}</span></span>
+      </div>
+      <div style={{ padding: "4px 16px 8px" }}>
+        {items.map((it, i) => (
+          <React.Fragment key={it.id}>
+            {i > 0 && <Divider />}
+            <ActionRow item={it} done={!!done} onToggle={onToggle} onOpenTitle={() => openAction(it)} />
+          </React.Fragment>
+        ))}
+      </div>
+    </Card>
+  );
+}
+
+function EmptyState({ text }) {
+  return <Card><div className="sk-muted" style={{ textAlign: "center", padding: "24px 0" }}>{text}</div></Card>;
+}
+
+// ---------------- Вкладка "Планы" ----------------
+function RiskBadge({ risks }) {
+  if (!risks.length) return null;
+  return (
+    <Tooltip placement="top" content={
+      <div className="sk-col sk-gap-1" style={{ maxWidth: 360, whiteSpace: "normal" }}>
+        {risks.map((r, i) => <div key={i}>• {r}</div>)}
+      </div>
+    }>
+      <span style={{
+        display: "inline-flex", alignItems: "center", height: 22, padding: "0 8px", borderRadius: "var(--sk-radius-full)",
+        background: "var(--sk-negative)", color: "var(--sk-text-contrast)", font: "var(--sk-label-4)", cursor: "default",
+      }}>{risks.length} риска</span>
+    </Tooltip>
+  );
+}
+
+function PlanRow({ m, onOpen }) {
+  const pct = employeePlanProgress(m);
+  const atRisk = m.risks.length > 0;
+  return (
+    <Card bordered style={{ cursor: "pointer", borderLeft: atRisk ? "4px solid var(--sk-negative)" : undefined }}>
+      <div className="sk-clickable" onClick={onOpen}>
+        <div className="sk-row sk-gap-4" style={{ justifyContent: "space-between", alignItems: "flex-start" }}>
+          <div className="sk-row sk-gap-3" style={{ flex: 1 }}>
+          <Avatar src={personPhoto(m.name)} name={m.name} size={44} />
+            <div className="sk-col sk-gap-1">
+              <div className="sk-row sk-gap-2">
+                <span className="sk-label-2">{m.name}</span>
+                <RiskBadge risks={m.risks} />
+              </div>
+              <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{m.position}</div>
+              <div className="sk-row sk-gap-1 sk-muted" style={{ font: "var(--sk-label-4-regular)" }}><IconUsers size={13} />{m.department}</div>
+            </div>
+          </div>
+          {m.action && (
+            <Button size="s" variant="accent" mode="primary"
+              icon={m.action.type === "goal" ? <IconTarget size={14} /> : <IconLink2 size={14} />}
+              onClick={(e) => { e.stopPropagation && e.stopPropagation(); onOpen(); }}>
+              {m.action.label}{m.action.due !== "—" ? " до " + m.action.due : ""}
+            </Button>
+          )}
+        </div>
+        <Divider style={{ margin: "12px 0" }} />
+        <div className="sk-row sk-gap-6" style={{ flexWrap: "wrap" }}>
+          <div className="sk-col sk-gap-1">
+            <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>План</div>
+            <div className="sk-label-3-regular">{m.planKind} → {m.planTitle}</div>
+          </div>
+          <div className="sk-col sk-gap-1">
+            <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Срок</div>
+            <div className="sk-row sk-gap-1 sk-label-3-regular"><IconCalendar size={14} />{m.dateStart} – {m.dateEnd}{m.daysLeftLabel ? " (" + m.daysLeftLabel + ")" : ""}</div>
+          </div>
+          <div className="sk-col sk-gap-1" style={{ minWidth: 180 }}>
+            <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Прогресс</div>
+            <div className="sk-row sk-gap-2">
+              <div style={{ width: 120, height: 6, borderRadius: 999, background: "var(--sk-surface-secondary)", overflow: "hidden" }}>
+                <div style={{ width: pct + "%", height: "100%", background: m.status === "completed" ? "var(--sk-positive)" : "var(--sk-accent)" }} />
+              </div>
+              <span className="sk-label-4-regular">{pct}% ({m.progressBasis})</span>
+            </div>
+          </div>
+          <div className="sk-col sk-gap-1">
+            <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Статус</div>
+            <StatusTag status={m.status} />
+          </div>
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<Page />);
+</script>
+</body>
+</html>

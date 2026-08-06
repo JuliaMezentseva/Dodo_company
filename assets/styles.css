@@ -1,0 +1,100 @@
+@import './fonts.css';
+@import './fig-tokens.css';
+@import './semantic.css';
+@import './typography.css';
+@import './base.css';
+@import './scrollbar.css';
+
+/* ---------- prototype-only additions (not in DS export) ---------- */
+
+html, body { height: 100%; }
+#root { height: 100%; }
+a { color: inherit; text-decoration: none; }
+
+.sk-app-shell {
+  display: flex;
+  overflow: hidden;
+  background: var(--sk-surface-secondary);
+}
+.sk-app-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.sk-app-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--sk-space-6);
+  background: var(--sk-surface-page);
+}
+.sk-page-container {
+  max-width: 1280px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sk-space-6);
+}
+
+/* simple utility classes used across pages, all on --sk-* tokens */
+.sk-row { display: flex; align-items: center; }
+.sk-col { display: flex; flex-direction: column; }
+.sk-gap-1 { gap: var(--sk-space-1); }
+.sk-gap-2 { gap: var(--sk-space-2); }
+.sk-gap-3 { gap: var(--sk-space-3); }
+.sk-gap-4 { gap: var(--sk-space-4); }
+.sk-gap-5 { gap: var(--sk-space-5); }
+.sk-gap-6 { gap: var(--sk-space-6); }
+.sk-muted { color: var(--sk-text-secondary); }
+.sk-link-btn { background: none; border: none; padding: 0; cursor: pointer; font: inherit; color: var(--sk-text-accent); }
+.sk-clickable { cursor: pointer; }
+.sk-clickable:hover { background: var(--sk-hover-nav); }
+.sk-status-dot { width: 8px; height: 8px; border-radius: 999px; display: inline-block; flex-shrink: 0; }
+
+/* checklist row */
+.sk-check-row {
+  display: flex; align-items: flex-start; gap: var(--sk-space-3);
+  padding: var(--sk-space-3) var(--sk-space-2);
+  border-radius: var(--sk-radius-2);
+  cursor: pointer;
+}
+.sk-check-row:hover { background: var(--sk-hover-nav); }
+.sk-check-row.is-locked { cursor: not-allowed; opacity: 0.55; }
+
+/* stage header */
+.sk-stage-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: var(--sk-space-2) 0;
+}
+
+/* subgoal pill */
+.sk-subgoal-row {
+  display: flex; align-items: center; justify-content: space-between; gap: var(--sk-space-3);
+  padding: var(--sk-space-3);
+  border-radius: var(--sk-radius-2);
+  border: 1px solid var(--sk-stroke);
+  cursor: pointer;
+  background: var(--sk-surface-card);
+}
+.sk-subgoal-row:hover { border-color: var(--sk-stroke-hover); }
+
+.sk-role-switch-item {
+  display: flex; align-items: center; gap: var(--sk-space-3);
+  padding: var(--sk-space-3);
+  border-radius: var(--sk-radius-2);
+  cursor: pointer;
+}
+.sk-role-switch-item:hover { background: var(--sk-hover-nav); }
+.sk-role-switch-item.is-active { background: var(--sk-accent-secondary); }
+
+.sk-modal-scroll { max-height: 60vh; overflow-y: auto; }
+
+.sk-vacancy-card {
+  border: 1px solid var(--sk-stroke);
+  border-radius: var(--sk-radius-3);
+  padding: var(--sk-space-5);
+  background: var(--sk-surface-card);
+  display: flex; flex-direction: column; gap: var(--sk-space-3);
+  cursor: pointer;
+}
+.sk-vacancy-card:hover { box-shadow: var(--sk-shadow-s); border-color: var(--sk-stroke-hover); }
