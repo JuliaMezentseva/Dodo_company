@@ -213,8 +213,8 @@ function Page() {
   const activeSubgoal = activeSubgoalGoal && activeSubgoalGoal.subgoals.find(s => s.id === subgoalDrawer.subgoalId);
 
   const tabItems = [
-    { id: "min", label: <span className="sk-row sk-gap-1"><IconClipboard size={16} />Базовый минимум {checklistPct}%</span> },
-    ...(plan.hasGoals ? [{ id: "max", label: <span className="sk-row sk-gap-1"><IconTarget size={16} />Роскошный максимум {goalsPct}%</span> }] : []),
+    { id: "min", label: <span className="sk-row sk-gap-1"><IconClipboard size={16} />Базовые действия {checklistPct}%</span> },
+    ...(plan.hasGoals ? [{ id: "max", label: <span className="sk-row sk-gap-1"><IconTarget size={16} />План адаптации {goalsPct}%</span> }] : []),
     { id: "chat", label: <span className="sk-row sk-gap-1"><IconMessageCircle size={16} />Чат</span> },
     { id: "faq", label: <span className="sk-row sk-gap-1"><IconHelpCircle size={16} />FAQ</span> },
   ];

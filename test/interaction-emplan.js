@@ -30,45 +30,61 @@ function loadPage(htmlPath, query) {
   }
   return window;
 }
-const target = path.resolve("/home/claude/proto/employee/plan.html");
-const w = loadPage(target, "plan=onboarding");
-setTimeout(() => {
-  // 0. Переключиться на вкладку "Роскошный максимум" — цели теперь скрыты за сегмент-контролом
-  const maxTab = [...w.document.querySelectorAll("span")].find(el => el.textContent.includes("Роскошный максимум"));
-  console.log("Found 'Роскошный максимум' tab:", !!maxTab);
-  if (maxTab) maxTab.dispatchEvent(new w.MouseEvent("click", { bubbles: true }));
+function tick(ms) { return new Promise(res => setTimeout(res, ms)); }
 
-setTimeout(() => {
-  // 1. Открыть подцель "не начата" (g3s1) и взять в работу
-  const notStartedRow = [...w.document.querySelectorAll(".sk-label-3-regular")].find(el => el.textContent.includes("Довести 3 сделки до этапа"));
-  console.log("Found not_started subgoal row:", !!notStartedRow);
-  notStartedRow.closest(".sk-clickable").dispatchEvent(new w.MouseEvent("click", { bubbles: true }));
-  setTimeout(() => {
+const target = path.resolve(__dirname, "..", "employee", "plan.html");
+
+(async () => {
+  try {
+    const w = loadPage(target, "plan=onboarding");
+    await tick(150);
+
+    // 0. Переключиться на вкладку "План адаптации" — цели теперь скрыты за сегмент-контролом
+    const maxTab = [...w.document.querySelectorAll("span")].find(el => el.textContent.includes("План адаптации"));
+    console.log("Found 'План адаптации' tab:", !!maxTab ? "PASS" : "FAIL");
+    maxTab.dispatchEvent(new w.MouseEvent("click", { bubbles: true }));
+    await tick(80);
+
+    // 1. Развернуть цель g3 (шеврон рядом с заголовком) — подцель g3s1 внутри неё, не начата
+    const goalTitle = [...w.document.querySelectorAll("div")].find(el => el.textContent.trim() === "Освоить полный цикл продажи и закрывать сделки без наставника");
+    console.log("Found goal g3 title:", !!goalTitle ? "PASS" : "FAIL");
+    const chevronBtn = goalTitle.closest(".sk-col.sk-gap-3").querySelector("button.sk-link-btn");
+    chevronBtn.dispatchEvent(new w.MouseEvent("click", { bubbles: true }));
+    await tick(80);
+
+    // 2. Открыть подцель "не начата" (g3s1) и взять в работу
+    const notStartedRow = [...w.document.querySelectorAll(".sk-label-3-regular")].find(el => el.textContent.includes("Самостоятельно провести сделку от первого контакта"));
+    console.log("Found not_started subgoal row:", !!notStartedRow ? "PASS" : "FAIL");
+    notStartedRow.closest(".sk-clickable").dispatchEvent(new w.MouseEvent("click", { bubbles: true }));
+    await tick(80);
+
     const takeBtn = [...w.document.querySelectorAll("button")].find(b => b.textContent.trim() === "Взять в работу");
-    console.log("'Взять в работу' button present:", !!takeBtn);
+    console.log("'Взять в работу' button present:", !!takeBtn ? "PASS" : "FAIL");
     takeBtn.dispatchEvent(new w.MouseEvent("click", { bubbles: true }));
-    setTimeout(() => {
-      console.log("Toast after taking subgoal:", w.document.body.textContent.includes("взята в работу") ? "PASS" : "FAIL");
-      const submitBtn = [...w.document.querySelectorAll("button")].find(b => b.textContent.trim() === "Отправить на подтверждение");
-      console.log("'Отправить на подтверждение' now available:", !!submitBtn ? "PASS" : "FAIL");
-      submitBtn.dispatchEvent(new w.MouseEvent("click", { bubbles: true }));
-      setTimeout(() => {
-        console.log("Toast after submit:", w.document.body.textContent.includes("Отправлено на подтверждение") ? "PASS" : "FAIL");
+    await tick(80);
+    console.log("Toast after taking subgoal:", w.document.body.textContent.includes("взята в работу") ? "PASS" : "FAIL");
 
-        // 2. Переключиться обратно на "Базовый минимум" и отметить пункт чек-листа выполненным
-        const minTab = [...w.document.querySelectorAll("span")].find(el => el.textContent.includes("Базовый минимум"));
-        if (minTab) minTab.dispatchEvent(new w.MouseEvent("click", { bubbles: true }));
-        const checkboxes = [...w.document.querySelectorAll('[role="checkbox"]')];
-        console.log("Checklist checkboxes found:", checkboxes.length);
-        const target = checkboxes.find(c => c.getAttribute("aria-checked") === "false");
-        if (target) {
-          target.dispatchEvent(new w.MouseEvent("click", { bubbles: true }));
-          setTimeout(() => {
-            console.log("Checkbox toggled without crash: PASS");
-          }, 30);
-        }
-      }, 50);
-    }, 50);
-  }, 50);
-}, 150);
-}, 150);
+    const submitBtn = [...w.document.querySelectorAll("button")].find(b => b.textContent.trim() === "Отправить на подтверждение");
+    console.log("'Отправить на подтверждение' now available:", !!submitBtn ? "PASS" : "FAIL");
+    submitBtn.dispatchEvent(new w.MouseEvent("click", { bubbles: true }));
+    await tick(80);
+    console.log("Toast after submit:", w.document.body.textContent.includes("Отправлено на подтверждение") ? "PASS" : "FAIL");
+
+    // 3. Переключиться обратно на "Базовые действия" и отметить пункт чек-листа выполненным
+    const minTab = [...w.document.querySelectorAll("span")].find(el => el.textContent.includes("Базовые действия"));
+    minTab.dispatchEvent(new w.MouseEvent("click", { bubbles: true }));
+    await tick(80);
+    const checkboxes = [...w.document.querySelectorAll('[role="checkbox"]')];
+    console.log("Checklist checkboxes found (> 0):", checkboxes.length > 0 ? "PASS" : "FAIL (" + checkboxes.length + ")");
+    const uncheckedBox = checkboxes.find(c => c.getAttribute("aria-checked") === "false");
+    uncheckedBox.dispatchEvent(new w.MouseEvent("click", { bubbles: true }));
+    await tick(50);
+    console.log("Checkbox toggled without crash:", "PASS");
+
+    console.log("\nOK: сценарий плана сотрудника (взять/отправить подцель + чек-лист) прошёл без падений");
+  } catch (e) {
+    console.error("THREW:", e.message);
+    console.error(e.stack);
+    process.exit(1);
+  }
+})();

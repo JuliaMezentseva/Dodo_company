@@ -28,18 +28,6 @@ const templatesById = Object.fromEntries(D.templates.map((t) => [t.id, t]));
 const MIN_TAB_NOTE = "Этот чек-лист — формальный порог входа сотрудника в роль: доступы, культура и регламенты компании. Он одинаков для всех на этой позиции и не требует чьего-либо подтверждения.";
 const MAX_TAB_NOTE = "Персональный план сотрудника на результат в роли. Цели ставит руководитель, подцели проверяются им же, а прогресс сверяется на контрольных точках.";
 
-// В наборе иконок ДС нет иконки "сотрудник + галочка" для карточки "Мои задачи" — добавляем
-// локально, тем же приёмом, что и другие одноразовые иконки на HR-экранах.
-function IconUserCheck({ size = 22, color = "var(--sk-icon-accent)" }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" style={{ color, flexShrink: 0 }}>
-      <circle cx="10" cy="8.3" r="3.3" stroke="currentColor" strokeWidth="1.5" />
-      <path d="M3.5 19.5c.8-3.2 3.2-5 6.5-5 1 0 1.9.17 2.7.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-      <path d="M15.5 15.5l2 2 3.5-3.5" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
 function recordFromUrl() {
   const id = new URLSearchParams(window.location.search).get("id");
   return D.hrAssignedPlans.find((p) => p.id === id) || D.hrAssignedPlans[0];
@@ -76,47 +64,11 @@ function TaskAddModal({ onClose, onAdd }) {
   );
 }
 
-function HrTasksTab({ record, tasks, onToggle, onAdd }) {
-  const requiredTasks = tasks.filter((t) => t.required);
-  const doneRequired = requiredTasks.filter((t) => t.done).length;
-  const allRequiredDone = requiredTasks.length > 0 && doneRequired === requiredTasks.length;
+function HrTasksTab({ tasks, onToggle, onAdd }) {
   const [addOpen, setAddOpen] = React.useState(false);
 
   return (
     <div className="sk-col sk-gap-4">
-      <Card style={{ background: "var(--sk-surface-secondary)", boxShadow: "none" }}>
-        <div className="sk-row sk-gap-3" style={{ alignItems: "flex-start" }}>
-          <span style={{ width: 40, height: 40, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "var(--sk-accent-secondary)" }}>
-            <IconUserCheck size={20} />
-          </span>
-          <div className="sk-col sk-gap-3" style={{ flex: 1 }}>
-            <div className="sk-col sk-gap-1">
-              <div className="sk-label-2">Добавьте задачи в план адаптации сотрудника</div>
-              <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Задачи помогут сотруднику быстрее войти в рабочий ритм — они должны быть развивающими и выполнимыми.</div>
-            </div>
-            <div className="sk-row sk-gap-5" style={{ flexWrap: "wrap" }}>
-              <div className="sk-row sk-gap-2">
-                <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Кол-во задач</span>
-                <span className="sk-label-4">{tasks.length}</span>
-              </div>
-              {record.tasksDeadline && (
-                <div className="sk-row sk-gap-1">
-                  <IconClock size={14} color="var(--sk-icon-secondary)" />
-                  <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Дедлайн</span>
-                  <span className="sk-label-4">{record.tasksDeadline}</span>
-                </div>
-              )}
-              <div className="sk-row sk-gap-1">
-                <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Статус</span>
-                <Tag size="s" hue={allRequiredDone ? "positive" : tasks.length ? "blue" : "neutral"} icon={allRequiredDone ? <IconCheck size={11} /> : undefined}>
-                  {allRequiredDone ? "Завершено" : tasks.length ? "В процессе" : "Не начато"}
-                </Tag>
-              </div>
-            </div>
-          </div>
-        </div>
-      </Card>
-
       {tasks.length === 0 ? (
         <Card><div className="sk-muted" style={{ textAlign: "center", padding: "16px 0" }}>Задачи ещё не добавлены.</div></Card>
       ) : (
@@ -366,8 +318,8 @@ function Page() {
 
   const tabItems = [
     { id: "tasks", label: "Мои задачи", count: tasks.filter((t) => t.done).length + "/" + tasks.length },
-    { id: "min", label: <span className="sk-row sk-gap-1"><IconClipboard size={16} />Базовый минимум {checklistPct0}%</span> },
-    ...(plan0 && plan0.hasGoals ? [{ id: "max", label: <span className="sk-row sk-gap-1"><IconTarget size={16} />Роскошный максимум {goalsPct0}%</span> }] : []),
+    { id: "min", label: <span className="sk-row sk-gap-1"><IconClipboard size={16} />Базовые действия {checklistPct0}%</span> },
+    ...(plan0 && plan0.hasGoals ? [{ id: "max", label: <span className="sk-row sk-gap-1"><IconTarget size={16} />План адаптации {goalsPct0}%</span> }] : []),
     { id: "chat", label: "Чат" },
     { id: "faq", label: "FAQ" },
   ];
@@ -378,7 +330,7 @@ function Page() {
       <div className="sk-row" style={{ alignItems: "flex-start", gap: 24 }}>
         <div className="sk-col sk-gap-4" style={{ flex: 1, minWidth: 0 }}>
           <Tabs items={tabItems} active={tab} onChange={setTab} />
-          {tab === "tasks" && <HrTasksTab record={record0} tasks={tasks} onToggle={toggleTask} onAdd={addTask} />}
+          {tab === "tasks" && <HrTasksTab tasks={tasks} onToggle={toggleTask} onAdd={addTask} />}
           {tab === "min" && <PlanTab record={record0} view="min" />}
           {tab === "max" && <PlanTab record={record0} view="max" />}
           {tab === "chat" && <ChatTab record={record0} />}

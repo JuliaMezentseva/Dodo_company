@@ -52,14 +52,14 @@ const planTarget = path.resolve("/home/claude/proto/candidate/plan.html");
     console.log("adaptation.html: пункт меню 'Вакансии' отсутствует у кандидата:", !body.includes("Вакансии") ? "PASS" : "FAIL");
     console.log("adaptation.html: шапка показывает кандидата (Максим Орлов), а не сотрудницу:", body.includes("Максим Орлов") && !body.includes("Юлия Мезенцева") ? "PASS" : "FAIL");
 
-    // ---- candidate/plan.html: только 3 вкладки (Минимум/Чат/FAQ), без "Роскошный максимум" ----
+    // ---- candidate/plan.html: только 3 вкладки (Минимум/Чат/FAQ), без "План адаптации" ----
     const w2 = loadPage(planTarget);
     await tick(150);
     body = w2.document.body.textContent;
-    console.log("plan.html: вкладка 'Базовый минимум' показана:", body.includes("Базовый минимум") ? "PASS" : "FAIL");
+    console.log("plan.html: вкладка 'Базовые действия' показана:", body.includes("Базовые действия") ? "PASS" : "FAIL");
     console.log("plan.html: вкладка 'Чат' показана:", body.includes("Чат") ? "PASS" : "FAIL");
     console.log("plan.html: вкладка 'FAQ' показана:", body.includes("FAQ") ? "PASS" : "FAIL");
-    console.log("plan.html: вкладки 'Роскошный максимум' НЕТ (у кандидата нет целей):", !body.includes("Роскошный максимум") ? "PASS" : "FAIL");
+    console.log("plan.html: вкладки 'План адаптации' НЕТ (у кандидата нет целей):", !body.includes("План адаптации") ? "PASS" : "FAIL");
 
     // Чек-лист кандидата — та же схема данных, что у сотрудника (8 элементов на этапе)
     const checkboxes = Array.from(w2.document.querySelectorAll('[role="checkbox"]'));
@@ -70,7 +70,7 @@ const planTarget = path.resolve("/home/claude/proto/candidate/plan.html");
     firstUnchecked.dispatchEvent(new w2.MouseEvent("click", { bubbles: true }));
     await tick(80);
     body = w2.document.body.textContent;
-    console.log("plan.html: после отметки пункта прогресс обновился (не 25%):", !body.includes("Базовый минимум 25%") ? "PASS" : "FAIL");
+    console.log("plan.html: после отметки пункта прогресс обновился (не 25%):", !body.includes("Базовые действия 25%") ? "PASS" : "FAIL");
 
     // Переключение на вкладку "Чат"
     const chatTab = Array.from(w2.document.querySelectorAll("span")).find(el => el.textContent.trim() === "Чат");

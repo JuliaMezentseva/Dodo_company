@@ -36,6 +36,7 @@ function planIdFromUrl() {
   return D.plans[id] ? id : "onboarding";
 }
 
+const ELEMENT_ICON = { article: IconFileText, task: IconCheck, course: IconFileText, survey: IconHelpCircle, file: IconFileText, link: IconLink2, checkpoint: IconTarget };
 const ELEMENT_LABEL = { article: "Статья", task: "Задача", course: "Курс", survey: "Опрос", file: "Файл", link: "Ссылка", checkpoint: "Контрольная точка" };
 const SUBGOAL_ICON = {
   done: { icon: IconCheck, bg: "var(--sk-positive)", fg: "var(--sk-text-contrast)" },
@@ -232,9 +233,10 @@ function CollapsibleSection({ title, children, defaultOpen = true }) {
   );
 }
 
-function SubgoalDrawer({ plan, goal, subgoal, onClose, onSubmit, onAddComment }) {
+function SubgoalDrawer({ plan, goal, subgoal, onClose, onSubmit, onAddComment, onToggleMaterial }) {
   const [comment, setComment] = React.useState("");
   const links = (subgoal.checklistRefs || []).map((id) => findChecklistItem(plan, id)).filter(Boolean);
+  const doneCount = links.filter(({ item }) => item.done).length;
   const reviewer = subgoal.reviewer || D.manager.name;
 
   return (
@@ -259,17 +261,24 @@ function SubgoalDrawer({ plan, goal, subgoal, onClose, onSubmit, onAddComment })
         </CollapsibleSection>
 
         {links.length > 0 && (
-          <CollapsibleSection title={"Полезные материалы " + links.length}>
+          <CollapsibleSection title={"Полезные материалы " + doneCount + "/" + links.length}>
             <div className="sk-col sk-gap-2" style={{ padding: 12, background: "var(--sk-surface-secondary)", borderRadius: "var(--sk-radius-3)" }}>
-              {links.map(({ item, stage }) => (
-                <div key={item.id} className="sk-row" style={{ justifyContent: "space-between", padding: 10, background: "var(--sk-surface-page)", border: "1px solid var(--sk-stroke)", borderRadius: "var(--sk-radius-2)" }}>
-                  <div className="sk-col sk-gap-1">
-                    <div className="sk-label-4">{item.title}</div>
-                    <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{ELEMENT_LABEL[item.kind]} · Этап «{stage.title}»</div>
+              {links.map(({ item, stage }) => {
+                const Icon = ELEMENT_ICON[item.kind] || IconFileText;
+                return (
+                  <div key={item.id} className="sk-row sk-gap-3 sk-clickable" onClick={() => onToggleMaterial(item.id)}
+                    style={{ alignItems: "flex-start", padding: 10, background: "var(--sk-surface-page)", border: "1px solid var(--sk-stroke)", borderRadius: "var(--sk-radius-2)" }}>
+                    <div style={{ paddingTop: 2 }} onClick={(e) => e.stopPropagation()}>
+                      <Checkbox checked={!!item.done} onChange={() => onToggleMaterial(item.id)} />
+                    </div>
+                    <Icon size={16} color="var(--sk-icon-secondary)" style={{ flexShrink: 0, marginTop: 2 }} />
+                    <div className="sk-col sk-gap-1" style={{ flex: 1, minWidth: 0 }}>
+                      <div className="sk-label-4" style={{ textDecoration: item.done ? "line-through" : "none", color: item.done ? "var(--sk-text-secondary)" : "var(--sk-text-primary)" }}>{item.title}</div>
+                      <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{ELEMENT_LABEL[item.kind]} · Этап «{stage.title}»</div>
+                    </div>
                   </div>
-                  {item.done && <IconCheck size={16} color="var(--sk-icon-positive)" />}
-                </div>
-              ))}
+                );
+              })}
             </div>
           </CollapsibleSection>
         )}
@@ -643,8 +652,8 @@ function Page() {
   const activeCheckpoint = cpModal && plan.checkpoints[cpModal];
 
   const tabItems = [
-    { id: "min", label: <span className="sk-row sk-gap-1"><IconClipboard size={16} />Базовый минимум {checklistPct}%</span> },
-    ...(plan.hasGoals ? [{ id: "max", label: <span className="sk-row sk-gap-1"><IconTarget size={16} />Роскошный максимум {goalsPct}%</span> }] : []),
+    { id: "min", label: <span className="sk-row sk-gap-1"><IconClipboard size={16} />Базовые действия {checklistPct}%</span> },
+    ...(plan.hasGoals ? [{ id: "max", label: <span className="sk-row sk-gap-1"><IconTarget size={16} />План адаптации {goalsPct}%</span> }] : []),
     { id: "chat", label: <span className="sk-row sk-gap-1"><IconMessageCircle size={16} />Чат</span> },
     { id: "faq", label: <span className="sk-row sk-gap-1"><IconHelpCircle size={16} />FAQ</span> },
   ];
@@ -711,7 +720,8 @@ function Page() {
         <SubgoalDrawer plan={plan} goal={activeSubgoalGoal} subgoal={activeSubgoal}
           onClose={() => setSubgoalDrawer(null)}
           onSubmit={() => submitSubgoal(subgoalDrawer.goalId, subgoalDrawer.subgoalId)}
-          onAddComment={(text) => addSubgoalComment(subgoalDrawer.goalId, subgoalDrawer.subgoalId, text)} />
+          onAddComment={(text) => addSubgoalComment(subgoalDrawer.goalId, subgoalDrawer.subgoalId, text)}
+          onToggleMaterial={toggleItemDone} />
       )}
 
       {activeCheckpoint && (

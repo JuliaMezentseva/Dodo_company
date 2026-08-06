@@ -16,7 +16,7 @@
 <div id="root"></div>
 <script type="text/babel">
 // Роль "Кандидат" — тот же план пребординга 1-в-1, что и у роли "Сотрудник"
-// (employee/plan.html), но без вкладки "Роскошный максимум" (цели, подцели,
+// (employee/plan.html), но без вкладки "План адаптации" (цели, подцели,
 // контрольные точки): у кандидата это никогда не появится, план всегда
 // window.SITE_DATA.plans.candidatePreboarding с hasGoals=false и checkpoints={}.
 // Поэтому весь код целей/подцелей/КТ здесь сознательно не переносим — только
@@ -249,9 +249,9 @@ function Page() {
   const checklistPct = totalChecklist.length ? Math.round((doneChecklist / totalChecklist.length) * 100) : 0;
   const overallPct = checklistPct;
 
-  // Только Минимум / Чат / FAQ — у кандидата нет "Роскошный максимум" (plan.hasGoals === false).
+  // Только Минимум / Чат / FAQ — у кандидата нет "План адаптации" (plan.hasGoals === false).
   const tabItems = [
-    { id: "min", label: <span className="sk-row sk-gap-1"><IconClipboard size={16} />Базовый минимум {checklistPct}%</span> },
+    { id: "min", label: <span className="sk-row sk-gap-1"><IconClipboard size={16} />Базовые действия {checklistPct}%</span> },
     { id: "chat", label: <span className="sk-row sk-gap-1"><IconMessageCircle size={16} />Чат</span> },
     { id: "faq", label: <span className="sk-row sk-gap-1"><IconHelpCircle size={16} />FAQ</span> },
   ];
