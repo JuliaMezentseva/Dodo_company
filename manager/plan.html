@@ -59,6 +59,27 @@ const MAX_TAB_NOTE = "Персональный план сотрудника н�
 const CP_YELLOW = "var(--yellow-yellow-85)";
 const CP_YELLOW_BG = "var(--yellow-yellow-96)";
 const CP_YELLOW_BORDER = "var(--yellow-yellow-80)";
+// Та же шкала-смайлы, что видит сотрудник в employee/plan.html (CheckpointModal) — переносим
+// 1-в-1, чтобы проверяющий читал ответы сотрудника в той же визуальной кодировке, а не как
+// мелкие голые цифры без цвета и формы.
+const SCALE_TINTS = { 1: "#FBE4E4", 2: "#FCEBD6", 3: "#FBF3CB", 4: "#DEF3E1", 5: "#CFEDD5" };
+const SCALE_BORDERS = { 1: "#E0716F", 2: "#E0A23D", 3: "#D2B93B", 4: "#5DAE6F", 5: "#3E9E56" };
+const SCALE_MOUTHS = {
+  1: "M8.2 16c1.4-2 6.2-2 7.6 0",
+  2: "M8.2 15.4c1.4-1 6.2-1 7.6 0",
+  3: "M8.2 15h7.6",
+  4: "M8.2 14.4c1.4 1 6.2 1 7.6 0",
+  5: "M7.6 13.8c1.9 2.6 6.9 2.6 8.8 0",
+};
+function ScaleFace({ n, size = 22, color }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <circle cx="9" cy="10" r="1.25" fill={color} />
+      <circle cx="15" cy="10" r="1.25" fill={color} />
+      <path d={SCALE_MOUTHS[n]} stroke={color} strokeWidth="1.6" strokeLinecap="round" fill="none" />
+    </svg>
+  );
+}
 
 function goalProgress(goal) {
   const total = goal.subgoals.length;
@@ -917,14 +938,24 @@ const RISK_LEVELS = [
   { value: "high", label: "Высокий риск" },
 ];
 
-function CheckpointStatusRow({ label, done }) {
+// Тёплая плашка статуса КТ — аналог блока "Обратная связь по итогам" у сотрудника
+// (CheckpointModal в employee/plan.html): вместо сухого чек-листа "кто что заполнил"
+// показываем один итоговый статус с пояснением, что делать дальше.
+function CheckpointStatusBanner({ done, surveyReady, reportReady }) {
+  let title, note;
+  if (done) { title = "Контрольная точка завершена"; note = "Итоги зафиксированы и доступны сотруднику."; }
+  else if (!surveyReady) { title = "Ожидает сотрудника"; note = "Форма станет доступна для заполнения, как только сотрудник ответит на опрос."; }
+  else if (!reportReady) { title = "Готово к завершению"; note = "Заполните обязательные поля выше, чтобы завершить контрольную точку."; }
+  else { title = "Всё заполнено"; note = "Можно завершить контрольную точку."; }
   return (
-    <div className="sk-row sk-gap-2" style={{ alignItems: "center" }}>
-      <span style={{
-        width: 18, height: 18, borderRadius: 5, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center",
-        background: done ? "var(--sk-accent)" : "var(--sk-surface-page)", boxShadow: done ? "none" : "inset 0 0 0 1.5px var(--graphite-graphite-80)",
-      }}>{done && <IconCheck size={12} color="var(--sk-text-contrast)" />}</span>
-      <span className="sk-label-3-regular" style={{ color: done ? "var(--sk-text-primary)" : "var(--sk-text-secondary)" }}>{label}</span>
+    <div className="sk-row sk-gap-3" style={{ padding: 14, background: CP_YELLOW_BG, borderRadius: "var(--sk-radius-3)", alignItems: "center" }}>
+      <span style={{ width: 32, height: 32, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "var(--sk-surface-page)" }}>
+        <IconClock size={16} color="var(--sk-icon-secondary)" />
+      </span>
+      <div className="sk-col" style={{ gap: 0 }}>
+        <div className="sk-label-3">{title}</div>
+        <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{note}</div>
+      </div>
     </div>
   );
 }
@@ -938,88 +969,103 @@ function ManagerCheckpointDrawer({ checkpoint, viewerName, employee, canEdit, on
   const surveyReady = checkpoint.surveySubmitted || done;
   const reportReady = !!(employeeSummary.trim() && internalReport.trim() && riskLevel);
   const canFinish = canEdit && !done && surveyReady && reportReady;
+  const fieldsDisabled = !surveyReady || !canEdit;
 
   return (
-    <Drawer open title={done ? "Промежуточные итоги сотрудника" : checkpoint.title} onClose={onClose} size="m"
-      primary={!done && canEdit ? <Button disabled={!canFinish} onClick={() => onFinish({ employeeSummary: employeeSummary.trim(), internalReport: internalReport.trim(), riskLevel })}>Завершить контрольную точку</Button> : null}
+    <Drawer open title={done ? "Промежуточные итоги сотрудника" : (employee ? "Как проходит адаптация " + employee.name.split(" ")[0] + "а?" : checkpoint.title)}
+      onClose={onClose} size="m"
+      primary={!done && canEdit ? <Button disabled={!canFinish} onClick={() => onFinish({ employeeSummary: employeeSummary.trim(), internalReport: internalReport.trim(), riskLevel })} style={{ width: "100%" }}>Завершить контрольную точку</Button> : null}
       secondary={<Button mode="secondary" onClick={onClose}>Закрыть</Button>}>
-      <div className="sk-col sk-gap-4">
-        <div className="sk-row sk-gap-2" style={{ flexWrap: "wrap" }}>
-          <Tag size="s" hue="neutral">{checkpoint.title}</Tag>
-          <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Срок: {checkpoint.dateLabel || checkpoint.date}</span>
-          <StatusTag status={done ? "cp_done" : "cp_pending"} />
-          {!done && <Tag size="s" hue="warning">{surveyReady ? "Ожидает проверяющего" : "Ожидает сотрудника"}</Tag>}
-        </div>
-
-        <div className="sk-row sk-gap-5" style={{ flexWrap: "wrap" }}>
-          {employee && (
+      <div className="sk-col sk-gap-5">
+        <div className="sk-row" style={{ justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 12 }}>
+          {employee ? (
             <div className="sk-row sk-gap-2">
-              <Avatar src={personPhoto(employee.name)} name={employee.name} size={28} />
+              <Avatar src={personPhoto(employee.name)} name={employee.name} size={40} />
               <div className="sk-col" style={{ gap: 0 }}>
                 <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Сотрудник</div>
-                <span className="sk-label-4">{employee.name}</span>
+                <div className="sk-label-3">{employee.name}</div>
               </div>
             </div>
+          ) : (
+            <Tag size="s" hue="neutral">{checkpoint.title}</Tag>
           )}
-          <div className="sk-row sk-gap-2">
-            <Avatar src={personPhoto(checkpoint.reviewer)} name={checkpoint.reviewer} size={28} />
-            <div className="sk-col" style={{ gap: 0 }}>
-              <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Проверяющий</div>
-              <span className="sk-label-4">{checkpoint.reviewer}</span>
+          {!done && (checkpoint.daysLeftLabel || checkpoint.dueLabel) ? (
+            <div className="sk-col" style={{ gap: 0, alignItems: "flex-end" }}>
+              {checkpoint.daysLeftLabel && <div className="sk-label-3">{checkpoint.daysLeftLabel}</div>}
+              {checkpoint.dueLabel && <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{checkpoint.dueLabel}</div>}
             </div>
+          ) : (
+            <StatusTag status={done ? "cp_done" : "cp_pending"} />
+          )}
+        </div>
+
+        {done && <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Срок: {checkpoint.dateLabel || checkpoint.date}</div>}
+
+        <div className="sk-col sk-gap-3" style={{ padding: 16, background: "var(--sk-surface-secondary)", borderRadius: "var(--sk-radius-3)" }}>
+          <div className="sk-label-3">Повестка</div>
+          <div className="sk-col sk-gap-2">
+            {checkpoint.agenda.map((a, i) => (
+              <div key={i} className="sk-row sk-gap-2" style={{ alignItems: "flex-start" }}>
+                <span style={{
+                  width: 22, height: 22, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center",
+                  background: "var(--sk-surface-dark)", color: "var(--sk-text-contrast)", font: "var(--sk-label-4)",
+                }}>{i + 1}</span>
+                <div className="sk-label-3-regular">{a}</div>
+              </div>
+            ))}
           </div>
         </div>
 
-        <CollapsibleSection title="Повестка">
-          <ul style={{ margin: 0, paddingLeft: 20 }} className="sk-col sk-gap-1">
-            {checkpoint.agenda.map((a, i) => <li key={i} className="sk-label-3-regular">{a}</li>)}
-          </ul>
-        </CollapsibleSection>
-
-        <Divider />
         {!surveyReady ? (
           <Alert hue="warning">Сотрудник ещё не заполнил опрос — итог можно зафиксировать после того, как он ответит.</Alert>
         ) : (
-          <CollapsibleSection title={<span className="sk-row sk-gap-2">Ответы сотрудника <Tag size="s" hue="positive">Заполнено</Tag></span>} defaultOpen={false}>
-            <div className="sk-col sk-gap-4">
-              {checkpoint.survey.map((q, i) => (
-                <div key={i} className="sk-col sk-gap-1">
-                  <div className="sk-label-3-regular">{q.q}</div>
-                  {q.type === "scale" ? (
-                    <div className="sk-col sk-gap-1">
-                      <div className="sk-row sk-gap-1">
-                        {[1, 2, 3, 4, 5].map((n) => (
-                          <span key={n} style={{
-                            width: 26, height: 26, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", font: "var(--sk-label-4)",
-                            background: q.answer === n ? "var(--sk-accent-secondary)" : "transparent",
-                            color: q.answer === n ? "var(--sk-text-accent)" : "var(--sk-text-tertiary)",
-                            boxShadow: q.answer === n ? "inset 0 0 0 1.5px var(--sk-stroke-accent)" : "none",
-                          }}>{n}</span>
-                        ))}
-                      </div>
-                      {(q.minLabel || q.maxLabel) && (
-                        <div className="sk-row" style={{ justifyContent: "space-between" }}>
-                          <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{q.minLabel}</span>
-                          <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{q.maxLabel}</span>
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="sk-label-3" style={{ color: "var(--sk-text-accent)" }}>{q.answer}</div>
-                  )}
-                </div>
-              ))}
+          <div className="sk-col sk-gap-4">
+            <div className="sk-row sk-gap-2" style={{ alignItems: "center" }}>
+              <span className="sk-label-3">Ответы сотрудника</span>
+              <Tag size="s" hue="positive">Заполнено</Tag>
             </div>
-          </CollapsibleSection>
+            {checkpoint.survey.map((q, i) => (
+              <div key={i} className="sk-col sk-gap-2">
+                <div className="sk-label-3-regular">{q.q}</div>
+                {q.type === "scale" ? (
+                  <div className="sk-col sk-gap-1">
+                    <div className="sk-row sk-gap-2">
+                      {[1, 2, 3, 4, 5].map((n) => {
+                        const active = q.answer === n;
+                        return (
+                          <span key={n} style={{
+                            width: 34, height: 34, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center",
+                            background: SCALE_TINTS[n],
+                            border: (active ? "2.5px" : "1.5px") + " solid " + SCALE_BORDERS[n],
+                            boxShadow: active ? "0 0 0 3px " + SCALE_TINTS[n] : "none",
+                            opacity: q.answer !== null && !active ? 0.35 : 1,
+                          }}><ScaleFace n={n} size={16} color={SCALE_BORDERS[n]} /></span>
+                        );
+                      })}
+                    </div>
+                    {(q.minLabel || q.maxLabel) && (
+                      <div className="sk-row" style={{ justifyContent: "space-between" }}>
+                        <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{q.minLabel}</span>
+                        <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{q.maxLabel}</span>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="sk-label-3-regular" style={{ color: "var(--sk-text-secondary)", background: "var(--sk-surface-secondary)", borderRadius: "var(--sk-radius-2)", padding: "10px 12px" }}>{q.answer}</div>
+                )}
+              </div>
+            ))}
+          </div>
         )}
 
         <Divider />
+
         <div className="sk-col sk-gap-2">
           <div className="sk-row sk-gap-1"><span className="sk-label-3">Итоги встречи для сотрудника</span><span style={{ color: "var(--sk-text-negative)" }}>*</span></div>
           <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Будут доступны сотруднику</div>
           {done ? <div className="sk-label-3-regular">{checkpoint.employeeSummary}</div> : (
-            <Textarea placeholder="Опишите итоги встречи, договорённости и следующие шаги" rows={3}
-              value={employeeSummary} onChange={(e) => setEmployeeSummary(e.target.value || "")} disabled={!surveyReady || !canEdit} />
+            <Textarea placeholder="Опишите итоги встречи, договорённости и следующие шаги" rows={2}
+              value={employeeSummary} onChange={(e) => setEmployeeSummary(e.target.value || "")} disabled={fieldsDisabled} />
           )}
         </div>
 
@@ -1027,8 +1073,8 @@ function ManagerCheckpointDrawer({ checkpoint, viewerName, employee, canEdit, on
           <div className="sk-row sk-gap-1"><span className="sk-label-3">Внутренний отчёт</span><span style={{ color: "var(--sk-text-negative)" }}>*</span></div>
           <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Доступен только руководителю и HR</div>
           {done ? <div className="sk-label-3-regular">{checkpoint.internalReport}</div> : (
-            <Textarea placeholder="Зафиксируйте внутреннюю оценку, проблемы и рекомендации" rows={3}
-              value={internalReport} onChange={(e) => setInternalReport(e.target.value || "")} disabled={!surveyReady || !canEdit} />
+            <Textarea placeholder="Зафиксируйте внутреннюю оценку, проблемы и рекомендации" rows={2}
+              value={internalReport} onChange={(e) => setInternalReport(e.target.value || "")} disabled={fieldsDisabled} />
           )}
         </div>
 
@@ -1039,16 +1085,25 @@ function ManagerCheckpointDrawer({ checkpoint, viewerName, employee, canEdit, on
               {(RISK_LEVELS.find((r) => r.value === riskLevel) || {}).label || "—"}
             </Tag>
           ) : (
-            <Select value={riskLevel || null} options={RISK_LEVELS} onChange={setRiskLevel} disabled={!surveyReady || !canEdit} />
+            <div className="sk-row sk-gap-2" style={{ flexWrap: "wrap" }}>
+              {RISK_LEVELS.map((r) => {
+                const active = riskLevel === r.value;
+                return (
+                  <button key={r.value} type="button" disabled={fieldsDisabled} onClick={() => setRiskLevel(r.value)}
+                    className={fieldsDisabled ? "" : "sk-clickable"} style={{
+                      padding: "7px 14px", borderRadius: "var(--sk-radius-full)", border: "1.5px solid " + (active ? "var(--sk-stroke-accent)" : "var(--sk-stroke)"),
+                      background: active ? "var(--sk-accent-secondary)" : "var(--sk-surface-page)",
+                      color: active ? "var(--sk-text-accent)" : "var(--sk-text-secondary)",
+                      font: active ? "var(--sk-label-3)" : "var(--sk-label-3-regular)",
+                      cursor: fieldsDisabled ? "default" : "pointer", opacity: fieldsDisabled ? 0.5 : 1,
+                    }}>{r.label.replace(" риск", "").replace("Риск ", "")}</button>
+                );
+              })}
+            </div>
           )}
         </div>
 
-        <Divider />
-        <div className="sk-col sk-gap-2">
-          <div className="sk-label-3">Статус контрольной точки</div>
-          <CheckpointStatusRow label="Сотрудник заполнил опрос" done={surveyReady} />
-          <CheckpointStatusRow label="Проверяющий заполнил отчёт" done={done} />
-        </div>
+        <CheckpointStatusBanner done={done} surveyReady={surveyReady} reportReady={reportReady} />
 
         <Divider />
         <div className="sk-col sk-gap-3">
