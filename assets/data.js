@@ -62,7 +62,7 @@ window.SITE_DATA = {
           id: "s1",
           title: "Старт в роли",
           status: "completed",
-          dueLabel: "Этап завершён",
+          dueLabel: "",
           items: [
             { id: "e1", kind: "article", title: "Добро пожаловать: план адаптации менеджера по продажам", date: "2 марта", duration: "10 м.", done: true },
             { id: "e2", kind: "task", title: "Получить доступы: CRM, телефония, почта, календарь", date: "4 марта", done: true,
@@ -90,7 +90,7 @@ window.SITE_DATA = {
           id: "s3",
           title: "Доступы и рабочие инструменты",
           status: "locked",
-          dueLabel: "Этап пока недоступен · с 10 мар",
+          dueLabel: "с 10 мар",
           items: [
             { id: "e10", kind: "task", title: "Настроить рабочее место: почта, календарь, корпоративный мессенджер", date: "до 11 марта", done: false },
             { id: "e11", kind: "task", title: "Получить доступ к базе знаний и справочникам по продукту", date: "до 11 марта", done: false },
@@ -103,7 +103,7 @@ window.SITE_DATA = {
           id: "s4",
           title: "Бенефиты и регламенты",
           status: "locked",
-          dueLabel: "Этап пока недоступен · с 12 мар",
+          dueLabel: "с 12 мар",
           items: [
             { id: "e13", kind: "article", title: "Регламент по бенефитам: ДМС, компенсации, льготы", date: "до 14 марта", duration: "10 м.", done: false },
             { id: "e14", kind: "task", title: "Оформить заявление на ДМС", date: "до 14 марта", done: false },
@@ -266,7 +266,7 @@ window.SITE_DATA = {
           id: "p1",
           title: "Подготовка к первому дню",
           status: "completed",
-          dueLabel: "Этап завершён",
+          dueLabel: "",
           items: [
             { id: "p_e1", kind: "task", title: "Загрузить документы для оформления", date: "20 февраля", done: true, description: "Паспорт, ИНН, СНИЛС — загрузите сканы в личный кабинет." },
             { id: "p_e2", kind: "link", title: "Форма для получения техники", date: "21 февраля", done: true, url: "#", description: "Заполните форму — ноутбук и техника будут готовы к первому дню." },

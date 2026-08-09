@@ -229,7 +229,6 @@ function Page() {
               <div className="sk-col sk-gap-4">
                 {plan.stages.map((s, i) => (
                   <ManagerStageBlock key={s.id} stage={s} index={i + 1}
-                    defaultOpen={s.status !== "locked" && s.status !== "completed"}
                     onOpenItem={(item) => setTaskModal(item)}
                     onAdd={() => showToast("Добавление элементов чек-листа доступно в редакторе адаптации")} />
                 ))}
@@ -717,32 +716,40 @@ function ChecklistPickerModal({ plan, selected, onToggle, onClose }) {
 }
 
 // ---------------- Чек-лист (только просмотр для руководителя) ----------------
-function ManagerStageBlock({ stage, index, defaultOpen, onOpenItem, onAdd }) {
-  const [open, setOpen] = React.useState(defaultOpen);
+function ManagerStageBlock({ stage, index, onOpenItem, onAdd }) {
   const locked = stage.status === "locked";
   const completed = stage.status === "completed";
+  const current = !locked && !completed;
+  const [open, setOpen] = React.useState(current);
   return (
-    <div className="sk-col sk-gap-2">
-      <div className="sk-stage-header sk-clickable" onClick={() => !locked && setOpen(o => !o)}
-        style={{ borderRadius: "var(--sk-radius-3)", padding: "10px 12px", background: "var(--sk-accent-secondary)" }}>
+    <div className="sk-col sk-gap-2" style={{
+      borderRadius: "var(--sk-radius-3)", overflow: "hidden",
+      border: current ? "1.5px solid var(--sk-stroke-accent)" : "1px solid var(--sk-stroke)",
+      opacity: locked ? 0.65 : 1,
+    }}>
+      <div className={locked ? "sk-row" : "sk-row sk-clickable"} onClick={() => !locked && setOpen(o => !o)}
+        style={{
+          justifyContent: "space-between", padding: "10px 12px",
+          background: completed ? "var(--sk-positive-secondary)" : current ? "var(--sk-accent-secondary)" : "var(--sk-surface-secondary)",
+        }}>
         <div className="sk-row sk-gap-3">
           <span style={{
-            width: 24, height: 24, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center",
-            background: completed ? "var(--sk-accent)" : locked ? "var(--sk-surface-dark)" : "var(--sk-surface-page)",
-            color: completed ? "var(--sk-text-contrast)" : locked ? "var(--sk-text-contrast)" : "var(--sk-text-accent)",
-            border: !completed && !locked ? "1.5px solid var(--sk-stroke-accent)" : "none", font: "var(--sk-label-4)",
-          }}>{completed ? <IconCheck size={13} /> : locked ? <IconLock size={12} /> : index}</span>
-          <div className="sk-col" style={{ gap: 0 }}>
-            <span className="sk-label-3">{stage.title}</span>
-          </div>
+            width: 22, height: 22, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center",
+            background: completed ? "var(--sk-positive)" : current ? "var(--sk-accent)" : "var(--sk-surface-page)",
+            color: completed || current ? "var(--sk-text-contrast)" : "var(--sk-text-tertiary)",
+            border: locked ? "1.5px solid var(--sk-stroke)" : "none", font: "var(--sk-label-4)",
+          }}>{completed ? <IconCheck size={12} /> : locked ? <IconLock size={11} /> : index}</span>
+          <span className="sk-label-3" style={{ color: completed ? "var(--sk-text-positive)" : current ? "var(--sk-text-accent)" : "var(--sk-text-secondary)" }}>{stage.title}</span>
         </div>
-        <div className="sk-row sk-gap-2">
-          <Tag size="s" hue="neutral">{stage.dueLabel}</Tag>
+        <div className="sk-row sk-gap-2" style={{ alignItems: "center" }}>
+          {completed && <span className="sk-label-4" style={{ color: "var(--sk-text-positive)" }}>Завершён</span>}
+          {current && stage.dueLabel && <span className="sk-label-4" style={{ color: "var(--sk-text-accent)" }}>{stage.dueLabel}</span>}
+          {locked && <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{stage.dueLabel}</span>}
           {!locked && (open ? <IconChevronUp size={16} color="var(--sk-icon-secondary)" /> : <IconChevronDown size={16} color="var(--sk-icon-secondary)" />)}
         </div>
       </div>
       {open && !locked && (
-        <div className="sk-col sk-gap-1" style={{ paddingLeft: 8 }}>
+        <div className="sk-col sk-gap-1" style={{ padding: "4px 8px 8px" }}>
           {stage.items.filter(item => item.kind !== "checkpoint").map(item => (
             <div key={item.id} className="sk-check-row" onClick={() => onOpenItem(item)}>
               <div style={{ paddingTop: 2 }}><Checkbox checked={!!item.done} disabled /></div>
