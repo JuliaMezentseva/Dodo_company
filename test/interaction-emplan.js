@@ -45,14 +45,11 @@ const target = path.resolve(__dirname, "..", "employee", "plan.html");
     maxTab.dispatchEvent(new w.MouseEvent("click", { bubbles: true }));
     await tick(80);
 
-    // 1. Развернуть цель g3 (шеврон рядом с заголовком) — подцель g3s1 внутри неё, не начата
+    // 1. Подцели цели g3 видны сразу без разворачивания (шеврон убран — список всегда развёрнут)
     const goalTitle = [...w.document.querySelectorAll("div")].find(el => el.textContent.trim() === "Освоить полный цикл продажи и закрывать сделки без наставника");
     console.log("Found goal g3 title:", !!goalTitle ? "PASS" : "FAIL");
-    const chevronBtn = goalTitle.closest(".sk-col.sk-gap-2").querySelector("button.sk-link-btn");
-    chevronBtn.dispatchEvent(new w.MouseEvent("click", { bubbles: true }));
-    await tick(80);
 
-    // 2. Открыть подцель "не начата" (g3s1) и взять в работу
+    // 2. Открыть подцель "не начата" (g3s1) прямо со страницы (список виден без клика по цели) и взять в работу
     const notStartedRow = [...w.document.querySelectorAll(".sk-label-3-regular")].find(el => el.textContent.includes("Самостоятельно провести сделку от первого контакта"));
     console.log("Found not_started subgoal row:", !!notStartedRow ? "PASS" : "FAIL");
     notStartedRow.closest(".sk-clickable").dispatchEvent(new w.MouseEvent("click", { bubbles: true }));
@@ -80,6 +77,16 @@ const target = path.resolve(__dirname, "..", "employee", "plan.html");
     uncheckedBox.dispatchEvent(new w.MouseEvent("click", { bubbles: true }));
     await tick(50);
     console.log("Checkbox toggled without crash:", "PASS");
+
+    // 4. Клик по карточке цели (не по подцели) открывает дровер цели с деталями
+    const maxTab2 = [...w.document.querySelectorAll("span")].find(el => el.textContent.includes("План адаптации"));
+    maxTab2.dispatchEvent(new w.MouseEvent("click", { bubbles: true }));
+    await tick(80);
+    const goalCardTitle = [...w.document.querySelectorAll(".sk-title-5")].find(el => el.textContent.trim() === "Освоить полный цикл продажи и закрывать сделки без наставника");
+    console.log("Goal card title found on page:", !!goalCardTitle ? "PASS" : "FAIL");
+    goalCardTitle.closest(".sk-clickable").dispatchEvent(new w.MouseEvent("click", { bubbles: true }));
+    await tick(80);
+    console.log("Goal drawer opens on card click:", w.document.body.textContent.includes("Нужно самостоятельно провести хотя бы одну сделку") ? "PASS" : "FAIL");
 
     console.log("\nOK: сценарий плана сотрудника (взять/отправить подцель + чек-лист) прошёл без падений");
   } catch (e) {

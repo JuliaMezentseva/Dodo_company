@@ -318,7 +318,7 @@ function Page() {
 
   const tabItems = [
     { id: "tasks", label: "Мои задачи", count: tasks.filter((t) => t.done).length + "/" + tasks.length },
-    { id: "min", label: <span className="sk-row sk-gap-1"><IconClipboard size={16} />Базовые действия {checklistPct0}%</span> },
+    { id: "min", label: <span className="sk-row sk-gap-1"><IconClipboard size={16} />Базовые действия</span> },
     ...(plan0 && plan0.hasGoals ? [{ id: "max", label: <span className="sk-row sk-gap-1"><IconTarget size={16} />План адаптации {goalsPct0}%</span> }] : []),
     { id: "chat", label: "Чат" },
     { id: "faq", label: "FAQ" },

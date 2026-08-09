@@ -76,9 +76,9 @@ async function scenarioGoalDrawer() {
   const w2 = loadPage(target, "employee=yulia&tab=max", patchGoal);
   await tick(150);
 
-  // Открываем дровер цели (как на скриншоте) кликом по названию цели
-  const titleEl = Array.from(w2.document.querySelectorAll(".sk-clickable")).find(e => e.textContent.trim() === "Тестовая цель");
-  titleEl.dispatchEvent(new w2.MouseEvent("click", { bubbles: true }));
+  // Открываем дровер цели (как на скриншоте) кликом по карточке цели (кликабельна целиком)
+  const titleEl = Array.from(w2.document.querySelectorAll(".sk-title-5")).find(e => e.textContent.trim() === "Тестовая цель");
+  titleEl.closest(".sk-clickable").dispatchEvent(new w2.MouseEvent("click", { bubbles: true }));
   await tick(100);
   console.log("[GoalDrawer] Дровер цели открыт:", w2.document.body.textContent.includes("Шаги для выполнения") ? "PASS" : "FAIL");
 

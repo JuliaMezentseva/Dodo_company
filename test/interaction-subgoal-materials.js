@@ -45,15 +45,12 @@ const target = path.resolve(__dirname, "..", "employee", "plan.html");
     maxTab.dispatchEvent(new w.MouseEvent("click", { bubbles: true }));
     await tick(80);
 
-    // Разворачиваем цель g2 — кликаем на кнопку шеврона рядом с её заголовком
+    // Цель g2 и её подцели видны сразу, без разворачивания шевроном
     const goalTitle = [...w.document.querySelectorAll("div")].find(el => el.textContent.trim() === "Вывести 3 сделки на этап КП и выполнить план на 80%");
-    const goalRow = goalTitle.closest(".sk-col.sk-gap-2");
-    const chevronBtn = goalRow.querySelector("button.sk-link-btn");
-    chevronBtn.dispatchEvent(new w.MouseEvent("click", { bubbles: true }));
-    await tick(80);
+    console.log("Цель g2 найдена на странице:", !!goalTitle ? "PASS" : "FAIL");
 
     // Кликаем на подцель "Подготовить и отправить 3 КП"
-    const subgoalRow = [...w.document.querySelectorAll(".sk-clickable")].find(el => el.textContent.includes("Подготовить и отправить 3 коммерческих предложения"));
+    const subgoalRow = [...w.document.querySelectorAll(".sk-clickable")].find(el => el.className.includes("sk-row") && el.textContent.includes("Подготовить и отправить 3 коммерческих предложения"));
     subgoalRow.dispatchEvent(new w.MouseEvent("click", { bubbles: true }));
     await tick(100);
 

@@ -53,7 +53,6 @@ function StageBlock({ stage, index, defaultOpen, onOpenItem }) {
             border: !completed && !locked ? "1.5px solid var(--sk-stroke-accent)" : "none", font: "var(--sk-label-4)",
           }}>{completed ? <IconCheck size={13} /> : locked ? <IconLock size={12} /> : index}</span>
           <div className="sk-col" style={{ gap: 0 }}>
-            <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Этап {index}</span>
             <span className="sk-label-3">{stage.title}</span>
           </div>
         </div>
@@ -142,27 +141,23 @@ function RightPanel({ plan, overallPct }) {
   return (
     <div className="sk-col sk-gap-5">
       <Card bordered>
-        <CollapsibleSection title="Статус адаптации">
-          <div className="sk-col sk-gap-3">
-            <StatusTag status={plan.status === "completed" ? "completed" : "in_progress_plan"} style={{ alignSelf: "flex-start" }} />
-            <div className="sk-row sk-gap-3" style={{ alignItems: "center" }}><ProgressBar value={overallPct} style={{ flex: 1 }} hue="accent" /><span className="sk-title-5">{overallPct}%</span></div>
-            <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{plan.dateStart} – {plan.dateEnd}</div>
-          </div>
-        </CollapsibleSection>
+        <div className="sk-col sk-gap-3">
+          <div className="sk-label-3">Статус адаптации</div>
+          <StatusTag status={plan.status === "completed" ? "completed" : "in_progress_plan"} style={{ alignSelf: "flex-start" }} />
+          <div className="sk-row sk-gap-3" style={{ alignItems: "center" }}><ProgressBar value={overallPct} style={{ flex: 1 }} hue="accent" /><span className="sk-title-5">{overallPct}%</span></div>
+          <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{plan.dateStart} – {plan.dateEnd}</div>
+        </div>
       </Card>
 
       <Card bordered>
-        <CollapsibleSection title="Информация">
+        <div className="sk-col sk-gap-4">
           <div className="sk-col sk-gap-2">
             <div className="sk-row sk-gap-2"><IconClock size={16} color="var(--sk-icon-secondary)" /><span className="sk-label-4-regular">{D.info.hours}</span></div>
             <div className="sk-row sk-gap-2" style={{ alignItems: "flex-start" }}><IconMapPin size={16} color="var(--sk-icon-secondary)" style={{ marginTop: 2 }} /><span className="sk-label-4-regular">{D.info.address}</span></div>
           </div>
-        </CollapsibleSection>
-      </Card>
-
-      <Card bordered>
-        <CollapsibleSection title="Участники плана">
+          <Divider />
           <div className="sk-col sk-gap-4">
+            <div className="sk-label-4" style={{ color: "var(--sk-text-tertiary)", textTransform: "uppercase" }}>Участники плана</div>
             <PersonCard p={D.manager} />
             {D.assistants.length > 0 && (
               <div className="sk-col sk-gap-3">
@@ -175,7 +170,7 @@ function RightPanel({ plan, overallPct }) {
               <PersonCard p={D.hrbp} />
             </div>
           </div>
-        </CollapsibleSection>
+        </div>
       </Card>
     </div>
   );
@@ -248,7 +243,7 @@ function Page() {
 
   // Только Минимум / Чат / FAQ — у кандидата нет "План адаптации" (plan.hasGoals === false).
   const tabItems = [
-    { id: "min", label: <span className="sk-row sk-gap-1"><IconClipboard size={16} />Базовые действия {checklistPct}%</span> },
+    { id: "min", label: <span className="sk-row sk-gap-1"><IconClipboard size={16} />Базовые действия</span> },
     { id: "chat", label: <span className="sk-row sk-gap-1"><IconMessageCircle size={16} />Чат</span> },
     { id: "faq", label: <span className="sk-row sk-gap-1"><IconHelpCircle size={16} />FAQ</span> },
   ];
@@ -263,16 +258,14 @@ function Page() {
           {tab === "min" && (
             <React.Fragment>
               <Alert hue="neutral" style={{ background: "var(--sk-surface-page)", boxShadow: "inset 0 0 0 1px var(--sk-stroke)" }}>{MIN_TAB_NOTE}</Alert>
-              <Card bordered>
-                <div className="sk-col sk-gap-4">
-                  <div className="sk-title-5">Чек-лист {doneChecklist} из {totalChecklist.length}</div>
-                  {plan.stages.map((s, i) => (
-                    <StageBlock key={s.id} stage={s} index={i + 1}
-                      defaultOpen={s.status !== "locked" && s.status !== "completed"}
-                      onOpenItem={(item, toggled) => toggled ? toggleItemDone(item.id) : setItemModal(item)} />
-                  ))}
-                </div>
-              </Card>
+              <div className="sk-title-5">Чек-лист {doneChecklist} из {totalChecklist.length}</div>
+              <div className="sk-col sk-gap-4">
+                {plan.stages.map((s, i) => (
+                  <StageBlock key={s.id} stage={s} index={i + 1}
+                    defaultOpen={s.status !== "locked" && s.status !== "completed"}
+                    onOpenItem={(item, toggled) => toggled ? toggleItemDone(item.id) : setItemModal(item)} />
+                ))}
+              </div>
             </React.Fragment>
           )}
           {tab === "chat" && <ChatPanel />}
