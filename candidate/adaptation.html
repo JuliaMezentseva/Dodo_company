@@ -44,7 +44,7 @@ function PlanCard({ plan }) {
               {plan.dateStart} – {plan.dateEnd}
             </div>
           </div>
-          <ProgressCircle value={pct} size={56} hue={plan.status === "completed" ? "positive" : "accent"} />
+          <ProgressCircle value={pct} size={72} thickness={5} hue={plan.status === "completed" ? "positive" : "accent"} />
         </div>
       </Card>
     </a>

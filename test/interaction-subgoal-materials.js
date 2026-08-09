@@ -47,7 +47,7 @@ const target = path.resolve(__dirname, "..", "employee", "plan.html");
 
     // Разворачиваем цель g2 — кликаем на кнопку шеврона рядом с её заголовком
     const goalTitle = [...w.document.querySelectorAll("div")].find(el => el.textContent.trim() === "Вывести 3 сделки на этап КП и выполнить план на 80%");
-    const goalRow = goalTitle.closest(".sk-col.sk-gap-3");
+    const goalRow = goalTitle.closest(".sk-col.sk-gap-2");
     const chevronBtn = goalRow.querySelector("button.sk-link-btn");
     chevronBtn.dispatchEvent(new w.MouseEvent("click", { bubbles: true }));
     await tick(80);

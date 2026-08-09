@@ -30,11 +30,16 @@ function loadPage(htmlPath, query) {
   }
   return window;
 }
-const target = path.resolve("/home/claude/proto/assistant/plan.html");
-const w = loadPage(target, "employee=yulia");
+const target = path.resolve(__dirname, "..", "assistant", "plan.html");
+const w = loadPage(target, "employee=alexey");
 setTimeout(() => {
-  // Открыть подцель g2s3 "Проанализировать 3 компании" (reviewer = Дмитрий Волков, статус pending_review)
-  const row = [...w.document.querySelectorAll(".sk-label-3-regular")].find(el => el.textContent.includes("Проанализировать 3 компании"));
+  // Переключиться на вкладку "План адаптации" — по умолчанию открыта "Базовые действия"
+  const maxTab = [...w.document.querySelectorAll("span")].find(el => el.textContent.includes("План адаптации"));
+  console.log("Found 'План адаптации' tab:", !!maxTab ? "PASS" : "FAIL");
+  maxTab.dispatchEvent(new w.MouseEvent("click", { bubbles: true }));
+setTimeout(() => {
+  // Открыть подцель alg1s2 "Пройти code review с тимлидом" (reviewer = Дмитрий Волков, статус pending_review)
+  const row = [...w.document.querySelectorAll(".sk-label-3-regular")].find(el => el.textContent.includes("Пройти code review с тимлидом"));
   console.log("Subgoal row found:", !!row);
   row.closest(".sk-clickable").dispatchEvent(new w.MouseEvent("click", { bubbles: true }));
   setTimeout(() => {
@@ -44,8 +49,9 @@ setTimeout(() => {
     setTimeout(() => {
       console.log("Toast after confirm:", w.document.body.textContent.includes("подтверждена") ? "PASS" : "FAIL");
 
-      // Открыть КТ "60 дней" (reviewer = Дмитрий Волков) через правую панель
-      const cpRow = [...w.document.querySelectorAll(".sk-label-4")].find(el => el.textContent.includes("60 дней"));
+      // Открыть КТ "60 дней" (acp2, dateLabel "2 марта", reviewer = Дмитрий Волков) через правую панель
+      const cpRow = [...w.document.querySelectorAll(".sk-label-4")].find(el => el.textContent.includes("2 марта"));
+      console.log("CP2 row found:", !!cpRow);
       cpRow.closest(".sk-clickable").dispatchEvent(new w.MouseEvent("click", { bubbles: true }));
       setTimeout(() => {
         const hasFinish = [...w.document.querySelectorAll("button")].some(b => b.textContent.includes("Завершить контрольную точку"));
@@ -53,4 +59,5 @@ setTimeout(() => {
       }, 50);
     }, 50);
   }, 50);
+}, 80);
 }, 150);

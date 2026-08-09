@@ -32,8 +32,8 @@ function loadPage(htmlPath, query) {
 }
 function tick(ms) { return new Promise(res => setTimeout(res, ms)); }
 
-const adaptationTarget = path.resolve("/home/claude/proto/candidate/adaptation.html");
-const planTarget = path.resolve("/home/claude/proto/candidate/plan.html");
+const adaptationTarget = path.resolve(__dirname, "..", "candidate", "adaptation.html");
+const planTarget = path.resolve(__dirname, "..", "candidate", "plan.html");
 
 (async () => {
   try {

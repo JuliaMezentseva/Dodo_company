@@ -38,7 +38,7 @@ function findNavItem(w, label) {
 }
 function tick(ms) { return new Promise(res => setTimeout(res, ms)); }
 
-const target = path.resolve("/home/claude/proto/hr/template.html");
+const target = path.resolve(__dirname, "..", "hr", "template.html");
 
 (async () => {
   try {

@@ -221,6 +221,9 @@ window.SITE_DATA = {
           short: "90 дней",
           date: "06.05.26",
           dateLabel: "6 мая",
+          dueLabel: "Пройти до 10 мая",
+          dueLabelShort: "Пройти до 10 мая",
+          daysLeftLabel: "Осталось 4 дня",
           reviewer: "Анна Козлова",
           status: "pending",
           agenda: [
@@ -231,12 +234,13 @@ window.SITE_DATA = {
             "После встречи проверяющий зафиксирует договорённости и завершит контрольную точку.",
           ],
           survey: [
-            { q: "Насколько вам понятны цели и ожидаемые результаты на текущем этапе адаптации?", type: "scale", answer: null, minLabel: "Совсем не понятны", maxLabel: "Полностью понятны" },
-            { q: "Насколько уверенно вы справляетесь с рабочими задачами на текущем этапе?", type: "scale", answer: null, minLabel: "Совсем не уверенно", maxLabel: "Полностью уверенно" },
-            { q: "Какие сложности у вас сейчас возникают и какая поддержка вам необходима?", type: "text", answer: "" },
+            { q: "Насколько вам понятны цели и ожидаемые результаты на текущем этапе адаптации?", type: "scale", answer: 4, minLabel: "Совсем не понятны", maxLabel: "Полностью понятны" },
+            { q: "Насколько уверенно вы справляетесь с рабочими задачами на текущем этапе?", type: "scale", answer: 4, minLabel: "Совсем не уверенно", maxLabel: "Полностью уверенно" },
+            { q: "Какие сложности у вас сейчас возникают и какая поддержка вам необходима?", type: "text",
+              answer: "Уверенно веду сделки самостоятельно, иногда нужна помощь с крупными корпоративными клиентами." },
           ],
-          surveySubmitted: false,
-          employeeSummary: "", internalReport: "", riskLevel: "", comments: [],
+          surveySubmitted: true,
+          employeeSummary: "", internalReport: "", riskLevel: "", comments: [], employeeComment: "Готова обсудить дальнейшие цели на встрече.",
         },
       },
 
@@ -410,6 +414,22 @@ window.SITE_DATA = {
       risks: [],
     },
     {
+      // Второй, более поздний план Юлии (после newhire) — уже в процессе, с целями и
+      // контрольными точками. Отдельная запись в команде, т.к. D.team не поддерживает
+      // несколько планов на одного человека; ссылается на тот же demo-план D.plans.onboarding,
+      // который также используют задачи помощника (assistantActions as1/as2 переиспользуют alexey,
+      // но сама цель g2s3/КТ здесь были написаны под Юлию — оставляем её именем и planId "onboarding").
+      id: "yulia2", name: "Юлия Мезенцева", position: "Менеджер по продажам",
+      department: "Департамент продаж",
+      planKind: "Адаптация", planTitle: "Адаптация для новичка: менеджер по продажам",
+      dateStart: "01.03.26", dateEnd: "31.05.26", daysLeftLabel: "ещё 47 дн.",
+      progressPct: 50, progressBasis: "по целям", status: "in_progress",
+      planId: "onboarding",
+      action: { type: "checkin", label: "Пройти контрольную точку", due: "20 апр" },
+      helper: "Дмитрий Волков",
+      risks: [],
+    },
+    {
       id: "darya", name: "Дарья Белозёрова", position: "Младший разработчик",
       department: "Основной отдел разработки frontend",
       planKind: "Адаптация", planTitle: "План адаптации НЛО (согласован)",
@@ -473,8 +493,8 @@ window.SITE_DATA = {
   // помощника "Дмитрий Волков": подцели/КТ, где он назначен проверяющим) ----------------
   assistantMe: { name: "Дмитрий Волков", role: "Senior frontend", email: "d.volkov@skillaz.com" },
   assistantActions: [
-    { id: "as1", type: "subgoal", title: "Подтвердить подцель «Проанализировать 3 компании из подборки»", employeeId: "yulia", employee: "Юлия Мезенцева", planId: "onboarding", due: "5 апр 26", dueSort: "2026-04-05" },
-    { id: "as2", type: "checkin", title: "Пройти контрольную точку «60 дней»", employeeId: "yulia", employee: "Юлия Мезенцева", planId: "onboarding", due: "16 апр 26", dueSort: "2026-04-16" },
+    { id: "as1", type: "subgoal", title: "Подтвердить подцель «Пройти code review с тимлидом по тестовой задаче»", employeeId: "alexey", employee: "Алексей Ковалев", planId: "alexey_dev", due: "18 янв 26", dueSort: "2026-01-18" },
+    { id: "as2", type: "checkin", title: "Пройти контрольную точку «60 дней»", employeeId: "alexey", employee: "Алексей Ковалев", planId: "alexey_dev", due: "5 мар 26", dueSort: "2026-03-05" },
   ],
 };
 
@@ -616,7 +636,7 @@ window.SITE_DATA = {
         description: "Настроить рабочее окружение, познакомиться с кодовой базой и пройти первый code review с тимлидом.",
         subgoals: [
           { id: "alg1s1", title: "Установить и настроить рабочее окружение", dueLabel: "до 10 янв", status: "done", reviewer: "Анна Козлова" },
-          { id: "alg1s2", title: "Пройти code review с тимлидом по тестовой задаче", dueLabel: "до 18 янв", status: "pending_review", reviewer: "Анна Козлова",
+          { id: "alg1s2", title: "Пройти code review с тимлидом по тестовой задаче", dueLabel: "до 18 янв", status: "pending_review", reviewer: "Дмитрий Волков",
             comments: [{ author: "Алексей Ковалев", date: "17 янв, 15:20", text: "Задачу выполнил, PR в общем репозитории, ссылка в задаче. Готов к ревью." }] },
           { id: "alg1s3", title: "Изучить архитектуру основного репозитория", dueLabel: "до 20 янв", status: "not_started", reviewer: "Анна Козлова" },
         ],

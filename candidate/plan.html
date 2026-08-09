@@ -69,11 +69,11 @@ function StageBlock({ stage, index, defaultOpen, onOpenItem }) {
               <div style={{ paddingTop: 2 }} onClick={(e) => e.stopPropagation()}>
                 <Checkbox checked={!!item.done} onChange={() => onOpenItem(item, true)} />
               </div>
-              <div className="sk-col" style={{ flex: 1, gap: 2 }}>
+              <div className="sk-col" style={{ flex: 1, gap: item.done ? 0 : 2 }}>
                 <div className="sk-label-3-regular" style={{ textDecoration: item.done ? "line-through" : "none", color: item.done ? "var(--sk-text-secondary)" : "var(--sk-text-primary)" }}>{item.title}</div>
-                <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{item.date}{item.date ? " · " : ""}{ELEMENT_LABEL[item.kind]}{item.duration ? " · " + item.duration : ""}</div>
+                {!item.done && <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{ELEMENT_LABEL[item.kind]}{item.date ? " · " + item.date : ""}</div>}
               </div>
-              {item.highlight === "warning" && <Tag size="s" hue="warning">Скоро дедлайн</Tag>}
+              {!item.done && item.highlight === "warning" && <Tag size="s" hue="warning">Скоро дедлайн</Tag>}
             </div>
           ))}
         </div>
@@ -145,11 +145,8 @@ function RightPanel({ plan, overallPct }) {
         <CollapsibleSection title="Статус адаптации">
           <div className="sk-col sk-gap-3">
             <StatusTag status={plan.status === "completed" ? "completed" : "in_progress_plan"} style={{ alignSelf: "flex-start" }} />
-            <div className="sk-label-3-regular">{plan.dateStart} – {plan.dateEnd}</div>
-            <div className="sk-col sk-gap-2">
-              <div className="sk-row sk-gap-1 sk-label-4-regular sk-muted">Прогресс</div>
-              <div className="sk-row sk-gap-3"><ProgressBar value={overallPct} style={{ flex: 1 }} hue="accent" /><span className="sk-label-4">{overallPct}%</span></div>
-            </div>
+            <div className="sk-row sk-gap-3" style={{ alignItems: "center" }}><ProgressBar value={overallPct} style={{ flex: 1 }} hue="accent" /><span className="sk-title-5">{overallPct}%</span></div>
+            <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{plan.dateStart} – {plan.dateEnd}</div>
           </div>
         </CollapsibleSection>
       </Card>

@@ -48,7 +48,7 @@ const target = path.resolve(__dirname, "..", "employee", "plan.html");
     // 1. Развернуть цель g3 (шеврон рядом с заголовком) — подцель g3s1 внутри неё, не начата
     const goalTitle = [...w.document.querySelectorAll("div")].find(el => el.textContent.trim() === "Освоить полный цикл продажи и закрывать сделки без наставника");
     console.log("Found goal g3 title:", !!goalTitle ? "PASS" : "FAIL");
-    const chevronBtn = goalTitle.closest(".sk-col.sk-gap-3").querySelector("button.sk-link-btn");
+    const chevronBtn = goalTitle.closest(".sk-col.sk-gap-2").querySelector("button.sk-link-btn");
     chevronBtn.dispatchEvent(new w.MouseEvent("click", { bubbles: true }));
     await tick(80);
 

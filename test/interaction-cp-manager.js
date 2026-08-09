@@ -40,7 +40,7 @@ const target = path.resolve(__dirname, "..", "manager", "plan.html");
     // руководитель Анна Козлова видит форму, но не может её редактировать. ----
     const w1 = loadPage(target, "employee=alexey&tab=max");
     await tick(150);
-    const cp2Row = [...w1.document.querySelectorAll(".sk-label-4")].find(el => el.textContent.includes("60 дней"));
+    const cp2Row = [...w1.document.querySelectorAll(".sk-label-4")].find(el => el.textContent.includes("2 марта"));
     console.log("[A] CP2 row found:", !!cp2Row ? "PASS" : "FAIL");
     cp2Row.closest(".sk-clickable").dispatchEvent(new w1.MouseEvent("click", { bubbles: true }));
     await tick(80);
@@ -50,20 +50,20 @@ const target = path.resolve(__dirname, "..", "manager", "plan.html");
     console.log("[A] Comments section still visible (read-only doesn't hide everything):", body.includes("Комментарии") ? "PASS" : "FAIL");
     console.log("[A] Textareas disabled (canEdit=false):", [...w1.document.querySelectorAll("textarea")].every(t => t.disabled) ? "PASS" : "FAIL");
 
-    // ---- Сценарий B (editable): план Юлии, КТ 60 дней назначена на саму Анну Козлову —
-    // опрос сотрудника уже готов, форма редактируема, можно завершить. ----
-    const w2 = loadPage(target, "employee=yulia&tab=max");
+    // ---- Сценарий B (editable): план "yulia2" (второй, более поздний план Юлии), КТ "90 дней"
+    // назначена на саму Анну Козлову — опрос сотрудника уже готов, форма редактируема, можно завершить. ----
+    const w2 = loadPage(target, "employee=yulia2&tab=max");
     await tick(150);
-    const cp2RowY = [...w2.document.querySelectorAll(".sk-label-4")].find(el => el.textContent.includes("16 апреля"));
+    const cp2RowY = [...w2.document.querySelectorAll(".sk-label-4")].find(el => el.textContent.includes("6 мая"));
     console.log("[B] CP2 row found:", !!cp2RowY ? "PASS" : "FAIL");
     cp2RowY.closest(".sk-clickable").dispatchEvent(new w2.MouseEvent("click", { bubbles: true }));
     await tick(80);
     body = w2.document.body.textContent;
-    console.log("[B] Drawer title greets employee by name:", body.includes("Как проходит адаптация Юли") ? "PASS" : "FAIL");
+    console.log("[B] Drawer title greets employee by name:", body.includes("Как проходит адаптация — Юлия") ? "PASS" : "FAIL");
     console.log("[B] Survey answers section shown ('Заполнено' badge):", body.includes("Заполнено") ? "PASS" : "FAIL");
     console.log("[B] Textareas are editable (not disabled):", [...w2.document.querySelectorAll("textarea")].every(t => !t.disabled) ? "PASS" : "FAIL");
-    console.log("[B] Risk level pills present (Без риска/Низкий/Средний/Высокий):",
-      body.includes("Отсутствует") && body.includes("Низкий") && body.includes("Средний") && body.includes("Высокий") ? "PASS" : "FAIL");
+    console.log("[B] Risk level pills present (отсутствует/Низкий/Средний/Высокий):",
+      body.includes("отсутствует") && body.includes("Низкий") && body.includes("Средний") && body.includes("Высокий") ? "PASS" : "FAIL");
     console.log("[B] Finish button present but disabled before filling fields:",
       [...w2.document.querySelectorAll("button")].some(b => b.textContent.includes("Завершить контрольную точку") && b.disabled) ? "PASS" : "FAIL");
 
@@ -75,7 +75,7 @@ const target = path.resolve(__dirname, "..", "manager", "plan.html");
     setTextareaValue.call(textareas[1], "Внутренне: рисков не вижу, рекомендую продолжать по плану.");
     textareas[1].dispatchEvent(new w2.Event("input", { bubbles: true }));
     await tick(50);
-    const riskBtn = [...w2.document.querySelectorAll("button")].find(b => b.textContent.trim() === "Отсутствует");
+    const riskBtn = [...w2.document.querySelectorAll("button")].find(b => b.textContent.trim() === "отсутствует");
     riskBtn.dispatchEvent(new w2.MouseEvent("click", { bubbles: true }));
     await tick(80);
 
@@ -86,7 +86,7 @@ const target = path.resolve(__dirname, "..", "manager", "plan.html");
     finishBtn.dispatchEvent(new w2.MouseEvent("click", { bubbles: true }));
     await tick(80);
     body = w2.document.body.textContent;
-    console.log("[B] Drawer switches to completed view after finishing:", body.includes("Промежуточные итоги сотрудника") ? "PASS" : "FAIL");
+    console.log("[B] Drawer closes after finishing (onFinish calls setCpModal(null)):", !body.includes("Заполните обязательные поля выше") ? "PASS" : "FAIL");
     console.log("[B] Status banner shows 'Контрольная точка завершена':", body.includes("Контрольная точка завершена") ? "PASS" : "FAIL");
 
     console.log("\nOK: сценарии read-only и editable для формы КТ проверяющего прошли без падений");

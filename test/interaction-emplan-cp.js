@@ -30,17 +30,22 @@ function loadPage(htmlPath, query) {
   }
   return window;
 }
-const target = path.resolve("/home/claude/proto/employee/plan.html");
+const target = path.resolve(__dirname, "..", "employee", "plan.html");
 const w = loadPage(target, "plan=onboarding");
 setTimeout(() => {
-  // Открыть контрольную точку "90 дней" (cp3, ещё не заполнена) через правую панель
-  const cpRow = [...w.document.querySelectorAll(".sk-label-4")].find(el => el.textContent.includes("90 дней"));
-  console.log("CP3 row found:", !!cpRow);
+  // Переключиться на вкладку "План адаптации" — блок КТ виден только на ней (showCheckpoints={tab === "max"})
+  const maxTab = [...w.document.querySelectorAll("span")].find((el) => el.textContent.includes("План адаптации"));
+  console.log("Found 'План адаптации' tab:", !!maxTab ? "PASS" : "FAIL");
+  maxTab.dispatchEvent(new w.MouseEvent("click", { bubbles: true }));
+setTimeout(() => {
+  // Открыть контрольную точку cp2 (dateLabel "16 апреля", pending, первая незавершённая — значит текущая и кликабельная)
+  const cpRow = [...w.document.querySelectorAll(".sk-label-4")].find(el => el.textContent.includes("16 апреля"));
+  console.log("CP2 row found:", !!cpRow);
   cpRow.closest(".sk-clickable").dispatchEvent(new w.MouseEvent("click", { bubbles: true }));
   setTimeout(() => {
     console.log("Drawer opened with survey:", w.document.body.textContent.includes("Опрос") ? "PASS" : "FAIL");
-    // ответить на шкальные вопросы (выбрать оценку 4) - найдём кнопки с эмодзи
-    const scaleButtons = [...w.document.querySelectorAll("button")].filter(b => /^[😞🙁😐🙂😄]$/.test(b.textContent.trim()));
+    // Шкальные вопросы рендерятся как круглые 44x44 кнопки с SVG ScaleFace внутри (без текста/эмодзи) — ищем по размеру
+    const scaleButtons = [...w.document.querySelectorAll("button")].filter(b => b.style.width === "44px" && b.querySelector("svg"));
     console.log("Scale buttons found:", scaleButtons.length);
     // кликаем по 4-й кнопке (индекс 3) в каждой группе из 5 - для первых двух вопросов
     for (let i = 0; i < 5; i++) scaleButtons[i].dispatchEvent(new w.MouseEvent("click", { bubbles: true }));
@@ -60,4 +65,5 @@ setTimeout(() => {
       }, 30);
     }, 30);
   }, 50);
+}, 80);
 }, 150);

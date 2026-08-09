@@ -411,16 +411,17 @@ function ManagerGoalRow({ goal, plan, onOpenGoal, onOpenSubgoal, onDeleteGoal })
   const { done, total, pct } = goalProgress(goal);
   const statusVal = goal.status === "done" ? "done" : goal.status === "in_progress" ? "in_progress" : "not_started";
   return (
-    <div className="sk-col sk-gap-3">
-      <div className="sk-row sk-gap-3" style={{ justifyContent: "space-between" }}>
-        <div className="sk-col sk-gap-2" style={{ flex: 1 }}>
+    <div className="sk-col sk-gap-2">
+      <div className="sk-row sk-gap-3" style={{ justifyContent: "space-between", alignItems: "flex-start" }}>
+        <div className="sk-col sk-gap-1" style={{ flex: 1, minWidth: 0 }}>
           <div className="sk-label-3 sk-clickable" style={{ display: "inline" }} onClick={onOpenGoal}>{goal.title || "Без названия"}</div>
-          <div className="sk-row sk-gap-3" style={{ alignItems: "center" }}>
-            <ProgressBar value={pct} style={{ width: 160 }} hue="positive" />
-            <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)", whiteSpace: "nowrap" }}>{pct}% {done}/{total} шаги · {goal.dueLabel || "срок не задан"}</span>
+          <div className="sk-row sk-gap-2" style={{ alignItems: "center" }}>
+            <ProgressBar value={pct} style={{ width: 120 }} hue="positive" />
+            <span className="sk-label-4" style={{ whiteSpace: "nowrap" }}>{pct}%</span>
           </div>
+          <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{done} из {total} шагов · {goal.dueLabel || "срок не задан"}</div>
         </div>
-        <div className="sk-row sk-gap-2">
+        <div className="sk-row sk-gap-2" style={{ flexShrink: 0 }}>
           {plan.employeeStarted && <StatusTag status={statusVal} size="m" />}
           {!plan.employeeStarted && (
             <button className="sk-link-btn" onClick={onDeleteGoal} style={{ color: "var(--sk-icon-secondary)" }} title="Удалить цель"><IconTrash size={16} /></button>
@@ -431,7 +432,7 @@ function ManagerGoalRow({ goal, plan, onOpenGoal, onOpenSubgoal, onDeleteGoal })
         </div>
       </div>
       {open && (
-        <div className="sk-col sk-gap-3" style={{ paddingLeft: 12, borderLeft: "3px solid var(--sk-stroke-accent)" }}>
+        <div className="sk-col sk-gap-3" style={{ paddingLeft: 12, borderLeft: "3px solid var(--sk-stroke-accent)", marginTop: 4 }}>
           <div className="sk-label-4-regular sk-muted">Шаги для выполнения {goal.subgoals.length}</div>
           {goal.subgoals.map(sg => <ManagerSubgoalRow key={sg.id} subgoal={sg} onOpen={() => onOpenSubgoal(sg.id)} />)}
           {!goal.subgoals.length && <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Подцели ещё не добавлены</div>}
@@ -442,16 +443,20 @@ function ManagerGoalRow({ goal, plan, onOpenGoal, onOpenSubgoal, onDeleteGoal })
 }
 
 function ManagerSubgoalRow({ subgoal, onOpen }) {
+  const isDone = subgoal.status === "done";
   const cfg = SUBGOAL_ICON[subgoal.status];
   const matCount = (subgoal.checklistRefs || []).length;
   return (
     <div className="sk-row sk-gap-3 sk-clickable" onClick={onOpen} style={{ justifyContent: "space-between", alignItems: "center", padding: 10, border: "1px solid var(--sk-stroke)", borderRadius: "var(--sk-radius-3)", background: "var(--sk-surface-page)" }}>
-      <div className="sk-col sk-gap-1" style={{ flex: 1 }}>
-        <div className="sk-label-3-regular">{subgoal.title || "Без названия"}</div>
-        <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{subgoal.dueLabel || "срок не задан"}</div>
+      <div className="sk-row sk-gap-2" style={{ flex: 1, minWidth: 0, alignItems: "center" }}>
+        {isDone && cfg && <span style={{ width: 18, height: 18, borderRadius: "50%", flexShrink: 0, background: cfg.bg, color: cfg.fg, display: "flex", alignItems: "center", justifyContent: "center" }}><cfg.icon size={11} /></span>}
+        <div className="sk-col sk-gap-1" style={{ minWidth: 0 }}>
+          <div className="sk-label-3-regular" style={{ textDecoration: isDone ? "line-through" : "none", color: isDone ? "var(--sk-text-secondary)" : "var(--sk-text-primary)" }}>{subgoal.title || "Без названия"}</div>
+          {!isDone && <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{subgoal.dueLabel || "срок не задан"}</div>}
+        </div>
       </div>
       <div className="sk-row sk-gap-2" style={{ flexShrink: 0, alignItems: "center" }}>
-        {cfg && <span style={{ width: 20, height: 20, borderRadius: "50%", background: cfg.bg, color: cfg.fg, display: "flex", alignItems: "center", justifyContent: "center" }}><cfg.icon size={12} /></span>}
+        {!isDone && cfg && <span style={{ width: 20, height: 20, borderRadius: "50%", background: cfg.bg, color: cfg.fg, display: "flex", alignItems: "center", justifyContent: "center" }}><cfg.icon size={12} /></span>}
         <span className="sk-row sk-gap-1" style={{
           height: 26, padding: "0 10px 0 6px", borderRadius: "var(--sk-radius-full)",
           background: "var(--sk-accent-secondary)", color: "var(--sk-text-accent)", font: "var(--sk-label-4)", whiteSpace: "nowrap",
@@ -755,9 +760,9 @@ function ManagerStageBlock({ stage, index, defaultOpen, onOpenItem, onAdd }) {
           {stage.items.filter(item => item.kind !== "checkpoint").map(item => (
             <div key={item.id} className="sk-check-row" onClick={() => onOpenItem(item)}>
               <div style={{ paddingTop: 2 }}><Checkbox checked={!!item.done} disabled /></div>
-              <div className="sk-col" style={{ flex: 1, gap: 2 }}>
+              <div className="sk-col" style={{ flex: 1, gap: item.done ? 0 : 2 }}>
                 <div className="sk-label-3-regular" style={{ textDecoration: item.done ? "line-through" : "none", color: item.done ? "var(--sk-text-secondary)" : "var(--sk-text-primary)" }}>{item.title}</div>
-                <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{item.date}{item.date ? " · " : ""}{ELEMENT_LABEL[item.kind]}{item.duration ? " · " + item.duration : ""}</div>
+                {!item.done && <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{ELEMENT_LABEL[item.kind]}{item.date ? " · " + item.date : ""}</div>}
               </div>
             </div>
           ))}
@@ -980,7 +985,7 @@ function PersonCard({ p }) {
 }
 
 function RightPanel({ member, plan, overallPct, onOpenCheckpoint, showCheckpoints }) {
-  const cpOrder = ["cp1", "cp2", "cp3"];
+  const cpOrder = Object.keys(plan.checkpoints);
   const checkpoints = cpOrder.filter(id => plan.checkpoints[id]).map(id => plan.checkpoints[id]);
   return (
     <div className="sk-col sk-gap-5">
@@ -1043,7 +1048,7 @@ function RightPanel({ member, plan, overallPct, onOpenCheckpoint, showCheckpoint
             <div className="sk-label-3-regular">{plan.dateStart} – {plan.dateEnd}</div>
             <div className="sk-col sk-gap-2">
               <div className="sk-row sk-gap-1 sk-label-4-regular sk-muted">Прогресс</div>
-              <div className="sk-row sk-gap-3"><ProgressBar value={overallPct} style={{ flex: 1 }} hue="accent" /><span className="sk-label-4">{overallPct}%</span></div>
+              <div className="sk-row sk-gap-3" style={{ alignItems: "center" }}><ProgressBar value={overallPct} style={{ flex: 1 }} hue="accent" /><span className="sk-title-5">{overallPct}%</span></div>
             </div>
           </div>
         </CollapsibleSection>
