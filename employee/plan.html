@@ -48,6 +48,7 @@ const SUBGOAL_ICON = {
   not_done: { icon: IconX, bg: "var(--sk-negative)", fg: "var(--sk-text-contrast)" },
   pending_review: { icon: IconInfo, bg: "var(--sk-warning)", fg: "var(--sk-text-contrast)" },
   in_progress: { icon: IconClock, bg: "var(--sk-accent)", fg: "var(--sk-text-contrast)" },
+  returned: { icon: IconInfo, bg: "var(--sk-warning)", fg: "var(--sk-text-contrast)" },
 };
 const SCALE_TINTS = { 1: "#FBE4E4", 2: "#FCEBD6", 3: "#FBF3CB", 4: "#DEF3E1", 5: "#CFEDD5" };
 const SCALE_BORDERS = { 1: "#E0716F", 2: "#E0A23D", 3: "#D2B93B", 4: "#5DAE6F", 5: "#3E9E56" };
@@ -79,8 +80,8 @@ const CHECKPOINT_STEPS = [
   "Обратная связь по итогам — появится здесь после встречи",
 ];
 
-const MIN_TAB_NOTE = "Этот чек-лист поможет вам быстро закрыть формальный порог входа в роль: получить доступы, познакомиться с культурой и регламентами компании. Он одинаков для всех сотрудников на этой позиции — просто отмечайте пункты по мере прохождения.";
-const MAX_TAB_NOTE = "Ваш персональный план выхода на результат в роли — выполняйте цели, отправляйте подцели на проверку руководителю и сверяйтесь с ним на контрольных точках.";
+const MIN_TAB_NOTE = "Формальный порог входа в роль: доступы, культура, регламенты. Отмечайте пункты по мере прохождения.";
+const MAX_TAB_NOTE = "Ваш персональный план на результат в роли. Открывайте цель, чтобы увидеть шаги и отправить их на проверку.";
 
 function goalProgress(goal) {
   const total = goal.subgoals.length;
@@ -188,16 +189,19 @@ function ElementModal({ item, onClose, onToggleDone }) {
 function GoalRow({ goal, plan, onOpenGoal, onOpenSubgoal, onTakeGoal }) {
   const { done, total, pct } = goalProgress(goal);
   const statusVal = goal.status === "done" ? "done" : goal.status === "in_progress" ? "in_progress" : "not_started";
+  const isDone = goal.status === "done";
   return (
     <div className="sk-col sk-gap-3 sk-clickable" onClick={onOpenGoal} style={{ padding: 14, border: "1px solid var(--sk-stroke)", borderRadius: "var(--sk-radius-3)", background: "var(--sk-surface-page)" }}>
       <div className="sk-row sk-gap-3" style={{ justifyContent: "space-between", alignItems: "flex-start" }}>
         <div className="sk-col sk-gap-1" style={{ flex: 1, minWidth: 0 }}>
-          <div className="sk-title-5">{goal.title}</div>
-          <div className="sk-row sk-gap-3" style={{ alignItems: "center" }}>
-            <ProgressBar value={pct} style={{ width: 140 }} hue="positive" />
-            <span className="sk-label-3">{pct}%</span>
-            <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)", whiteSpace: "nowrap" }}>{done} из {total} · до {stripDuePrefix(goal.dueLabel)}</span>
-          </div>
+          <div className="sk-title-5" style={{ color: isDone ? "var(--sk-text-secondary)" : "var(--sk-text-primary)" }}>{goal.title}</div>
+          {!isDone && (
+            <div className="sk-row sk-gap-3" style={{ alignItems: "center" }}>
+              <ProgressBar value={pct} style={{ width: 140 }} hue="positive" />
+              <span className="sk-label-3">{pct}%</span>
+              <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)", whiteSpace: "nowrap" }}>{done} из {total} · до {stripDuePrefix(goal.dueLabel)}</span>
+            </div>
+          )}
         </div>
         <div style={{ flexShrink: 0 }} onClick={(e) => e.stopPropagation()}>
           {goal.status === "not_started" ? (
@@ -211,29 +215,35 @@ function GoalRow({ goal, plan, onOpenGoal, onOpenSubgoal, onTakeGoal }) {
           )}
         </div>
       </div>
-      <div className="sk-col sk-gap-2" onClick={(e) => e.stopPropagation()}>
-        {goal.subgoals.map((sg) => <SubgoalRow key={sg.id} subgoal={sg} onOpen={() => onOpenSubgoal(sg.id)} />)}
-      </div>
+      {!isDone && (
+        <div className="sk-col sk-gap-2" onClick={(e) => e.stopPropagation()}>
+          {goal.subgoals.map((sg) => <SubgoalRow key={sg.id} subgoal={sg} goalDueLabel={goal.dueLabel} onOpen={() => onOpenSubgoal(sg.id)} />)}
+        </div>
+      )}
     </div>
   );
 }
 
-// Статус подцели: done — просто галочка + зачёркнутый текст (не нужен ещё и тег).
-// Для остальных статусов короткий тег несёт новую информацию (На проверке /
-// Возвращена в работу) и остаётся — но без лишней даты дублирующей её же в тексте.
-function SubgoalRow({ subgoal, onOpen }) {
+// Статус подцели: done — галочка + зачёркнутый текст. Остальные статусы получают
+// свой цветной индикатор (включая in_progress — раньше он не показывался никак,
+// и было неясно, взят ли шаг в работу). Дата шага показывается только если она
+// отличается от срока самой цели — в demo-данных они почти всегда совпадают,
+// повторять одну и ту же дату на каждом шаге избыточно.
+function SubgoalRow({ subgoal, goalDueLabel, onOpen }) {
   const isDone = subgoal.status === "done";
   const cfg = SUBGOAL_ICON[subgoal.status];
+  const ownDue = stripDuePrefix(subgoal.dueLabel);
+  const showOwnDue = !isDone && ownDue && ownDue !== stripDuePrefix(goalDueLabel);
   return (
     <div className="sk-row sk-gap-3 sk-clickable" onClick={onOpen} style={{ justifyContent: "space-between", alignItems: "center", padding: 10, border: "1px solid var(--sk-stroke)", borderRadius: "var(--sk-radius-3)", background: "var(--sk-surface-page)" }}>
       <div className="sk-row sk-gap-2" style={{ flex: 1, minWidth: 0, alignItems: "center" }}>
-        {isDone && cfg && <span style={{ width: 18, height: 18, borderRadius: "50%", flexShrink: 0, background: cfg.bg, color: cfg.fg, display: "flex", alignItems: "center", justifyContent: "center" }}><cfg.icon size={11} /></span>}
+        {cfg && subgoal.status !== "pending_review" && subgoal.status !== "returned" && <span style={{ width: 18, height: 18, borderRadius: "50%", flexShrink: 0, background: cfg.bg, color: cfg.fg, display: "flex", alignItems: "center", justifyContent: "center" }}><cfg.icon size={11} /></span>}
+        {(subgoal.status === "pending_review" || subgoal.status === "returned") && <StatusTag status={subgoal.status} size="s" style={{ flexShrink: 0 }} />}
+        {!cfg && subgoal.status === "not_started" && <span style={{ width: 18, height: 18, borderRadius: "50%", flexShrink: 0, border: "1.5px solid var(--sk-stroke)" }} />}
         <div className="sk-label-3-regular" style={{ textDecoration: isDone ? "line-through" : "none", color: isDone ? "var(--sk-text-secondary)" : "var(--sk-text-primary)" }}>{subgoal.title}</div>
       </div>
       <div className="sk-row sk-gap-2" style={{ flexShrink: 0, alignItems: "center" }}>
-        {!isDone && <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)", whiteSpace: "nowrap" }}>до {stripDuePrefix(subgoal.dueLabel)}</span>}
-        {!isDone && (subgoal.status === "pending_review" || subgoal.status === "returned") && <StatusTag status={subgoal.status} size="s" />}
-        {!isDone && subgoal.status === "not_started" && cfg && <span style={{ width: 18, height: 18, borderRadius: "50%", flexShrink: 0, background: cfg.bg, color: cfg.fg, display: "flex", alignItems: "center", justifyContent: "center" }}><cfg.icon size={11} /></span>}
+        {showOwnDue && <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)", whiteSpace: "nowrap" }}>до {ownDue}</span>}
       </div>
     </div>
   );
@@ -274,7 +284,7 @@ function GoalDrawer({ goal, onClose, onOpenSubgoal, onTakeGoal }) {
         )}
         <div className="sk-col sk-gap-2">
           <div className="sk-label-3">Шаги</div>
-          {goal.subgoals.map((sg) => <SubgoalRow key={sg.id} subgoal={sg} onOpen={() => onOpenSubgoal(sg.id)} />)}
+          {goal.subgoals.map((sg) => <SubgoalRow key={sg.id} subgoal={sg} goalDueLabel={goal.dueLabel} onOpen={() => onOpenSubgoal(sg.id)} />)}
         </div>
       </div>
     </Drawer>
