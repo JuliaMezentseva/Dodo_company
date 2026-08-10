@@ -17,7 +17,7 @@
 <script type="text/babel">
 const { Card, Tag, Input, Button, Select, Checkbox } = window.SkillazCoreDesignSystem_bf9566;
 const { AppShell, Icons, directionHue } = window.Site;
-const { IconSearch, IconMapPin, IconBriefcase, IconClock, IconCheck, IconFilter } = Icons;
+const { IconSearch, IconMapPin, IconBriefcase, IconCheck, IconFilter } = Icons;
 const D = window.SITE_DATA;
 
 function fmtMoney(n) { return n.toLocaleString("ru-RU"); }
@@ -47,11 +47,17 @@ function VacancyCard({ vacancy, hasResponse }) {
   const closed = vacancy.status === "closed";
   return (
     <a href={"vacancy.html?id=" + vacancy.id} style={{ textDecoration: "none" }}>
-      <Card bordered style={{ cursor: "pointer", height: "100%" }}>
+      <Card bordered
+        style={{
+          cursor: "pointer", height: "100%",
+          ...(hasResponse ? { background: "var(--sk-surface-secondary)", borderColor: "var(--sk-stroke)" } : null),
+        }}>
         <div className="sk-col sk-gap-3" style={{ height: "100%" }}>
           <div className="sk-row" style={{ justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
             <Tag size="s" hue={directionHue(vacancy.direction)}>{vacancy.direction}</Tag>
-            {hasResponse && <Tag size="s" hue="neutral" icon={<IconCheck size={12} />}>Есть отклик</Tag>}
+            {hasResponse
+              ? <Tag size="s" hue="accent" icon={<IconCheck size={12} />}>Есть отклик</Tag>
+              : (closed && <Tag size="s" hue="neutral">Закрыта</Tag>)}
           </div>
 
           <div className="sk-col sk-gap-1" style={{ flex: 1 }}>
@@ -62,15 +68,11 @@ function VacancyCard({ vacancy, hasResponse }) {
             </div>
           </div>
 
-          <div className="sk-label-3" style={{ color: "var(--sk-text-accent)" }}>
-            {fmtMoney(vacancy.salaryFrom)} – {fmtMoney(vacancy.salaryTo)} ₽
-          </div>
-
           <div className="sk-row" style={{ justifyContent: "space-between", alignItems: "center" }}>
-            {closed
-              ? <Tag size="s" hue="neutral">Закрыта</Tag>
-              : <span className="sk-row sk-gap-1 sk-muted" style={{ font: "var(--sk-label-4-regular)" }}><IconClock size={13} />Опубликовано: {vacancy.postedDate}</span>}
-            <span className="sk-label-4" style={{ color: "var(--sk-text-tertiary)" }}>{vacancy.grade}</span>
+            <div className="sk-label-3" style={{ color: "var(--sk-text-accent)" }}>
+              {fmtMoney(vacancy.salaryFrom)} – {fmtMoney(vacancy.salaryTo)} ₽
+            </div>
+            <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{vacancy.postedDate}</span>
           </div>
         </div>
       </Card>
@@ -148,15 +150,15 @@ function Page() {
 
   return (
     <AppShell role="employee" active="vacancies" base="..">
-      <div className="sk-row" style={{ justifyContent: "space-between", alignItems: "center" }}>
-        <div className="sk-title-4">Вакансии</div>
-        <a href="my-responses.html" style={{ textDecoration: "none" }}>
-          <Button mode="secondary">Мои отклики{responses.length ? " · " + responses.length : ""}</Button>
+      <div className="sk-title-4">Вакансии</div>
+
+      <div className="sk-row sk-gap-3" style={{ justifyContent: "space-between", alignItems: "center" }}>
+        <Input icon={<IconSearch size={20} />} placeholder="Поиск по названию или подразделению"
+          value={q} onChange={(e) => setQ(e.target.value || "")} style={{ maxWidth: 420, flex: 1 }} />
+        <a href="my-responses.html" style={{ textDecoration: "none", flexShrink: 0 }}>
+          <Button variant="accent" mode="secondary">Мои отклики{responses.length ? " · " + responses.length : ""}</Button>
         </a>
       </div>
-
-      <Input icon={<IconSearch size={20} />} placeholder="Поиск по названию или подразделению"
-        value={q} onChange={(e) => setQ(e.target.value || "")} style={{ maxWidth: 420 }} />
 
       <div className="sk-row sk-gap-2" style={{ flexWrap: "wrap" }}>
         <DirectionPill direction="Все направления" active={!direction} count={visibleVacancies.length} onClick={() => setDirection(null)} />
