@@ -39,9 +39,9 @@ const QUICK_INDICATORS = [
   { id: "active", label: "Активные", icon: IconTarget, bg: "var(--sk-accent-secondary)", fg: "var(--sk-icon-accent)", test: (p) => p.status === "in_progress" || p.status === "not_started" },
   { id: "risk", label: "С риском", icon: IconAlertCircle, bg: "var(--sk-negative-secondary)", fg: "var(--sk-icon-negative)", test: (p) => p.risks.length > 0 },
   { id: "no_goals", label: "Без целей", icon: IconFlag, bg: "var(--sk-warning-secondary)", fg: "var(--sk-text-warning-dark)", test: (p) => !p.goalsPublished },
-  { id: "overdue_cp", label: "С просроченными КТ", icon: IconClock, bg: "var(--sk-special-secondary)", fg: "var(--sk-special)", test: (p) => p.overdueCheckpoint },
-  { id: "review", label: "Ожидают финального ревью", icon: IconCheck, bg: "var(--sk-positive-secondary)", fg: "var(--sk-icon-positive)", test: (p) => p.finalReview === "pending" },
-  { id: "ending_soon", label: "Завершаются скоро", icon: IconCalendar, bg: "var(--sk-warning-secondary)", fg: "var(--sk-text-warning-dark)", test: (p) => !!p.endingSoon },
+  { id: "overdue_cp", label: "Просрочка КТ", icon: IconClock, bg: "var(--sk-special-secondary)", fg: "var(--sk-special)", test: (p) => p.overdueCheckpoint },
+  { id: "review", label: "Ждут ревью", icon: IconCheck, bg: "var(--sk-positive-secondary)", fg: "var(--sk-icon-positive)", test: (p) => p.finalReview === "pending" },
+  { id: "ending_soon", label: "Скоро завершатся", icon: IconCalendar, bg: "var(--sk-warning-secondary)", fg: "var(--sk-text-warning-dark)", test: (p) => !!p.endingSoon },
 ];
 
 const GROUP_OPTIONS = [
@@ -70,7 +70,8 @@ function GroupByMenu({ value, onChange }) {
   const current = GROUP_OPTIONS.find((o) => o.value === value) || GROUP_OPTIONS[0];
   return (
     <div ref={ref} style={{ position: "relative" }}>
-      <Button mode="secondary" icon={<Icons.IconLayers size={16} />} onClick={() => setOpen((o) => !o)}>{current.label}</Button>
+      <Button mode="secondary" icon={<Icons.IconLayers size={16} />} onClick={() => setOpen((o) => !o)}
+        style={{ background: "var(--sk-surface-page)", border: "1px solid var(--sk-stroke)" }}>{current.label}</Button>
       {open && (
         <div className="sk-scroll" style={{
           position: "absolute", top: "calc(100% + 6px)", right: 0, zIndex: 50, background: "var(--sk-surface-page)",
@@ -121,7 +122,8 @@ function ColumnsMenu({ all, visible, onChange }) {
   }, []);
   return (
     <div ref={ref} style={{ position: "relative" }}>
-      <Button mode="secondary" icon={<IconColumns size={16} />} onClick={() => setOpen((o) => !o)}>Столбцы</Button>
+      <Button mode="secondary" icon={<IconColumns size={16} />} onClick={() => setOpen((o) => !o)}
+        style={{ background: "var(--sk-surface-page)", border: "1px solid var(--sk-stroke)" }}>Столбцы</Button>
       {open && (
         <div className="sk-scroll" style={{
           position: "absolute", top: "calc(100% + 6px)", right: 0, zIndex: 50, background: "var(--sk-surface-page)",
@@ -515,20 +517,20 @@ function AssignedTable() {
 
   return (
     <div className="sk-col sk-gap-4">
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
+      <div style={{ display: "flex", gap: 12 }}>
         {QUICK_INDICATORS.map((ind) => {
           const count = plans.filter((p) => (!HIDDEN_BY_DEFAULT.includes(p.status) || showHiddenStatuses) && ind.test(p)).length;
           const active = activeIndicator === ind.id;
           return (
             <Card key={ind.id} bordered padding={12}
-              style={{ cursor: "pointer", flex: "0 0 190px", minHeight: 78, outline: active ? "2px solid var(--sk-stroke-accent)" : "none" }}>
-              <div className="sk-row sk-gap-2 sk-clickable" onClick={() => setActiveIndicator(active ? null : ind.id)} style={{ alignItems: "flex-start", height: "100%" }}>
+              style={{ cursor: "pointer", flex: "1 1 0", minWidth: 0, outline: active ? "2px solid var(--sk-stroke-accent)" : "none" }}>
+              <div className="sk-row sk-gap-2 sk-clickable" onClick={() => setActiveIndicator(active ? null : ind.id)} style={{ alignItems: "center" }}>
                 <span style={{ width: 28, height: 28, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", background: ind.bg, color: ind.fg }}>
                   <ind.icon size={15} />
                 </span>
                 <div className="sk-col" style={{ gap: 0, minWidth: 0 }}>
                   <div className="sk-label-2">{count}</div>
-                  <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)", lineHeight: 1.3 }}>{ind.label}</div>
+                  <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{ind.label}</div>
                 </div>
               </div>
             </Card>
