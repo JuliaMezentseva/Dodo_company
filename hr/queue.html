@@ -53,7 +53,8 @@ function ColumnsMenu({ all, visible, onChange }) {
   }, []);
   return (
     <div ref={ref} style={{ position: "relative" }}>
-      <Button mode="secondary" icon={<Icons.IconColumns size={16} />} onClick={() => setOpen((o) => !o)}>Столбцы</Button>
+      <Button mode="secondary" icon={<Icons.IconColumns size={16} />} onClick={() => setOpen((o) => !o)}
+        style={{ background: "var(--sk-surface-page)", border: "1px solid var(--sk-stroke)" }}>Столбцы</Button>
       {open && (
         <div className="sk-scroll" style={{
           position: "absolute", top: "calc(100% + 6px)", right: 0, zIndex: 50, background: "var(--sk-surface-page)",
@@ -227,6 +228,7 @@ const PENDING_COLUMNS_ALL = [
 function PendingTab({ rows, setRows, onExcludeToOtherTab }) {
   const [q, setQ] = React.useState("");
   const [eventFilter, setEventFilter] = React.useState("");
+  const [planTypeFilter, setPlanTypeFilter] = React.useState("");
   const [period, setPeriod] = React.useState("");
   const [selected, setSelected] = React.useState(() => new Set());
   const [visibleCols, setVisibleCols] = React.useState(PENDING_COLUMNS_ALL.map((c) => c.key));
@@ -238,9 +240,11 @@ function PendingTab({ rows, setRows, onExcludeToOtherTab }) {
   function showToast(msg) { setToast(msg); window.setTimeout(() => setToast(null), 2600); }
 
   const needle = q.trim().toLowerCase();
+  const planTypeOptions = [...new Set(rows.map((p) => p.planTypeNeeded))];
   const list = rows.filter((p) => {
     if (needle && !p.name.toLowerCase().includes(needle)) return false;
     if (eventFilter && p.eventType !== eventFilter) return false;
+    if (planTypeFilter && p.planTypeNeeded !== planTypeFilter) return false;
     return true;
   });
 
@@ -313,14 +317,14 @@ function PendingTab({ rows, setRows, onExcludeToOtherTab }) {
     ) },
   ];
 
-  const hasActiveFilters = !!(eventFilter || period);
+  const hasActiveFilters = !!(eventFilter || period || planTypeFilter);
 
   return (
     <div className="sk-col sk-gap-4">
       <div className="sk-col sk-gap-3">
         <div className="sk-row sk-gap-2">
           <Input icon={<IconSearch size={20} />} placeholder="Поиск по сотруднику" value={q}
-            onChange={(e) => setQ(e.target.value || "")} style={{ flex: 1 }} />
+            onChange={(e) => setQ(e.target.value || "")} style={{ maxWidth: 420, flex: 1 }} />
           <ColumnsMenu all={PENDING_COLUMNS_ALL} visible={visibleCols}
             onChange={(key) => setVisibleCols((v) => v.includes(key) ? v.filter((k) => k !== key) : [...v, key])} />
         </div>
@@ -329,16 +333,20 @@ function PendingTab({ rows, setRows, onExcludeToOtherTab }) {
             <button key={f.value || "all"} onClick={() => setEventFilter(f.value)}
               className="sk-label-4-regular"
               style={{
-                padding: "8px 14px", borderRadius: "var(--sk-radius-full, 999px)", cursor: "pointer", border: "none",
+                height: 40, padding: "0 14px", display: "inline-flex", alignItems: "center",
+                borderRadius: "var(--sk-radius-full, 999px)", cursor: "pointer", border: "none",
                 background: eventFilter === f.value ? "var(--sk-accent-secondary)" : "var(--graphite-graphite-97)",
                 color: eventFilter === f.value ? "var(--sk-text-accent)" : "var(--sk-text-secondary)",
               }}>
               {f.label}
             </button>
           ))}
+          <Select placeholder="Тип плана" value={planTypeFilter || null}
+            options={planTypeOptions.map((v) => ({ value: v, label: v }))}
+            onChange={(v) => setPlanTypeFilter(v || "")} style={{ width: 170 }} />
           <PeriodMenu value={period} onChange={setPeriod} />
           {hasActiveFilters && (
-            <button className="sk-link-btn sk-label-4-regular" onClick={() => { setEventFilter(""); setPeriod(""); }}>Сбросить</button>
+            <button className="sk-link-btn sk-label-4-regular" onClick={() => { setEventFilter(""); setPeriod(""); setPlanTypeFilter(""); }}>Сбросить</button>
           )}
         </div>
       </div>
@@ -455,7 +463,7 @@ function ExcludedTab({ rows, setRows, onRestoreToOtherTab }) {
       <div className="sk-col sk-gap-3">
         <div className="sk-row sk-gap-2">
           <Input icon={<IconSearch size={20} />} placeholder="Поиск по сотруднику" value={q}
-            onChange={(e) => setQ(e.target.value || "")} style={{ flex: 1 }} />
+            onChange={(e) => setQ(e.target.value || "")} style={{ maxWidth: 420, flex: 1 }} />
           <Button mode="secondary" icon={<IconFilter size={16} />} onClick={() => setFiltersOpen((o) => !o)}>
             Фильтры{hasActiveFilters ? " · " + Object.values(filters).filter(Boolean).length : ""}
           </Button>
