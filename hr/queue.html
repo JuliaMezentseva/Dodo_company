@@ -23,26 +23,47 @@ const {
 
 const D = window.SITE_DATA;
 
-// ---- Дата события в читаемом виде: "12.08.26" -> "12 авг 2026" (тот же принцип, что
-// и везде в проекте — короткие рус. месяцы, полный год для однозначности). ----
-const MONTHS_SHORT = ["янв", "фев", "мар", "апр", "мая", "июн", "июл", "авг", "сен", "окт", "ноя", "дек"];
-function parseEventDate(d) {
-  const m = /^(\d{2})\.(\d{2})\.(\d{2})$/.exec(d || "");
-  if (!m) return null;
-  return new Date(2000 + parseInt(m[3], 10), parseInt(m[2], 10) - 1, parseInt(m[1], 10));
+// ---- "Таблетки"-табы: активная — чёрная капсула, неактивные — светло-серые. Тот же
+// компонент и цветовая логика, что и в hr/plans.html (Button variant="neutral"
+// mode="primary" даёт ту же пару чёрный/белый — здесь применена к табам). ----
+function PillTabs({ items, active, onChange }) {
+  return (
+    <div className="sk-row sk-gap-2" style={{ flexWrap: "wrap" }}>
+      {items.map((it) => {
+        const sel = it.id === active;
+        return (
+          <button key={it.id} type="button" onClick={() => onChange(it.id)} className="sk-clickable" style={{
+            display: "inline-flex", alignItems: "center", gap: 6, height: 32, padding: "0 14px",
+            borderRadius: "var(--sk-radius-full)", border: "none",
+            background: sel ? "var(--graphite-graphite-0)" : "var(--graphite-graphite-97)",
+            color: sel ? "var(--sk-text-contrast)" : "var(--sk-text-secondary)",
+            font: "var(--sk-label-3-regular)", cursor: "pointer", whiteSpace: "nowrap",
+          }}>
+            {it.label}
+            {it.count !== undefined && <span style={{ opacity: sel ? 0.75 : 0.6 }}>{it.count}</span>}
+          </button>
+        );
+      })}
+    </div>
+  );
 }
-function fmtEventDate(d) {
-  const date = parseEventDate(d);
-  if (!date) return d || "—";
-  return date.getDate() + " " + MONTHS_SHORT[date.getMonth()] + " " + date.getFullYear();
-}
-// Событие уже произошло (сотрудник вышел/переведён/вернулся), а плана всё ещё нет —
-// самый полезный сигнал приоритизации для HR в очереди назначения.
-function daysSinceEvent(d) {
-  const date = parseEventDate(d);
-  if (!date) return null;
-  const today = new Date(); today.setHours(0, 0, 0, 0);
-  return Math.round((today - date) / 86400000);
+
+// ---- Пилюли событий над таблицей — активная ("Все события" по умолчанию) залита
+// насыщенным акцентным синим (variant="accent" mode="primary"), как кнопка "Мои отклики"
+// на referece-скрине из employee/vacancies.html. Высота 32 — компактнее прежней 40. ----
+function EventPill({ label, count, active, onClick }) {
+  return (
+    <button type="button" onClick={onClick} className="sk-clickable" style={{
+      display: "inline-flex", alignItems: "center", gap: 6, height: 32, padding: "0 14px",
+      borderRadius: "var(--sk-radius-full)", border: "none",
+      background: active ? "var(--sk-accent)" : "var(--graphite-graphite-97)",
+      color: active ? "var(--sk-text-contrast)" : "var(--sk-text-secondary)",
+      font: "var(--sk-label-3-regular)", cursor: "pointer", whiteSpace: "nowrap",
+    }}>
+      {label}
+      {typeof count === "number" && <span style={{ opacity: active ? 0.75 : 0.6 }}>{count}</span>}
+    </button>
+  );
 }
 
 // ---- Событие: тип + иконка + акцентный цвет тега (см. hr/plans.html — тот же принцип
@@ -60,25 +81,6 @@ const EVENT_QUICK_FILTERS = [
   { value: "return", label: "Возврат из отпуска" },
   { value: "internship", label: "Стажировка" },
 ];
-
-// ---- Пилюля события — тот же паттерн и цветовая логика, что DirectionPill в
-// employee/vacancies.html: активная пилюля залита акцентным цветом (--sk-accent-secondary
-// / --sk-text-accent — единый акцент темы), остальные нейтральные с рамкой. Высота 40
-// сохранена от прежних квик-фильтров (плотность страницы не меняем). ----
-function EventPill({ label, count, active, onClick }) {
-  return (
-    <button type="button" onClick={onClick} className="sk-clickable" style={{
-      display: "inline-flex", alignItems: "center", gap: 6, height: 40, padding: "0 16px",
-      borderRadius: "var(--sk-radius-full)", border: "1px solid " + (active ? "transparent" : "var(--sk-stroke)"),
-      background: active ? "var(--sk-accent-secondary)" : "var(--sk-surface-page)",
-      color: active ? "var(--sk-text-accent)" : "var(--sk-text-primary)",
-      font: "var(--sk-label-3-regular)", cursor: "pointer", whiteSpace: "nowrap",
-    }}>
-      {label}
-      {typeof count === "number" && <span style={{ opacity: active ? 0.75 : 0.55 }}>{count}</span>}
-    </button>
-  );
-}
 
 // ---- Плавающая панель-чекбокс для настройки видимости столбцов — тот же паттерн
 // плавающей панели, что и GroupByMenu в hr/plans.html (радио вместо чекбоксов там,
@@ -129,9 +131,6 @@ const PERIOD_PRESETS = [
   { id: "quarter", label: "Квартал" },
   { id: "custom", label: "Свой период" },
 ];
-// Триггер оформлен как поле Select (label сверху, высота 48, та же рамка/радиус), а не
-// как отдельная кнопка с иконкой календаря — раньше он визуально выбивался среди Select-ов
-// в панели фильтров, теперь ведёт себя как ещё одно поле фильтра.
 function PeriodMenu({ value, onChange }) {
   const [open, setOpen] = React.useState(false);
   const ref = React.useRef(null);
@@ -142,23 +141,10 @@ function PeriodMenu({ value, onChange }) {
   }, []);
   const current = PERIOD_PRESETS.find((p) => p.id === value) || null;
   return (
-    <div ref={ref} style={{ position: "relative", width: 190 }}>
-      <label className="sk-col" style={{ gap: 6, font: "var(--sk-label-3)" }}>
-        <span style={{ color: "var(--sk-text-primary)" }}>Дата события</span>
-        <button type="button" onClick={() => setOpen((o) => !o)} className="sk-clickable" style={{
-          display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, height: 48,
-          padding: "0 12px", borderRadius: "var(--sk-radius-form)", border: "none",
-          background: "var(--sk-surface-page)", boxShadow: "inset 0 0 0 1px var(--sk-stroke)",
-          font: "var(--sk-label-3-regular)", color: current ? "var(--sk-text-primary)" : "var(--sk-text-secondary)",
-          textAlign: "left", cursor: "pointer",
-        }}>
-          <span className="sk-row sk-gap-2" style={{ alignItems: "center", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-            <IconCalendar size={18} color="var(--sk-icon-secondary)" />
-            {current ? current.label : "Все"}
-          </span>
-          <IconChevronDown size={16} color="var(--sk-icon-secondary)" style={{ flexShrink: 0, transform: open ? "rotate(180deg)" : "none" }} />
-        </button>
-      </label>
+    <div ref={ref} style={{ position: "relative" }}>
+      <Button mode="secondary" icon={<IconCalendar size={16} />} onClick={() => setOpen((o) => !o)}>
+        {current ? current.label : "Дата события"}
+      </Button>
       {open && (
         <div style={{
           position: "absolute", top: "calc(100% + 6px)", left: 0, zIndex: 50, background: "var(--sk-surface-page)",
@@ -272,11 +258,9 @@ function ExcludeModal({ people, onClose, onConfirm }) {
 }
 
 // ------------------------------ Вкладка "К назначению" ------------------------------
-// Колонку "Причина появления в очереди" убрали как избыточную — событие уже понятно
-// из тега "Тип события", а сама причина (человекочитаемая формулировка) доступна по
-// ховеру на тег, чтобы не терять контекст совсем.
 const PENDING_COLUMNS_ALL = [
   { key: "name", title: "Сотрудник", locked: true },
+  { key: "reason", title: "Причина появления в очереди" },
   { key: "eventType", title: "Тип события" },
   { key: "eventDate", title: "Дата события" },
   { key: "department", title: "Подразделение" },
@@ -288,9 +272,6 @@ function PendingTab({ rows, setRows, onExcludeToOtherTab }) {
   const [q, setQ] = React.useState("");
   const [eventFilter, setEventFilter] = React.useState("");
   const [planTypeFilter, setPlanTypeFilter] = React.useState("");
-  const [positionFilter, setPositionFilter] = React.useState("");
-  const [departmentFilter, setDepartmentFilter] = React.useState("");
-  const [managerFilter, setManagerFilter] = React.useState("");
   const [period, setPeriod] = React.useState("");
   const [filtersOpen, setFiltersOpen] = React.useState(false);
   const [selected, setSelected] = React.useState(() => new Set());
@@ -304,16 +285,10 @@ function PendingTab({ rows, setRows, onExcludeToOtherTab }) {
 
   const needle = q.trim().toLowerCase();
   const planTypeOptions = [...new Set(rows.map((p) => p.planTypeNeeded))];
-  const positionOptions = [...new Set(rows.map((p) => p.position))];
-  const departmentOptions = [...new Set(rows.map((p) => p.department))];
-  const managerOptions = [...new Set(rows.map((p) => p.manager).filter(Boolean))];
   const list = rows.filter((p) => {
     if (needle && !p.name.toLowerCase().includes(needle)) return false;
     if (eventFilter && p.eventType !== eventFilter) return false;
     if (planTypeFilter && p.planTypeNeeded !== planTypeFilter) return false;
-    if (positionFilter && p.position !== positionFilter) return false;
-    if (departmentFilter && p.department !== departmentFilter) return false;
-    if (managerFilter && p.manager !== managerFilter) return false;
     return true;
   });
 
@@ -361,27 +336,9 @@ function PendingTab({ rows, setRows, onExcludeToOtherTab }) {
         <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{p.position}</span>
       </div>
     ),
-    // Причина появления в очереди больше не выводится отдельной колонкой — она теперь
-    // подсказка на теге события, чтобы контекст не терялся, но и не занимал место в таблице.
-    eventType: (p) => (
-      <Tooltip content={p.reason}>
-        <span><Tag size="s" hue={EVENT_META[p.eventType].hue}>{EVENT_META[p.eventType].label}</Tag></span>
-      </Tooltip>
-    ),
-    eventDate: (p) => {
-      const days = daysSinceEvent(p.eventDate);
-      const overdue = days !== null && days > 2;
-      return (
-        <span className="sk-row sk-gap-1" style={{ alignItems: "center", color: overdue ? "var(--sk-text-negative)" : "var(--sk-text-primary)" }}>
-          {fmtEventDate(p.eventDate)}
-          {overdue && (
-            <Tooltip content={"Событие произошло " + days + " дн. назад — план всё ещё не назначен"}>
-              <span style={{ display: "inline-flex" }}><Icons.IconAlertCircle size={14} /></span>
-            </Tooltip>
-          )}
-        </span>
-      );
-    },
+    reason: (p) => <span className="sk-label-4-regular" style={{ color: "var(--sk-text-secondary)" }}>{p.reason}</span>,
+    eventType: (p) => <Tag size="s" hue={EVENT_META[p.eventType].hue}>{EVENT_META[p.eventType].label}</Tag>,
+    eventDate: (p) => p.eventDate,
     department: (p) => p.department,
     position: (p) => p.position,
     planType: (p) => <Tag size="s" hue="neutral">{p.planTypeNeeded}</Tag>,
@@ -393,9 +350,7 @@ function PendingTab({ rows, setRows, onExcludeToOtherTab }) {
         <window.SkillazCoreDesignSystem_bf9566.Checkbox checked={selected.has(p.id)} onChange={() => toggleOne(p.id)} />
       </div>
     ) },
-    ...PENDING_COLUMNS_ALL.filter((c) => visibleCols.includes(c.key)).map((c) => ({
-      key: c.key, title: c.title, width: c.key === "name" ? 260 : undefined, render: columnRenderers[c.key],
-    })),
+    ...PENDING_COLUMNS_ALL.filter((c) => visibleCols.includes(c.key)).map((c) => ({ key: c.key, title: c.title, render: columnRenderers[c.key] })),
     { key: "actions", title: "", width: 190, render: (p) => (
       <div className="sk-row sk-gap-2" onClick={(e) => e.stopPropagation()}>
         <Button size="s" variant="accent" mode="secondary" onClick={() => setAssignPerson(p)}>Назначить план</Button>
@@ -406,13 +361,7 @@ function PendingTab({ rows, setRows, onExcludeToOtherTab }) {
     ) },
   ];
 
-  const extraFilterCount = [planTypeFilter, positionFilter, departmentFilter, managerFilter, period].filter(Boolean).length;
-  const hasActiveFilters = extraFilterCount > 0;
-
-  const eventCounts = Object.fromEntries(
-    EVENT_QUICK_FILTERS.map((f) => [f.value, f.value ? rows.filter((p) => p.eventType === f.value).length : rows.length])
-  );
-  const overdueCount = list.filter((p) => { const d = daysSinceEvent(p.eventDate); return d !== null && d > 2; }).length;
+  const hasActiveFilters = !!(eventFilter || period || planTypeFilter);
 
   return (
     <div className="sk-col sk-gap-4">
@@ -420,49 +369,32 @@ function PendingTab({ rows, setRows, onExcludeToOtherTab }) {
         <div className="sk-row sk-gap-2">
           <Input icon={<IconSearch size={20} />} placeholder="Поиск по сотруднику" value={q}
             onChange={(e) => setQ(e.target.value || "")} style={{ maxWidth: 420, flex: 1 }} />
-          <Button mode="secondary" icon={<IconFilter size={16} />} onClick={() => setFiltersOpen((o) => !o)}>
-            Фильтры{hasActiveFilters ? " · " + extraFilterCount : ""}
+          <Button mode="secondary" icon={<IconFilter size={16} />} onClick={() => setFiltersOpen((o) => !o)}
+            style={{ background: "var(--sk-surface-page)", border: "1px solid var(--sk-stroke)" }}>
+            Фильтры{(planTypeFilter || period) ? " · " + [planTypeFilter, period].filter(Boolean).length : ""}
           </Button>
         </div>
         <div className="sk-row sk-gap-2" style={{ flexWrap: "wrap", alignItems: "center" }}>
           {EVENT_QUICK_FILTERS.map((f) => (
-            <EventPill key={f.value || "all"} label={f.label} count={eventCounts[f.value]}
-              active={eventFilter === f.value} onClick={() => setEventFilter(f.value)} />
+            <EventPill key={f.value || "all"} label={f.label} active={eventFilter === f.value} onClick={() => setEventFilter(f.value)} />
           ))}
         </div>
         {filtersOpen && (
           <div className="sk-row sk-gap-2" style={{ flexWrap: "wrap", alignItems: "flex-end" }}>
             <Select label="Тип плана" placeholder="Все" value={planTypeFilter || null}
               options={planTypeOptions.map((v) => ({ value: v, label: v }))}
-              onChange={(v) => setPlanTypeFilter(v || "")} style={{ width: 190 }} />
-            <Select label="Должность" placeholder="Все" value={positionFilter || null}
-              options={positionOptions.map((v) => ({ value: v, label: v }))}
-              onChange={(v) => setPositionFilter(v || "")} style={{ width: 220 }} />
-            <Select label="Подразделение" placeholder="Все" value={departmentFilter || null}
-              options={departmentOptions.map((v) => ({ value: v, label: v }))}
-              onChange={(v) => setDepartmentFilter(v || "")} style={{ width: 240 }} />
-            <Select label="Руководитель" placeholder="Все" value={managerFilter || null}
-              options={managerOptions.map((v) => ({ value: v, label: v }))}
-              onChange={(v) => setManagerFilter(v || "")} style={{ width: 200 }} />
+              onChange={(v) => setPlanTypeFilter(v || "")} style={{ width: 200 }} />
             <PeriodMenu value={period} onChange={setPeriod} />
             {hasActiveFilters && (
-              <button className="sk-link-btn sk-label-4-regular" style={{ height: 48 }}
-                onClick={() => { setPeriod(""); setPlanTypeFilter(""); setPositionFilter(""); setDepartmentFilter(""); setManagerFilter(""); }}>Сбросить</button>
+              <button className="sk-link-btn sk-label-4-regular" style={{ height: 40 }}
+                onClick={() => { setEventFilter(""); setPeriod(""); setPlanTypeFilter(""); }}>Сбросить</button>
             )}
           </div>
         )}
       </div>
 
       <div className="sk-row" style={{ justifyContent: "space-between", alignItems: "center" }}>
-        <div className="sk-row sk-gap-3" style={{ alignItems: "center" }}>
-          <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>В очереди: {list.length}</span>
-          {overdueCount > 0 && (
-            <span className="sk-row sk-gap-1" style={{ alignItems: "center", font: "var(--sk-label-4-regular)", color: "var(--sk-text-negative)" }}>
-              <Icons.IconAlertCircle size={14} />
-              Просрочено: {overdueCount}
-            </span>
-          )}
-        </div>
+        <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>В очереди: {list.length}</span>
         <ColumnsMenu all={PENDING_COLUMNS_ALL} visible={visibleCols}
           onChange={(key) => setVisibleCols((v) => v.includes(key) ? v.filter((k) => k !== key) : [...v, key])} />
       </div>
@@ -553,18 +485,15 @@ function ExcludedTab({ rows, setRows, onRestoreToOtherTab }) {
   }
 
   const columns = [
-    { key: "name", title: "Сотрудник", width: 260, render: (p) => (
+    { key: "name", title: "Сотрудник", render: (p) => (
       <div className="sk-col" style={{ gap: 2 }}>
         <span className="sk-label-3">{p.name}</span>
         <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{p.position}</span>
       </div>
     ) },
-    { key: "eventType", title: "Тип события", render: (p) => (
-      <Tooltip content={p.reason}>
-        <span><Tag size="s" hue={EVENT_META[p.eventType].hue}>{EVENT_META[p.eventType].label}</Tag></span>
-      </Tooltip>
-    ) },
-    { key: "eventDate", title: "Дата события", render: (p) => fmtEventDate(p.eventDate) },
+    { key: "reason", title: "Причина появления в очереди", render: (p) => <span className="sk-label-4-regular" style={{ color: "var(--sk-text-secondary)" }}>{p.reason}</span> },
+    { key: "eventType", title: "Тип события", render: (p) => <Tag size="s" hue={EVENT_META[p.eventType].hue}>{EVENT_META[p.eventType].label}</Tag> },
+    { key: "eventDate", title: "Дата события" },
     { key: "department", title: "Подразделение" },
     { key: "excludeReason", title: "Причина исключения", render: (p) => <span className="sk-label-4-regular" style={{ color: "var(--sk-text-secondary)" }}>{p.excludeReason}</span> },
     { key: "excludedBy", title: "Кто исключил" },
@@ -643,9 +572,10 @@ function Page() {
     <AppShell role="hr" active="hr-queue" base="..">
       <div className="sk-col sk-gap-2">
         <div className="sk-title-4">Очередь назначения</div>
+        <div className="sk-muted">Сотрудники и кандидаты, которым нужно назначить план — по приёму на работу, переводу, возврату из отпуска или началу стажировки.</div>
       </div>
 
-      <Tabs items={[
+      <PillTabs items={[
         { id: "pending", label: "К назначению", count: pendingRows.length },
         { id: "excluded", label: "Исключённые" },
       ]} active={tab} onChange={setTab} />
