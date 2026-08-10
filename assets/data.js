@@ -991,26 +991,31 @@ window.SITE_DATA = {
   window.SITE_DATA.assignmentQueue = [
     {
       id: "q_orlov", name: "Максим Орлов", position: "Специалист поддержки", department: "Дирекция по клиентскому сервису",
+      manager: "Дмитрий Волков",
       eventType: "hire", eventTypeLabel: "Приём на работу", eventDate: "12.08.26",
       reason: "Принят на работу, пребординговый план не назначен", planTypeNeeded: "Пребординг",
     },
     {
       id: "q_frolova", name: "Анастасия Фролова", position: "Менеджер по продажам", department: "Департамент продаж",
+      manager: "Павел Гусев",
       eventType: "hire", eventTypeLabel: "Приём на работу", eventDate: "10.08.26",
       reason: "Принята на работу, план адаптации не назначен", planTypeNeeded: "Адаптация",
     },
     {
       id: "q_gusev", name: "Павел Гусев", position: "Руководитель отдела продаж", department: "Департамент продаж",
+      manager: "Игорь Соловьёв",
       eventType: "transfer", eventTypeLabel: "Перевод", eventDate: "05.08.26",
       reason: "Переведён на руководящую должность, план перехода не назначен", planTypeNeeded: "Внутренний переход",
     },
     {
       id: "q_belova", name: "Кристина Белова", position: "Младший разработчик", department: "Основной отдел разработки frontend",
+      manager: "Анна Козлова",
       eventType: "return", eventTypeLabel: "Возврат из отпуска", eventDate: "03.08.26",
       reason: "Вернулась из длительного отпуска, план адаптации не назначен", planTypeNeeded: "Адаптация",
     },
     {
       id: "q_nikitin", name: "Артём Никитин", position: "Стажёр-аналитик", department: "Департамент аналитики",
+      manager: "Елена Иванова",
       eventType: "internship", eventTypeLabel: "Стажировка", eventDate: "01.08.26",
       reason: "Начинает стажировку, план стажировки не назначен", planTypeNeeded: "Стажировка",
     },
@@ -1019,11 +1024,13 @@ window.SITE_DATA = {
   window.SITE_DATA.assignmentQueueExcluded = [
     {
       id: "qe_titova", name: "Ольга Титова", position: "Менеджер по продажам", department: "Департамент продаж",
+      manager: "Павел Гусев",
       eventType: "hire", eventTypeLabel: "Приём на работу", eventDate: "28.07.26", planTypeNeeded: "Адаптация",
       reason: "Принята на работу, план адаптации не назначен", excludeReason: "Оффер отозван, кандидат не выйдет", excludedBy: "Ольга Соколова", excludedByType: "user",
     },
     {
       id: "qe_gromov", name: "Сергей Громов", position: "Младший разработчик", department: "Основной отдел разработки frontend",
+      manager: "Анна Козлова",
       eventType: "internship", eventTypeLabel: "Стажировка", eventDate: "20.07.26", planTypeNeeded: "Стажировка",
       reason: "Начинает стажировку, план стажировки не назначен", excludeReason: "Дублирующая запись из мастер-системы", excludedBy: "Автоматически", excludedByType: "auto",
     },
