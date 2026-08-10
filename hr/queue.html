@@ -1,0 +1,538 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Очередь назначения — Skillaz Start</title>
+<link rel="stylesheet" href="../assets/styles.css" />
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" crossorigin="anonymous"></script>
+<script src="../assets/ds_bundle.js"></script>
+<script src="../assets/data.js"></script>
+<script type="text/babel" src="../assets/shell.js"></script>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { Card, Tag, Table, Tabs, Input, Select, Button, Tooltip, Modal, Radio, Snackbar, Alert } = window.SkillazCoreDesignSystem_bf9566;
+const { AppShell, Icons } = window.Site;
+const {
+  IconSearch, IconFilter, IconUserX, IconInbox, IconChevronDown, IconLayers, IconCalendar,
+} = Icons;
+
+const D = window.SITE_DATA;
+
+// ---- Событие: тип + иконка + акцентный цвет тега (см. hr/plans.html — тот же принцип
+// компактных подписей вместо тяжёлой раскраски таблицы). ----
+const EVENT_META = {
+  hire: { label: "Приём на работу", hue: "accent" },
+  transfer: { label: "Перевод", hue: "special" },
+  return: { label: "Возврат из отпуска", hue: "positive" },
+  internship: { label: "Стажировка", hue: "warning" },
+};
+const EVENT_QUICK_FILTERS = [
+  { value: "", label: "Все события" },
+  { value: "hire", label: "Приём на работу" },
+  { value: "transfer", label: "Перевод" },
+  { value: "return", label: "Возврат из отпуска" },
+  { value: "internship", label: "Стажировка" },
+];
+
+// ---- Плавающая панель-чекбокс для настройки видимости столбцов — тот же паттерн
+// плавающей панели, что и GroupByMenu в hr/plans.html (радио вместо чекбоксов там,
+// здесь — множественный выбор). ----
+function ColumnsMenu({ all, visible, onChange }) {
+  const { Checkbox } = window.SkillazCoreDesignSystem_bf9566;
+  const [open, setOpen] = React.useState(false);
+  const ref = React.useRef(null);
+  React.useEffect(() => {
+    function onDocClick(e) { if (ref.current && !ref.current.contains(e.target)) setOpen(false); }
+    document.addEventListener("mousedown", onDocClick);
+    return () => document.removeEventListener("mousedown", onDocClick);
+  }, []);
+  return (
+    <div ref={ref} style={{ position: "relative" }}>
+      <Button mode="secondary" icon={<Icons.IconColumns size={16} />} onClick={() => setOpen((o) => !o)}>Столбцы</Button>
+      {open && (
+        <div className="sk-scroll" style={{
+          position: "absolute", top: "calc(100% + 6px)", right: 0, zIndex: 50, background: "var(--sk-surface-page)",
+          borderRadius: "var(--sk-radius-3)", boxShadow: "var(--sk-shadow-m)", padding: 8, minWidth: 240, maxHeight: 360, overflowY: "auto",
+        }}>
+          <div className="sk-col sk-gap-1">
+            {all.map((col) => (
+              <div key={col.key} style={{ padding: "8px 10px", borderRadius: "var(--sk-radius-2)" }}>
+                <Checkbox
+                  checked={visible.includes(col.key)}
+                  disabled={col.locked}
+                  label={col.title}
+                  onChange={() => onChange(col.key)}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ---- Быстрые пресеты периода — date picker пока не в UI-ките как range, поэтому
+// период собран как плавающая панель с пресетами + двумя одиночными DatePicker
+// (тот же принцип, что GroupByMenu/ColumnsMenu выше). ----
+const PERIOD_PRESETS = [
+  { id: "today", label: "Сегодня" },
+  { id: "week", label: "Неделя" },
+  { id: "month", label: "Месяц" },
+  { id: "quarter", label: "Квартал" },
+  { id: "custom", label: "Свой период" },
+];
+function PeriodMenu({ value, onChange }) {
+  const [open, setOpen] = React.useState(false);
+  const ref = React.useRef(null);
+  React.useEffect(() => {
+    function onDocClick(e) { if (ref.current && !ref.current.contains(e.target)) setOpen(false); }
+    document.addEventListener("mousedown", onDocClick);
+    return () => document.removeEventListener("mousedown", onDocClick);
+  }, []);
+  const current = PERIOD_PRESETS.find((p) => p.id === value) || null;
+  return (
+    <div ref={ref} style={{ position: "relative" }}>
+      <Button mode="secondary" icon={<IconCalendar size={16} />} onClick={() => setOpen((o) => !o)}>
+        {current ? current.label : "Дата события"}
+      </Button>
+      {open && (
+        <div style={{
+          position: "absolute", top: "calc(100% + 6px)", left: 0, zIndex: 50, background: "var(--sk-surface-page)",
+          borderRadius: "var(--sk-radius-3)", boxShadow: "var(--sk-shadow-m)", padding: 8, minWidth: 200,
+        }}>
+          <div className="sk-col sk-gap-1">
+            {PERIOD_PRESETS.map((p) => (
+              <div key={p.id} style={{ padding: "8px 10px", borderRadius: "var(--sk-radius-2)" }}>
+                <Radio checked={value === p.id} onChange={() => { onChange(p.id); setOpen(false); }} label={p.label} />
+              </div>
+            ))}
+            {value && (
+              <button className="sk-link-btn sk-label-4-regular" style={{ padding: "8px 10px", textAlign: "left" }}
+                onClick={() => { onChange(""); setOpen(false); }}>Сбросить</button>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ---- Модалка: выбор способа назначения (создать с нуля / выбрать шаблон) — единичное
+// назначение, сценарий из "Проектное решение" п. 11.4. ----
+function AssignModal({ person, onClose, onAssign }) {
+  const activeTemplates = D.templates.filter((t) => t.status === "active");
+  const [mode, setMode] = React.useState("template"); // template | scratch
+  const [templateId, setTemplateId] = React.useState(null);
+  return (
+    <Modal open title={"Назначить план: " + person.name} onClose={onClose} size="m"
+      secondary={<Button mode="secondary" onClick={onClose}>Отмена</Button>}
+      primary={<Button variant="accent" disabled={mode === "template" && !templateId} onClick={() => onAssign(mode, templateId)}>
+        {mode === "template" ? "Назначить шаблон" : "Создать с нуля"}
+      </Button>}>
+      <div className="sk-col sk-gap-4">
+        <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>
+          Нужен план типа «{person.planTypeNeeded}». Выберите готовый шаблон или создайте план с нуля — дальше откроется конструктор индивидуального плана.
+        </div>
+        <div className="sk-row sk-gap-2">
+          <Card bordered padding={12} style={{ flex: 1, cursor: "pointer", outline: mode === "template" ? "2px solid var(--sk-stroke-accent)" : "none" }}>
+            <div onClick={() => setMode("template")} className="sk-label-3">Выбрать шаблон</div>
+          </Card>
+          <Card bordered padding={12} style={{ flex: 1, cursor: "pointer", outline: mode === "scratch" ? "2px solid var(--sk-stroke-accent)" : "none" }}>
+            <div onClick={() => setMode("scratch")} className="sk-label-3">Создать с нуля</div>
+          </Card>
+        </div>
+        {mode === "template" && (
+          <Select label="Шаблон плана" placeholder="Выберите шаблон" value={templateId}
+            options={activeTemplates.filter((t) => t.planType === person.planTypeNeeded).length
+              ? activeTemplates.filter((t) => t.planType === person.planTypeNeeded).map((t) => ({ value: t.id, label: t.name }))
+              : activeTemplates.map((t) => ({ value: t.id, label: t.name + " · " + t.planType }))}
+            onChange={setTemplateId} />
+        )}
+      </div>
+    </Modal>
+  );
+}
+
+// ---- Модалка: массовое назначение одного шаблона нескольким выбранным сотрудникам. ----
+function BulkAssignModal({ people, onClose, onAssign }) {
+  const activeTemplates = D.templates.filter((t) => t.status === "active");
+  const [templateId, setTemplateId] = React.useState(null);
+  const planTypes = [...new Set(people.map((p) => p.planTypeNeeded))];
+  const mixedTypes = planTypes.length > 1;
+  return (
+    <Modal open title={"Назначить план: выбрано " + people.length} onClose={onClose} size="m"
+      secondary={<Button mode="secondary" onClick={onClose}>Отмена</Button>}
+      primary={<Button variant="accent" disabled={!templateId} onClick={() => onAssign(templateId)}>Назначить всем</Button>}>
+      <div className="sk-col sk-gap-4">
+        {mixedTypes ? (
+          <Alert hue="warning" title="Разные типы плана в выборке">
+            У выбранных сотрудников нужны разные типы плана ({planTypes.join(", ")}). Один шаблон подойдёт не всем — проверьте список перед назначением или разбейте выбор по типу плана.
+          </Alert>
+        ) : (
+          <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>
+            Всем выбранным сотрудникам нужен план типа «{planTypes[0]}». Выберите один шаблон — каждому будет создана своя копия плана.
+          </div>
+        )}
+        <Select label="Шаблон плана" placeholder="Выберите шаблон" value={templateId}
+          options={activeTemplates.map((t) => ({ value: t.id, label: t.name + " · " + t.planType }))}
+          onChange={setTemplateId} />
+        <div className="sk-scroll" style={{ maxHeight: 180, overflowY: "auto" }}>
+          <div className="sk-col sk-gap-1">
+            {people.map((p) => (
+              <div key={p.id} className="sk-row sk-gap-2" style={{ justifyContent: "space-between", padding: "6px 0" }}>
+                <span className="sk-label-4-regular">{p.name}</span>
+                <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{p.planTypeNeeded}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
+function ExcludeModal({ people, onClose, onConfirm }) {
+  const { Textarea } = window.SkillazCoreDesignSystem_bf9566;
+  const [reason, setReason] = React.useState("");
+  const many = people.length > 1;
+  return (
+    <Modal open title={many ? "Исключить из очереди: " + people.length : "Исключить из очереди"} onClose={onClose} size="s"
+      secondary={<Button mode="secondary" onClick={onClose}>Отмена</Button>}
+      primary={<Button variant="negative" disabled={!reason.trim()} onClick={() => onConfirm(reason)}>Исключить</Button>}>
+      <div className="sk-col sk-gap-3">
+        <div className="sk-muted">{many ? "Сотрудники" : people[0].name} перестан{many ? "ут" : "ет"} числиться в очереди на назначение плана. Вернуть в ожидание можно из вкладки «Исключённые».</div>
+        <Textarea label="Причина исключения" required rows={3} value={reason} onChange={(e) => setReason(e.target.value || "")} placeholder="Например: оффер отозван" />
+      </div>
+    </Modal>
+  );
+}
+
+// ------------------------------ Вкладка "К назначению" ------------------------------
+const PENDING_COLUMNS_ALL = [
+  { key: "name", title: "Сотрудник", locked: true },
+  { key: "reason", title: "Причина появления в очереди" },
+  { key: "eventType", title: "Тип события" },
+  { key: "eventDate", title: "Дата события" },
+  { key: "department", title: "Подразделение" },
+  { key: "position", title: "Должность" },
+  { key: "planType", title: "Тип плана" },
+];
+
+function PendingTab({ rows, setRows, onExcludeToOtherTab }) {
+  const [q, setQ] = React.useState("");
+  const [eventFilter, setEventFilter] = React.useState("");
+  const [period, setPeriod] = React.useState("");
+  const [selected, setSelected] = React.useState(() => new Set());
+  const [visibleCols, setVisibleCols] = React.useState(PENDING_COLUMNS_ALL.map((c) => c.key));
+  const [assignPerson, setAssignPerson] = React.useState(null);
+  const [bulkAssign, setBulkAssign] = React.useState(false);
+  const [excludeTargets, setExcludeTargets] = React.useState(null);
+  const [toast, setToast] = React.useState(null);
+
+  function showToast(msg) { setToast(msg); window.setTimeout(() => setToast(null), 2600); }
+
+  const needle = q.trim().toLowerCase();
+  const list = rows.filter((p) => {
+    if (needle && !p.name.toLowerCase().includes(needle)) return false;
+    if (eventFilter && p.eventType !== eventFilter) return false;
+    return true;
+  });
+
+  const allSelected = list.length > 0 && list.every((p) => selected.has(p.id));
+  function toggleAll() {
+    setSelected((s) => {
+      const n = new Set(s);
+      if (allSelected) list.forEach((p) => n.delete(p.id));
+      else list.forEach((p) => n.add(p.id));
+      return n;
+    });
+  }
+  function toggleOne(id) {
+    setSelected((s) => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  }
+
+  function removeFromQueue(ids) {
+    setRows((r) => r.filter((p) => !ids.includes(p.id)));
+    setSelected((s) => { const n = new Set(s); ids.forEach((id) => n.delete(id)); return n; });
+  }
+
+  function handleAssign(mode, templateId) {
+    showToast(mode === "template" ? "Шаблон назначен — открываем план для настройки" : "План создаётся с нуля — открываем конструктор");
+    removeFromQueue([assignPerson.id]);
+    setAssignPerson(null);
+  }
+  function handleBulkAssign(templateId) {
+    const ids = [...selected];
+    showToast("Шаблон назначен " + ids.length + " сотрудникам");
+    removeFromQueue(ids);
+    setBulkAssign(false);
+  }
+  function handleExclude(reason) {
+    const ids = excludeTargets.map((p) => p.id);
+    showToast(ids.length > 1 ? "Исключены из очереди: " + ids.length : "Сотрудник исключён из очереди");
+    onExcludeToOtherTab(excludeTargets, reason);
+    removeFromQueue(ids);
+    setExcludeTargets(null);
+  }
+
+  const columnRenderers = {
+    name: (p) => (
+      <div className="sk-col" style={{ gap: 2 }}>
+        <span className="sk-label-3">{p.name}</span>
+        <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{p.position}</span>
+      </div>
+    ),
+    reason: (p) => <span className="sk-label-4-regular" style={{ color: "var(--sk-text-secondary)" }}>{p.reason}</span>,
+    eventType: (p) => <Tag size="s" hue={EVENT_META[p.eventType].hue}>{EVENT_META[p.eventType].label}</Tag>,
+    eventDate: (p) => p.eventDate,
+    department: (p) => p.department,
+    position: (p) => p.position,
+    planType: (p) => <Tag size="s" hue="neutral">{p.planTypeNeeded}</Tag>,
+  };
+
+  const columns = [
+    { key: "__check", title: "", width: 40, render: (p) => (
+      <div onClick={(e) => e.stopPropagation()}>
+        <window.SkillazCoreDesignSystem_bf9566.Checkbox checked={selected.has(p.id)} onChange={() => toggleOne(p.id)} />
+      </div>
+    ) },
+    ...PENDING_COLUMNS_ALL.filter((c) => visibleCols.includes(c.key)).map((c) => ({ key: c.key, title: c.title, render: columnRenderers[c.key] })),
+    { key: "actions", title: "", width: 190, render: (p) => (
+      <div className="sk-row sk-gap-2" onClick={(e) => e.stopPropagation()}>
+        <Button size="s" variant="accent" mode="secondary" onClick={() => setAssignPerson(p)}>Назначить план</Button>
+        <Tooltip content="Исключить из очереди">
+          <Button size="s" mode="tertiary" onClick={() => setExcludeTargets([p])}><IconUserX size={15} /></Button>
+        </Tooltip>
+      </div>
+    ) },
+  ];
+
+  const hasActiveFilters = !!(eventFilter || period);
+
+  return (
+    <div className="sk-col sk-gap-4">
+      <div className="sk-col sk-gap-3">
+        <div className="sk-row sk-gap-2">
+          <Input icon={<IconSearch size={20} />} placeholder="Поиск по сотруднику" value={q}
+            onChange={(e) => setQ(e.target.value || "")} style={{ flex: 1 }} />
+          <ColumnsMenu all={PENDING_COLUMNS_ALL} visible={visibleCols}
+            onChange={(key) => setVisibleCols((v) => v.includes(key) ? v.filter((k) => k !== key) : [...v, key])} />
+        </div>
+        <div className="sk-row sk-gap-2" style={{ flexWrap: "wrap", alignItems: "center" }}>
+          {EVENT_QUICK_FILTERS.map((f) => (
+            <button key={f.value || "all"} onClick={() => setEventFilter(f.value)}
+              className="sk-label-4-regular"
+              style={{
+                padding: "8px 14px", borderRadius: "var(--sk-radius-full, 999px)", cursor: "pointer", border: "none",
+                background: eventFilter === f.value ? "var(--sk-accent-secondary)" : "var(--graphite-graphite-97)",
+                color: eventFilter === f.value ? "var(--sk-text-accent)" : "var(--sk-text-secondary)",
+              }}>
+              {f.label}
+            </button>
+          ))}
+          <PeriodMenu value={period} onChange={setPeriod} />
+          {hasActiveFilters && (
+            <button className="sk-link-btn sk-label-4-regular" onClick={() => { setEventFilter(""); setPeriod(""); }}>Сбросить</button>
+          )}
+        </div>
+      </div>
+
+      <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>В очереди: {list.length}</span>
+
+      {list.length === 0 ? (
+        <Card><div className="sk-col sk-gap-2" style={{ alignItems: "center", textAlign: "center", padding: "32px 0" }}>
+          <IconInbox size={28} color="var(--sk-icon-secondary)" />
+          <div className="sk-label-3">Очередь пуста</div>
+          <div className="sk-muted">Все сотрудники и кандидаты, требующие плана, уже назначены.</div>
+        </div></Card>
+      ) : (
+        <div className="sk-col sk-gap-2">
+          <div className="sk-row sk-gap-2" style={{ alignItems: "center", padding: "0 4px" }}>
+            <window.SkillazCoreDesignSystem_bf9566.Checkbox checked={allSelected} onChange={toggleAll} label={<span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Выбрать все</span>} />
+          </div>
+          <div className="sk-scroll" style={{ overflowX: "auto" }}>
+            <Table columns={columns} rows={list} style={{ minWidth: 1180 }} />
+          </div>
+        </div>
+      )}
+
+      {selected.size > 0 && (
+        <div style={{
+          position: "fixed", left: "50%", bottom: 24, transform: "translateX(-50%)", zIndex: 90,
+          display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", borderRadius: "var(--sk-radius-4)",
+          background: "var(--sk-text-primary)", boxShadow: "var(--sk-shadow-l)", color: "#fff",
+        }}>
+          <span className="sk-label-3" style={{ color: "#fff", whiteSpace: "nowrap" }}>Выбрано: {selected.size}</span>
+          <Button variant="accent" onClick={() => setBulkAssign(true)}>Назначить план</Button>
+          <Button mode="secondary" onClick={() => setExcludeTargets(list.filter((p) => selected.has(p.id)))}>Исключить</Button>
+          <IconButtonClose onClick={() => setSelected(new Set())} />
+        </div>
+      )}
+
+      {assignPerson && <AssignModal person={assignPerson} onClose={() => setAssignPerson(null)} onAssign={handleAssign} />}
+      {bulkAssign && <BulkAssignModal people={list.filter((p) => selected.has(p.id))} onClose={() => setBulkAssign(false)} onAssign={handleBulkAssign} />}
+      {excludeTargets && <ExcludeModal people={excludeTargets} onClose={() => setExcludeTargets(null)} onConfirm={handleExclude} />}
+      {toast && (
+        <div style={{ position: "fixed", bottom: 24, left: "50%", transform: "translateX(-50%)", zIndex: 100 }}>
+          <Snackbar>{toast}</Snackbar>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function IconButtonClose({ onClick }) {
+  return (
+    <button onClick={onClick} style={{
+      width: 32, height: 32, borderRadius: "50%", border: "none", background: "rgba(255,255,255,0.12)",
+      color: "#fff", display: "inline-flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0,
+    }}>
+      <Icons.IconX size={16} />
+    </button>
+  );
+}
+
+// ------------------------------ Вкладка "Исключённые" ------------------------------
+const EXCLUDED_INITIATOR = {
+  user: { label: "Пользователь" },
+  auto: { label: "Автоматически" },
+};
+
+function ExcludedTab({ rows, setRows, onRestoreToOtherTab }) {
+  const [q, setQ] = React.useState("");
+  const [filtersOpen, setFiltersOpen] = React.useState(false);
+  const [filters, setFilters] = React.useState({ eventType: "", department: "", initiator: "" });
+  const [toast, setToast] = React.useState(null);
+
+  function showToast(msg) { setToast(msg); window.setTimeout(() => setToast(null), 2600); }
+
+  const departments = [...new Set(rows.map((p) => p.department))];
+  const hasActiveFilters = !!(filters.eventType || filters.department || filters.initiator);
+
+  const needle = q.trim().toLowerCase();
+  const list = rows.filter((p) => {
+    if (needle && !p.name.toLowerCase().includes(needle)) return false;
+    if (filters.eventType && p.eventType !== filters.eventType) return false;
+    if (filters.department && p.department !== filters.department) return false;
+    if (filters.initiator && p.excludedByType !== filters.initiator) return false;
+    return true;
+  });
+
+  function restore(p) {
+    setRows((r) => r.filter((x) => x.id !== p.id));
+    onRestoreToOtherTab(p);
+    showToast(p.name + " возвращён(а) в ожидание назначения — снова в списке «К назначению»");
+  }
+
+  const columns = [
+    { key: "name", title: "Сотрудник", render: (p) => (
+      <div className="sk-col" style={{ gap: 2 }}>
+        <span className="sk-label-3">{p.name}</span>
+        <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{p.position}</span>
+      </div>
+    ) },
+    { key: "reason", title: "Причина появления в очереди", render: (p) => <span className="sk-label-4-regular" style={{ color: "var(--sk-text-secondary)" }}>{p.reason}</span> },
+    { key: "eventType", title: "Тип события", render: (p) => <Tag size="s" hue={EVENT_META[p.eventType].hue}>{EVENT_META[p.eventType].label}</Tag> },
+    { key: "eventDate", title: "Дата события" },
+    { key: "department", title: "Подразделение" },
+    { key: "excludeReason", title: "Причина исключения", render: (p) => <span className="sk-label-4-regular" style={{ color: "var(--sk-text-secondary)" }}>{p.excludeReason}</span> },
+    { key: "excludedBy", title: "Кто исключил" },
+    { key: "actions", title: "", width: 170, render: (p) => (
+      <div onClick={(e) => e.stopPropagation()}>
+        <Button size="s" mode="secondary" onClick={() => restore(p)}>Вернуть в ожидание</Button>
+      </div>
+    ) },
+  ];
+
+  return (
+    <div className="sk-col sk-gap-4">
+      <div className="sk-col sk-gap-3">
+        <div className="sk-row sk-gap-2">
+          <Input icon={<IconSearch size={20} />} placeholder="Поиск по сотруднику" value={q}
+            onChange={(e) => setQ(e.target.value || "")} style={{ flex: 1 }} />
+          <Button mode="secondary" icon={<IconFilter size={16} />} onClick={() => setFiltersOpen((o) => !o)}>
+            Фильтры{hasActiveFilters ? " · " + Object.values(filters).filter(Boolean).length : ""}
+          </Button>
+        </div>
+        {filtersOpen && (
+          <div className="sk-row sk-gap-2" style={{ flexWrap: "wrap", alignItems: "flex-end" }}>
+            <Select label="Тип события" placeholder="Все" value={filters.eventType || null}
+              options={Object.entries(EVENT_META).map(([v, m]) => ({ value: v, label: m.label }))}
+              onChange={(v) => setFilters((f) => ({ ...f, eventType: v || "" }))} style={{ width: 200 }} />
+            <Select label="Подразделение" placeholder="Все" value={filters.department || null} options={departments.map((v) => ({ value: v, label: v }))}
+              onChange={(v) => setFilters((f) => ({ ...f, department: v || "" }))} style={{ width: 240 }} />
+            <Select label="Инициатор" placeholder="Все" value={filters.initiator || null}
+              options={[{ value: "user", label: "Пользователь" }, { value: "auto", label: "Автоматически" }]}
+              onChange={(v) => setFilters((f) => ({ ...f, initiator: v || "" }))} style={{ width: 180 }} />
+            {(hasActiveFilters || q) && (
+              <button className="sk-link-btn sk-label-4-regular" style={{ height: 48 }} onClick={() => { setFilters({ eventType: "", department: "", initiator: "" }); setQ(""); }}>Сбросить</button>
+            )}
+          </div>
+        )}
+      </div>
+
+      <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Исключено: {list.length}</span>
+
+      {list.length === 0 ? (
+        <Card><div className="sk-muted" style={{ textAlign: "center", padding: "16px 0" }}>Никого не исключали — или ничего не нашлось по текущим фильтрам.</div></Card>
+      ) : (
+        <div className="sk-scroll" style={{ overflowX: "auto" }}>
+          <Table columns={columns} rows={list} style={{ minWidth: 1260 }} />
+        </div>
+      )}
+
+      {toast && (
+        <div style={{ position: "fixed", bottom: 24, left: "50%", transform: "translateX(-50%)", zIndex: 100 }}>
+          <Snackbar>{toast}</Snackbar>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function Page() {
+  const [tab, setTab] = React.useState("pending");
+  const [pendingRows, setPendingRows] = React.useState(D.assignmentQueue);
+  const [excludedRows, setExcludedRows] = React.useState(D.assignmentQueueExcluded);
+
+  function excludeToOtherTab(people, reason) {
+    const moved = people.map((p) => ({
+      id: p.id, name: p.name, position: p.position, department: p.department,
+      eventType: p.eventType, eventTypeLabel: p.eventTypeLabel, eventDate: p.eventDate,
+      reason: p.reason, excludeReason: reason, excludedBy: "Елена Иванова", excludedByType: "user",
+    }));
+    setExcludedRows((r) => [...moved, ...r]);
+  }
+  function restoreToPending(person) {
+    const { excludeReason, excludedBy, excludedByType, ...rest } = person;
+    setPendingRows((r) => [rest, ...r]);
+  }
+
+  return (
+    <AppShell role="hr" active="hr-queue" base="..">
+      <div className="sk-col sk-gap-2">
+        <div className="sk-title-4">Очередь назначения</div>
+        <div className="sk-muted">Сотрудники и кандидаты, которым нужно назначить план — по приёму на работу, переводу, возврату из отпуска или началу стажировки.</div>
+      </div>
+
+      <Tabs items={[
+        { id: "pending", label: "К назначению", count: pendingRows.length },
+        { id: "excluded", label: "Исключённые" },
+      ]} active={tab} onChange={setTab} />
+
+      {tab === "pending"
+        ? <PendingTab rows={pendingRows} setRows={setPendingRows} onExcludeToOtherTab={excludeToOtherTab} />
+        : <ExcludedTab rows={excludedRows} setRows={setExcludedRows} onRestoreToOtherTab={restoreToPending} />}
+    </AppShell>
+  );
+}
+ReactDOM.createRoot(document.getElementById("root")).render(<Page />);
+</script>
+</body>
+</html>
