@@ -719,6 +719,63 @@ function SubgoalCreateModal({ onClose, onCreate }) {
 }
 
 // ---------------- Дровер подцели (редактирование / просмотр / подтверждение-возврат) ----------------
+// ---------------- Оценочный лист: критерии практического навыка, которые проверяющий
+// заполняет перед подтверждением/возвратом подцели на доработку. Бизнес-смысл — не дать
+// подтвердить "на глаз": фиксирует, какие именно элементы стандарта продемонстрированы,
+// и даёт сотруднику понятную обратную связь по каждому пункту. ----------------
+function AssessmentChecklistCard({ checklist, onChange, readOnly }) {
+  const criteria = checklist.criteria || [];
+  const answeredCount = criteria.filter(c => c.checked !== null).length;
+  const allAnswered = answeredCount === criteria.length && criteria.length > 0;
+
+  function setCriterion(id, value) {
+    onChange({ ...checklist, criteria: criteria.map(c => c.id === id ? { ...c, checked: value } : c), submitted: false });
+  }
+
+  return (
+    <div className="sk-col sk-gap-3">
+      <div className="sk-row sk-gap-2" style={{ alignItems: "flex-start" }}>
+        <div className="sk-label-3">{checklist.title || "Оценочный лист"}</div>
+      </div>
+      {checklist.hint && (
+        <Alert hue="neutral">{checklist.hint}</Alert>
+      )}
+      <div className="sk-col sk-gap-2">
+        {criteria.map(c => (
+          <div key={c.id} className="sk-row sk-gap-3" style={{
+            alignItems: "center", justifyContent: "space-between", padding: 10,
+            border: "1px solid var(--sk-stroke)", borderRadius: "var(--sk-radius-3)", background: "var(--sk-surface-page)",
+          }}>
+            <span className="sk-label-4" style={{ flex: 1 }}>{c.label}</span>
+            {readOnly ? (
+              <Tag size="s" hue={c.checked ? "positive" : "negative"}>{c.checked ? "Да" : "Нет"}</Tag>
+            ) : (
+              <div className="sk-row sk-gap-2">
+                <Button size="s" mode={c.checked === true ? "primary" : "secondary"} variant={c.checked === true ? "positive" : "neutral"}
+                  onClick={() => setCriterion(c.id, true)}>Да</Button>
+                <Button size="s" mode={c.checked === false ? "primary" : "secondary"} variant={c.checked === false ? "negative" : "neutral"}
+                  onClick={() => setCriterion(c.id, false)}>Нет</Button>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+      {!readOnly && (
+        <Textarea label="Комментарий к оценке" rows={2} placeholder="Необязательно: что стоит отметить отдельно"
+          value={checklist.note || ""} onChange={(e) => onChange({ ...checklist, note: e.target.value || "" })} />
+      )}
+      {readOnly && checklist.note && (
+        <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{checklist.note}</div>
+      )}
+      {!readOnly && !allAnswered && (
+        <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>
+          Отмечено {answeredCount} из {criteria.length} — заполните все пункты, чтобы подтвердить или вернуть подцель на доработку.
+        </div>
+      )}
+    </div>
+  );
+}
+
 function SubgoalDrawer({ plan, goal, subgoal, onClose, onChange, onOpenChecklistPicker, onUnlinkChecklist, onAddComment, onConfirm, onReturn, onNotDone }) {
   const [comment, setComment] = React.useState("");
   const editable = !plan.employeeStarted;
@@ -729,6 +786,11 @@ function SubgoalDrawer({ plan, goal, subgoal, onClose, onChange, onOpenChecklist
   const isReview = plan.employeeStarted && subgoal.status === "pending_review" && isDefaultReviewer;
   const canMarkNotDone = plan.employeeStarted && subgoal.status === "pending_review";
   const links = (subgoal.checklistRefs || []).map(id => findChecklistItem(plan, id)).filter(Boolean);
+  // Оценочный лист — обязателен перед подтверждением/возвратом, если он есть у подцели
+  // (не у всех подцелей он нужен — только там, где важно зафиксировать практический навык).
+  const needsAssessment = !!subgoal.assessmentChecklist;
+  const assessmentCriteria = needsAssessment ? (subgoal.assessmentChecklist.criteria || []) : [];
+  const assessmentComplete = !needsAssessment || (assessmentCriteria.length > 0 && assessmentCriteria.every(c => c.checked !== null));
 
   return (
     <Drawer open title={editable ? undefined : goal.title} onClose={onClose} size="s">
@@ -785,6 +847,13 @@ function SubgoalDrawer({ plan, goal, subgoal, onClose, onChange, onOpenChecklist
           </div>
         </CollapsibleSection>
 
+        {subgoal.assessmentChecklist && (isReview || subgoal.status === "done") && (
+          <CollapsibleSection title="Оценочный лист">
+            <AssessmentChecklistCard checklist={subgoal.assessmentChecklist} readOnly={!isReview}
+              onChange={(next) => onChange({ assessmentChecklist: next })} />
+          </CollapsibleSection>
+        )}
+
         <div className="sk-col sk-gap-3">
           <div className="sk-label-3">Комментарии</div>
           <Textarea placeholder="Написать комментарий" rows={2} value={comment} onChange={(e) => setComment(e.target.value || "")} />
@@ -806,9 +875,12 @@ function SubgoalDrawer({ plan, goal, subgoal, onClose, onChange, onOpenChecklist
         {isReview && (
           <div className="sk-col sk-gap-2" style={{ position: "sticky", bottom: 0, background: "var(--sk-surface-page)", paddingTop: 8 }}>
             <Divider />
+            {needsAssessment && !assessmentComplete && (
+              <Alert hue="warning">Сначала заполните оценочный лист выше — все пункты обязательны для подтверждения или возврата на доработку.</Alert>
+            )}
             <div className="sk-row sk-gap-2" style={{ flexWrap: "wrap" }}>
-              <Button onClick={onConfirm}>Подтвердить</Button>
-              <Button mode="secondary" onClick={onReturn}>Вернуть в работу</Button>
+              <Button disabled={needsAssessment && !assessmentComplete} onClick={onConfirm}>Подтвердить</Button>
+              <Button mode="secondary" disabled={needsAssessment && !assessmentComplete} onClick={onReturn}>Вернуть в работу</Button>
               <Button mode="tertiary" variant="negative" onClick={onNotDone}>Отметить не выполненной</Button>
             </div>
           </div>
