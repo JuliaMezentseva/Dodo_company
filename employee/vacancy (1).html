@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Вакансия — Skillaz Start</title>
+<link rel="stylesheet" href="../assets/styles.css" />
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" crossorigin="anonymous"></script>
+<script src="../assets/ds_bundle.js"></script>
+<script src="../assets/data.js"></script>
+<script type="text/babel" src="../assets/shell.js"></script>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { Card, Tag, TextList, Divider, Modal, Input, Textarea, Button, Avatar, Snackbar, Alert } = window.SkillazCoreDesignSystem_bf9566;
+const { AppShell, Icons } = window.Site;
+const { IconArrowLeft, IconMapPin, IconMail, IconPhone, IconUpload, IconFileText, IconTarget, IconCheck, IconGift, IconLayers, IconClock, IconPlusSm, IconBriefcase } = Icons;
+const D = window.SITE_DATA;
+
+function fmtMoney(n) { return n.toLocaleString("ru-RU"); }
+function vacancyIdFromUrl() {
+  const id = new URLSearchParams(window.location.search).get("id");
+  return D.vacancies.find(v => v.id === id) ? id : D.vacancies[0].id;
+}
+
+function DetailRow({ label, value }) {
+  return (
+    <div className="sk-row" style={{ justifyContent: "space-between", padding: "6px 0" }}>
+      <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{label}</span>
+      <span className="sk-label-4">{value}</span>
+    </div>
+  );
+}
+
+function Page() {
+  const vacancy = D.vacancies.find(v => v.id === vacancyIdFromUrl());
+  const closed = vacancy.status === "closed";
+  const [responses, setResponses] = React.useState(D.myResponses);
+  const [modalOpen, setModalOpen] = React.useState(false);
+  const [toast, setToast] = React.useState(null);
+  const myResponse = responses.find(r => r.vacancyId === vacancy.id);
+
+  function showToast(msg) {
+    setToast(msg);
+    window.setTimeout(() => setToast(null), 3200);
+  }
+
+  function handleSubmitted() {
+    setResponses(rs => [...rs, { vacancyId: vacancy.id, date: "12.03.26", status: "response_received" }]);
+    setModalOpen(false);
+    showToast("Отклик отправлен. Уведомим вас об изменении статуса.");
+  }
+
+  const ApplyCta = ({ block }) => {
+    if (closed) return <Button disabled style={block ? { width: "100%" } : undefined}>Вакансия закрыта</Button>;
+    if (myResponse) return (
+      <a href="my-responses.html" style={{ textDecoration: "none" }}>
+        <Button mode="secondary" icon={<IconCheck size={16} />} style={block ? { width: "100%" } : undefined}>Отклик отправлен</Button>
+      </a>
+    );
+    return <Button variant="accent" onClick={() => setModalOpen(true)} style={block ? { width: "100%" } : undefined}>Откликнуться</Button>;
+  };
+
+  return (
+    <AppShell role="employee" active="vacancies" base=".."
+      breadcrumb={<a href="vacancies.html" className="sk-row sk-gap-1" style={{ color: "var(--sk-text-secondary)" }}><IconArrowLeft size={14} /> Вакансии</a>}>
+      <div className="sk-row" style={{ justifyContent: "space-between", alignItems: "flex-start" }}>
+        <div className="sk-col sk-gap-3" style={{ flex: 1 }}>
+          <div className="sk-row sk-gap-2" style={{ flexWrap: "wrap", alignItems: "center" }}>
+            <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{vacancy.direction}</span>
+            {closed
+              ? <Tag size="s" hue="neutral">Закрыта</Tag>
+              : <Tag size="s" hue="positive" icon={<IconCheck size={12} />}>Идёт поиск</Tag>}
+          </div>
+          <div className="sk-title-4">{vacancy.title}</div>
+          <div className="sk-row sk-gap-4 sk-muted" style={{ flexWrap: "wrap" }}>
+            <span className="sk-row sk-gap-1"><IconMapPin size={15} />{vacancy.city} · {vacancy.format}</span>
+            <span className="sk-row sk-gap-1"><IconBriefcase size={15} />{vacancy.department}</span>
+            {!closed && <span className="sk-row sk-gap-1"><IconClock size={15} />{vacancy.postedDate}</span>}
+          </div>
+        </div>
+        <ApplyCta />
+      </div>
+
+      {closed && (
+        <Alert hue="neutral" title="Эта вакансия закрыта">Отбор по ней завершён, отклик недоступен.</Alert>
+      )}
+
+      <div className="sk-row" style={{ alignItems: "flex-start", gap: 24 }}>
+        <div className="sk-col sk-gap-5" style={{ flex: 1, minWidth: 0 }}>
+          <Card bordered>
+            <div className="sk-col sk-gap-3">
+              <div className="sk-row sk-gap-2 sk-label-2"><IconTarget size={18} color="var(--sk-icon-accent)" />Чем предстоит заниматься</div>
+              <TextList items={vacancy.responsibilities} />
+            </div>
+          </Card>
+          <Card bordered>
+            <div className="sk-col sk-gap-3">
+              <div className="sk-row sk-gap-2 sk-label-2"><IconCheck size={18} color="var(--sk-icon-accent)" />Требования</div>
+              <TextList items={vacancy.requirements} />
+            </div>
+          </Card>
+          <Card bordered>
+            <div className="sk-col sk-gap-3">
+              <div className="sk-row sk-gap-2 sk-label-2"><IconGift size={18} color="var(--sk-icon-accent)" />Условия</div>
+              <TextList items={vacancy.conditions} />
+            </div>
+          </Card>
+          <Card bordered>
+            <div className="sk-col sk-gap-3">
+              <div className="sk-row sk-gap-2 sk-label-2"><IconLayers size={18} color="var(--sk-icon-accent)" />Ключевые навыки</div>
+              <div className="sk-row sk-gap-2" style={{ flexWrap: "wrap" }}>
+                {vacancy.requiredSkills.map((s, i) => <Tag key={i} size="s" hue="gray" pill>{s}</Tag>)}
+              </div>
+            </div>
+          </Card>
+
+          {!closed && !myResponse && <ApplyCta block />}
+        </div>
+
+        <div style={{ width: 300, flexShrink: 0 }}>
+          <Card bordered>
+            <div className="sk-col sk-gap-4">
+              <div style={{ background: "var(--sk-accent-secondary)", borderRadius: "var(--sk-radius-3)", padding: "14px 16px" }}>
+                <div className="sk-title-5" style={{ color: "var(--sk-text-accent)" }}>{fmtMoney(vacancy.salaryFrom)} – {fmtMoney(vacancy.salaryTo)} ₽</div>
+              </div>
+
+              <div className="sk-col">
+                <DetailRow label="Опыт работы" value={vacancy.experience} />
+                <Divider />
+                <DetailRow label="Тип занятости" value={vacancy.employment} />
+                <Divider />
+                <DetailRow label="Подразделение" value={vacancy.department} />
+                <Divider />
+                <DetailRow label="Грейд" value={vacancy.grade} />
+              </div>
+
+              <Divider />
+
+              <div className="sk-col sk-gap-2">
+                <div className="sk-label-4" style={{ color: "var(--sk-text-tertiary)", textTransform: "uppercase" }}>Рекрутёр вакансии</div>
+                <div className="sk-row sk-gap-3">
+                  <Avatar name={vacancy.recruiter.name} size={36} />
+                  <div className="sk-col" style={{ gap: 0 }}>
+                    <div className="sk-label-3">{vacancy.recruiter.name}</div>
+                    <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{vacancy.recruiter.role}</div>
+                  </div>
+                </div>
+                <div className="sk-col sk-gap-1" style={{ paddingLeft: 48 }}>
+                  <div className="sk-row sk-gap-2 sk-muted" style={{ font: "var(--sk-label-4-regular)" }}><IconPhone size={13} />{vacancy.recruiter.phone}</div>
+                  <div className="sk-row sk-gap-2 sk-muted" style={{ font: "var(--sk-label-4-regular)" }}><IconMail size={13} />{vacancy.recruiter.email}</div>
+                </div>
+              </div>
+            </div>
+          </Card>
+        </div>
+      </div>
+
+      {modalOpen && <ApplyModal vacancy={vacancy} onClose={() => setModalOpen(false)} onSubmitted={handleSubmitted} />}
+      {toast && (
+        <div style={{ position: "fixed", bottom: 24, left: "50%", transform: "translateX(-50%)", zIndex: 100 }}>
+          <Snackbar>{toast}</Snackbar>
+        </div>
+      )}
+    </AppShell>
+  );
+}
+
+function ApplyModal({ vacancy, onClose, onSubmitted }) {
+  const p = D.person;
+  const [lastName, setLastName] = React.useState(p.lastName);
+  const [firstName, setFirstName] = React.useState(p.firstName);
+  const [patronymic, setPatronymic] = React.useState(p.patronymic);
+  const [position, setPosition] = React.useState(p.position);
+  const [department, setDepartment] = React.useState(p.department);
+  const [tenure, setTenure] = React.useState(p.tenure);
+  const [phone, setPhone] = React.useState(p.phone);
+  const [email, setEmail] = React.useState(p.email);
+  const [city, setCity] = React.useState(p.city);
+  const [letter, setLetter] = React.useState("");
+  const [resume, setResume] = React.useState(null);
+
+  return (
+    <Modal open title={"Отклик: " + vacancy.title} onClose={onClose} size="m"
+      secondary={<Button mode="secondary" onClick={onClose}>Отмена</Button>}
+      primary={<Button variant="accent" disabled={!resume} onClick={onSubmitted}>Отправить отклик</Button>}>
+      <div className="sk-col sk-gap-3 sk-modal-scroll">
+        <Alert hue="neutral">Личные данные ниже подставлены из вашего профиля — проверьте и поправьте при необходимости. Резюме нужно прикрепить отдельно.</Alert>
+
+        <div className="sk-row sk-gap-3">
+          <Input label="Фамилия" value={lastName} onChange={(e) => setLastName(e.target.value || "")} style={{ flex: 1 }} />
+          <Input label="Имя" value={firstName} onChange={(e) => setFirstName(e.target.value || "")} style={{ flex: 1 }} />
+        </div>
+        <Input label="Отчество" value={patronymic} onChange={(e) => setPatronymic(e.target.value || "")} />
+        <div className="sk-row sk-gap-3">
+          <Input label="Текущая должность" value={position} onChange={(e) => setPosition(e.target.value || "")} style={{ flex: 1 }} />
+          <Input label="Подразделение" value={department} onChange={(e) => setDepartment(e.target.value || "")} style={{ flex: 1 }} />
+        </div>
+        <div className="sk-row sk-gap-3">
+          <Input label="Стаж" value={tenure} onChange={(e) => setTenure(e.target.value || "")} style={{ flex: 1 }} />
+          <Input label="Город" value={city} onChange={(e) => setCity(e.target.value || "")} style={{ flex: 1 }} />
+        </div>
+        <div className="sk-row sk-gap-3">
+          <Input label="Телефон" value={phone} onChange={(e) => setPhone(e.target.value || "")} style={{ flex: 1 }} />
+          <Input label="Почта" value={email} onChange={(e) => setEmail(e.target.value || "")} style={{ flex: 1 }} />
+        </div>
+
+        <div className="sk-col sk-gap-2">
+          <Textarea label="Мотивационное письмо" helper="Необязательно, но повышает шансы"
+            placeholder="Расскажите, почему вам интересна эта роль…" value={letter}
+            onChange={(e) => setLetter((e.target.value || "").slice(0, 800))} rows={3} />
+          <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)", alignSelf: "flex-end" }}>{letter.length}/800</div>
+          <div className="sk-row sk-gap-2" style={{ flexWrap: "wrap" }}>
+            {D.motivationPrompts.map((pr, i) => (
+              <button key={i} type="button" onClick={() => setLetter(l => (l ? l + "\n\n" : "") + pr + "\n")}
+                style={{
+                  display: "flex", alignItems: "center", gap: 4, border: "1px solid var(--sk-stroke)",
+                  background: "var(--sk-surface-page)", borderRadius: "var(--sk-radius-full)", padding: "4px 10px 4px 8px",
+                  font: "var(--sk-label-4-regular)", color: "var(--sk-text-secondary)", cursor: "pointer",
+                }}>
+                <IconPlusSm size={12} />{pr}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="sk-col sk-gap-2">
+          <div className="sk-row sk-gap-1"><div className="sk-label-3">Резюме</div><span style={{ color: "var(--sk-text-negative)" }}>*</span></div>
+          {resume ? (
+            <div className="sk-row sk-gap-2" style={{ padding: "10px 12px", border: "1px solid var(--sk-stroke)", borderRadius: "var(--sk-radius-2)" }}>
+              <IconFileText size={16} color="var(--sk-icon-secondary)" />
+              <span className="sk-label-3-regular" style={{ flex: 1 }}>{resume}</span>
+              <button className="sk-link-btn sk-label-4-regular" onClick={() => setResume(null)}>Удалить</button>
+            </div>
+          ) : (
+            <div className="sk-clickable" onClick={() => setResume("Резюме_Мезенцева_Юлия.pdf")} style={{
+              border: "1.5px dashed var(--sk-stroke)", borderRadius: "var(--sk-radius-3)", padding: "22px 16px",
+              display: "flex", flexDirection: "column", alignItems: "center", gap: 6, textAlign: "center",
+              background: "var(--sk-surface-secondary)",
+            }}>
+              <IconUpload size={20} color="var(--sk-icon-secondary)" />
+              <div className="sk-label-3-regular">Перетащите файл сюда или <span style={{ color: "var(--sk-text-accent)" }}>выберите на компьютере</span></div>
+              <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>PDF, DOC или DOCX, до 10 МБ</div>
+            </div>
+          )}
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<Page />);
+</script>
+</body>
+</html>
