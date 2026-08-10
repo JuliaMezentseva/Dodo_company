@@ -67,6 +67,22 @@ const IconSparkles = mkIcon(<><path d="M12 3.5 13.5 9 19 10.5 13.5 12 12 17.5 10
 // добавлено для "Полезные материалы" у шага цели (роль Руководитель) — раскрытая книга
 // читается понятнее плюсика как маркер прикреплённых учебных/справочных материалов.
 const IconBookOpen = mkIcon(<><path d="M12 6.5c-1.6-1.3-3.6-2-6.5-2-.6 0-1 .4-1 1v11c0 .6.4 1 1 1 2.7 0 4.7.6 6.5 2 1.8-1.4 3.8-2 6.5-2 .6 0 1-.4 1-1v-11c0-.6-.4-1-1-1-2.9 0-4.9.7-6.5 2Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" /><path d="M12 6.5v13" stroke="currentColor" strokeWidth="1.5" /></>);
+// добавлено для HR "Редактора адаптации" (DEV-62512) — набор для очереди назначения,
+// колонок таблицы и панели массовых действий; в исходном наборе ДС таких иконок не было.
+const IconUnlink = mkIcon(<><path d="M9.5 14.5l5-5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" /><path d="M11 7.5l1-1a3.2 3.2 0 0 1 4.5 4.5l-1.4 1.4M13 16.5l-1 1a3.2 3.2 0 0 1-4.5-4.5l1.4-1.4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeDasharray="1 3.2" /><path d="M4 4l16 16" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" /></>);
+const IconUserSwitch = mkIcon(<><circle cx="9" cy="8.3" r="3.3" stroke="currentColor" strokeWidth="1.5" /><path d="M3.5 19.2c.8-3.2 2.9-4.9 5.5-4.9.7 0 1.4.1 2 .4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /><path d="M15.5 8.5h5M18 6l2.5 2.5L18 11" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /><path d="M20.5 15.5h-5M18 13l-2.5 2.5L18 18" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></>);
+const IconRepeat = mkIcon(<><path d="M4 12a8 8 0 0 1 13.5-5.7L20 9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /><path d="M20 4.5V9h-4.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /><path d="M20 12a8 8 0 0 1-13.5 5.7L4 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /><path d="M4 19.5V15h4.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></>);
+const IconColumns = mkIcon(<><rect x="3.5" y="4.5" width="17" height="15" rx="2" stroke="currentColor" strokeWidth="1.5" /><path d="M9.5 4.5v15M14.5 4.5v15" stroke="currentColor" strokeWidth="1.5" /></>);
+const IconInbox = mkIcon(<><path d="M4 12.5h4.2l1.3 2.3h5l1.3-2.3H20" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" /><path d="M5.3 6.5 4 12.5v5a1.6 1.6 0 0 0 1.6 1.6h12.8A1.6 1.6 0 0 0 20 17.5v-5l-1.3-6a1.6 1.6 0 0 0-1.6-1.3H6.9a1.6 1.6 0 0 0-1.6 1.3Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" /></>);
+const IconUserX = mkIcon(<><circle cx="9" cy="8.3" r="3.3" stroke="currentColor" strokeWidth="1.5" /><path d="M3.5 19.2c.8-3.2 2.9-4.9 5.5-4.9.7 0 1.4.1 2 .4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /><path d="M15.5 8.5l5 5M20.5 8.5l-5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /></>);
+function IconCopyLocal2({ size = 16, color = "currentColor" }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" style={{ color, flexShrink: 0 }}>
+      <rect x="9" y="9" width="11" height="11" rx="2" stroke="currentColor" strokeWidth="1.5" />
+      <path d="M15 9V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h3" stroke="currentColor" strokeWidth="1.5" />
+    </svg>
+  );
+}
 
 window.SiteIcons = {
   IconSearch, IconChevronDown, IconChevronUp, IconChevronRight, IconArrowLeft, IconCheck, IconLock, IconClock,
@@ -74,6 +90,7 @@ window.SiteIcons = {
   IconTarget, IconMapPin, IconPhone, IconMail, IconSend, IconUpload, IconX, IconFilter, IconAlertCircle,
   IconGraduationCap, IconGift, IconLayers, IconPlusSm, IconEye, IconPaperclip, IconCalendar, IconUser,
   IconMoreHorizontal, IconEdit, IconTrash, IconFlag, IconSettings, IconClipboard, IconRocket, IconSparkles, IconBookOpen,
+  IconUnlink, IconUserSwitch, IconRepeat, IconColumns, IconInbox, IconUserX, IconCopyLocal2,
 };
 
 function directionHue(direction) {
@@ -125,15 +142,15 @@ function buildNavGroups(role, base) {
   }
   // HR-Админ: по паспорту продукта (п. 5.3 "Меню по ролям") — два раздела, оба сразу
   // в раскрытом виде: "Адаптация" (Планы сотрудников, Очередь назначения, Шаблоны планов,
-  // Справочники, Аналитика) и "Контент" (Редактор материалов). В этой итерации прототипа
-  // полностью отрисован только сценарий "Шаблоны планов" → работа с целями в шаблоне/плане
-  // (hr/templates.html, hr/template.html, hr/plans.html, hr/plan.html) — остальные пункты
-  // ведут на общую заглушку stub.html, как и для других недорисованных разделов.
+  // Справочники, Аналитика) и "Контент" (Редактор материалов). Полностью отрисованы:
+  // "Планы сотрудников" (hr/plans.html — назначенные + черновики, DEV-62512: чекбоксы,
+  // колонки, массовые действия), "Очередь назначения" (hr/queue.html — DEV-62512) и
+  // "Шаблоны планов" (hr/templates.html, hr/template.html). Остальные пункты — заглушка.
   if (role === "hr") {
     groups.push({
       kind: "group", label: "Адаптация", icon: <IconRocket />, children: [
         { id: "hr-plans", label: "Планы сотрудников", href: base + "/hr/plans.html" },
-        { id: "hr-queue", label: "Очередь назначения", href: base + "/stub.html?role=hr&section=queue" },
+        { id: "hr-queue", label: "Очередь назначения", href: base + "/hr/queue.html" },
         { id: "hr-templates", label: "Шаблоны планов", href: base + "/hr/templates.html" },
         { id: "hr-refs", label: "Справочники", href: base + "/stub.html?role=hr&section=refs" },
         { id: "hr-analytics", label: "Аналитика", href: base + "/stub.html?role=hr&section=analytics" },
