@@ -365,7 +365,7 @@ window.SITE_DATA = {
     {
       id: "v7", title: "Финансовый аналитик", direction: "Финансы", department: "Финансовый департамент",
       city: "Москва", format: "Гибрид", grade: "Middle", employment: "Полная занятость", schedule: "5/2",
-      salaryFrom: 150000, salaryTo: 190000, experience: "От 2 лет", status: "open", postedDate: "6 дней назад",
+      experience: "От 2 лет", status: "open", postedDate: "6 дней назад",
       requiredSkills: ["Excel", "Финансовое моделирование", "SQL", "Управленческая отчётность"],
       responsibilities: ["Готовить финансовые модели и прогнозы", "Анализировать unit-экономику продуктов", "Готовить отчётность для руководства"],
       requirements: ["Опыт финансового анализа от 2 лет", "Уверенный Excel, желателен SQL", "Понимание управленческой отчётности"],
