@@ -711,12 +711,20 @@ function AssignedTable() {
       </div>
 
       <div className="sk-col sk-gap-3">
-        <div className="sk-row sk-gap-2">
+        <div className="sk-row sk-gap-2" style={{ alignItems: "center", flexWrap: "wrap" }}>
           <Input icon={<IconSearch size={20} />} placeholder="Сотрудник, план, должность, руководитель, шаблон" value={q}
-            onChange={(e) => setQ(e.target.value || "")} style={{ flex: 1 }} />
+            onChange={(e) => setQ(e.target.value || "")} style={{ maxWidth: 420, flex: 1 }} />
           <Button mode="secondary" icon={<Icons.IconFilter size={16} />} onClick={() => setFiltersOpen((o) => !o)}>
             Фильтры{hasActiveFilters ? " · " + activeFilterCount : ""}
           </Button>
+          <div className="sk-row sk-gap-2" style={{ marginLeft: "auto", alignItems: "center" }}>
+            <GroupByMenu value={groupBy} onChange={setGroupBy} />
+            <ColumnsMenu all={ASSIGNED_COLUMNS_META} visible={visibleCols}
+              onChange={(key) => setVisibleCols((v) => v.includes(key) ? v.filter((k) => k !== key) : [...v, key])} />
+            <Tooltip content="Переход в раздел отчётов по планам адаптации.">
+              <Button mode="tertiary" icon={<Icons.IconFileText size={16} />} disabled>Отчёты</Button>
+            </Tooltip>
+          </div>
         </div>
         {filtersOpen && (
           <div className="sk-row sk-gap-2" style={{ flexWrap: "wrap", alignItems: "flex-end" }}>
@@ -745,23 +753,12 @@ function AssignedTable() {
         )}
       </div>
 
-      <div className="sk-row" style={{ justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
-        <div className="sk-row sk-gap-4" style={{ alignItems: "center" }}>
-          <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Найдено планов: {list.length}</span>
-
-          <label className="sk-row sk-gap-2 sk-clickable" style={{ font: "var(--sk-label-4-regular)", color: "var(--sk-text-secondary)" }}>
-            <input type="checkbox" checked={showHiddenStatuses} onChange={(e) => setShowHiddenStatuses(e.target.checked)} />
-            Показывать завершённые / неуспешные / отменённые
-          </label>
-        </div>
-        <div className="sk-row sk-gap-2" style={{ alignItems: "center" }}>
-          <GroupByMenu value={groupBy} onChange={setGroupBy} />
-          <ColumnsMenu all={ASSIGNED_COLUMNS_META} visible={visibleCols}
-            onChange={(key) => setVisibleCols((v) => v.includes(key) ? v.filter((k) => k !== key) : [...v, key])} />
-          <Tooltip content="Переход в раздел отчётов по планам адаптации.">
-            <Button mode="tertiary" icon={<Icons.IconFileText size={16} />} disabled>Отчёты</Button>
-          </Tooltip>
-        </div>
+      <div className="sk-row sk-gap-4" style={{ alignItems: "center", flexWrap: "wrap" }}>
+        <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Найдено планов: {list.length}</span>
+        <label className="sk-row sk-gap-2 sk-clickable" style={{ font: "var(--sk-label-4-regular)", color: "var(--sk-text-secondary)" }}>
+          <input type="checkbox" checked={showHiddenStatuses} onChange={(e) => setShowHiddenStatuses(e.target.checked)} />
+          Показывать завершённые / неуспешные / отменённые
+        </label>
       </div>
 
       {list.length > 0 && (
@@ -851,7 +848,7 @@ function Page() {
     <AppShell role="hr" active="hr-plans" base="..">
       <div className="sk-row" style={{ justifyContent: "space-between", alignItems: "center" }}>
         <div className="sk-title-4">Планы сотрудников</div>
-        <Button variant="accent" icon={<IconPlusSm size={16} />} disabled>Создать план</Button>
+        <Button variant="accent" icon={<IconPlusSm size={16} />} onClick={() => {}}>Создать план</Button>
       </div>
 
       <Tabs items={[{ id: "assigned", label: "Назначенные планы", count: D.hrAssignedPlans.length }, { id: "drafts", label: "Черновики", count: D.planDrafts.length }]}

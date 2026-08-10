@@ -379,12 +379,16 @@ function PendingTab({ rows, setRows, onExcludeToOtherTab }) {
   return (
     <div className="sk-col sk-gap-4">
       <div className="sk-col sk-gap-3">
-        <div className="sk-row sk-gap-2">
+        <div className="sk-row sk-gap-2" style={{ alignItems: "center", flexWrap: "wrap" }}>
           <Input icon={<IconSearch size={20} />} placeholder="Поиск по сотруднику" value={q}
             onChange={(e) => setQ(e.target.value || "")} style={{ maxWidth: 420, flex: 1 }} />
           <Button mode="secondary" icon={<IconFilter size={16} />} onClick={() => setFiltersOpen((o) => !o)}>
             Фильтры{hasActiveFilters ? " · " + extraFilterCount : ""}
           </Button>
+          <div style={{ marginLeft: "auto" }}>
+            <ColumnsMenu all={PENDING_COLUMNS_ALL} visible={visibleCols}
+              onChange={(key) => setVisibleCols((v) => v.includes(key) ? v.filter((k) => k !== key) : [...v, key])} />
+          </div>
         </div>
         <div className="sk-row sk-gap-2" style={{ flexWrap: "wrap", alignItems: "center" }}>
           {EVENT_QUICK_FILTERS.map((f) => (
@@ -414,11 +418,7 @@ function PendingTab({ rows, setRows, onExcludeToOtherTab }) {
         )}
       </div>
 
-      <div className="sk-row" style={{ justifyContent: "space-between", alignItems: "center" }}>
-        <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>В очереди: {list.length}</span>
-        <ColumnsMenu all={PENDING_COLUMNS_ALL} visible={visibleCols}
-          onChange={(key) => setVisibleCols((v) => v.includes(key) ? v.filter((k) => k !== key) : [...v, key])} />
-      </div>
+      <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>В очереди: {list.length}</span>
 
       {list.length === 0 ? (
         <Card><div className="sk-col sk-gap-2" style={{ alignItems: "center", textAlign: "center", padding: "32px 0" }}>
@@ -441,10 +441,10 @@ function PendingTab({ rows, setRows, onExcludeToOtherTab }) {
         <div style={{
           position: "fixed", left: "50%", bottom: 24, transform: "translateX(-50%)", zIndex: 90,
           display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", borderRadius: "var(--sk-radius-4)",
-          background: "var(--sk-text-primary)", boxShadow: "var(--sk-shadow-l)", color: "#fff",
+          background: "var(--sk-accent)", boxShadow: "var(--sk-shadow-l)", color: "#fff",
         }}>
           <span className="sk-label-3" style={{ color: "#fff", whiteSpace: "nowrap" }}>Выбрано: {selected.size}</span>
-          <Button variant="accent" onClick={() => setBulkAssign(true)}>Назначить план</Button>
+          <Button mode="secondary" onClick={() => setBulkAssign(true)}>Назначить план</Button>
           <Button mode="secondary" onClick={() => setExcludeTargets(list.filter((p) => selected.has(p.id)))}>Исключить</Button>
           <IconButtonClose onClick={() => setSelected(new Set())} />
         </div>
