@@ -323,6 +323,45 @@ function GoalDrawer({ goal, plan, onClose, onOpenSubgoal, onTakeGoal, onToggleMa
   );
 }
 
+// ---------------- Комментарии подцели — оформлены как вкладка (не просто список),
+// по референсу: заголовок "Комментарии N" с подчёркиванием, карточка ввода со скрепкой
+// для вложений, список сообщений ниже. ----------------
+function CommentsPanel({ comments, comment, setComment, onAdd, disabled }) {
+  const list = comments || [];
+  return (
+    <div className="sk-col sk-gap-3">
+      <div className="sk-row sk-gap-4" style={{ borderBottom: "1px solid var(--sk-stroke)" }}>
+        <div className="sk-col sk-gap-2" style={{ paddingBottom: 10, borderBottom: "2px solid var(--sk-text-primary)" }}>
+          <span className="sk-label-3">Комментарии <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{list.length}</span></span>
+        </div>
+      </div>
+
+      {!disabled && (
+        <div className="sk-col sk-gap-2">
+          <Textarea placeholder="Написать комментарий" rows={2} value={comment} onChange={(e) => setComment(e.target.value || "")} />
+          <div className="sk-row" style={{ justifyContent: "space-between", alignItems: "center" }}>
+            <button className="sk-link-btn" style={{ display: "inline-flex" }}><Icons.IconPaperclip size={17} color="var(--sk-icon-secondary)" /></button>
+            {comment.trim() && (
+              <Button size="s" onClick={() => { onAdd(comment.trim()); setComment(""); }}>Отправить</Button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {list.slice().reverse().map((c, i) => (
+        <div key={i} className="sk-row sk-gap-3" style={{ alignItems: "flex-start" }}>
+          <Avatar src={personPhoto(c.author)} name={c.author} size={28} />
+          <div className="sk-col sk-gap-1" style={{ flex: 1 }}>
+            <div className="sk-row sk-gap-2"><span className="sk-label-4">{c.author}</span><span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{c.date}</span></div>
+            <div className="sk-label-3-regular">{c.text}</div>
+          </div>
+        </div>
+      ))}
+      {!list.length && <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Комментариев пока нет</div>}
+    </div>
+  );
+}
+
 function SubgoalDrawer({ plan, goal, subgoal, onClose, onSubmit, onAddComment, onToggleMaterial }) {
   const [comment, setComment] = React.useState("");
   const links = (subgoal.checklistRefs || []).map((id) => findChecklistItem(plan, id)).filter(Boolean);
@@ -373,28 +412,8 @@ function SubgoalDrawer({ plan, goal, subgoal, onClose, onSubmit, onAddComment, o
           </CollapsibleSection>
         )}
 
-        <div className="sk-col sk-gap-3">
-          <div className="sk-label-3">Комментарии</div>
-          {(subgoal.status === "in_progress" || subgoal.status === "returned") && (
-            <React.Fragment>
-              <Textarea placeholder="Написать комментарий" rows={2} value={comment} onChange={(e) => setComment(e.target.value || "")} />
-              {comment.trim() && (
-                <Button size="s" mode="secondary" style={{ alignSelf: "flex-start" }}
-                  onClick={() => { onAddComment(comment.trim()); setComment(""); }}>Отправить комментарий</Button>
-              )}
-            </React.Fragment>
-          )}
-          {(subgoal.comments || []).slice().reverse().map((c, i) => (
-            <div key={i} className="sk-row sk-gap-3" style={{ alignItems: "flex-start" }}>
-              <Avatar src={personPhoto(c.author)} name={c.author} size={28} />
-              <div className="sk-col sk-gap-1" style={{ flex: 1 }}>
-                <div className="sk-row sk-gap-2"><span className="sk-label-4">{c.author}</span><span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{c.date}</span></div>
-                <div className="sk-label-3-regular">{c.text}</div>
-              </div>
-            </div>
-          ))}
-          {!(subgoal.comments || []).length && subgoal.status !== "in_progress" && subgoal.status !== "returned" && <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Комментариев пока нет</div>}
-        </div>
+        <CommentsPanel comments={subgoal.comments} comment={comment} setComment={setComment} onAdd={onAddComment}
+          disabled={!(subgoal.status === "in_progress" || subgoal.status === "returned")} />
 
         {subgoal.status === "not_started" && (
           <Alert hue="neutral">Сначала возьмите в работу всю цель «{goal.title}» — тогда этот шаг станет доступен для выполнения.</Alert>
