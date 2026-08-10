@@ -23,47 +23,6 @@ const {
 
 const D = window.SITE_DATA;
 
-// ---- Дата события в читаемом виде: "12.08.26" -> "12 авг 2026". ----
-const MONTHS_SHORT = ["янв", "фев", "мар", "апр", "мая", "июн", "июл", "авг", "сен", "окт", "ноя", "дек"];
-function parseEventDate(d) {
-  const m = /^(\d{2})\.(\d{2})\.(\d{2})$/.exec(d || "");
-  return m ? new Date(2000 + parseInt(m[3], 10), parseInt(m[2], 10) - 1, parseInt(m[1], 10)) : null;
-}
-function fmtEventDate(d) {
-  const date = parseEventDate(d);
-  return date ? date.getDate() + " " + MONTHS_SHORT[date.getMonth()] + " " + date.getFullYear() : (d || "—");
-}
-
-// ---- Пилюли событий над таблицей — активная ("Все события" по умолчанию) залита
-// насыщенным акцентным синим (variant="accent" mode="primary"), как кнопка "Мои отклики"
-// на referece-скрине из employee/vacancies.html. Высота 32 — компактнее прежней 40. ----
-// ---- Пилюли событий: "Все события" — чёрная (нейтральный акцент "сбросить фильтр"),
-// остальные — используют тот же hue, что и тег события в таблице (EVENT_META), чтобы
-// цвет пилюли совпадал с цветом тега, который получит сотрудник в списке. ----
-const PILL_HUES = {
-  accent: { bg: "var(--sk-accent-secondary)", color: "var(--sk-text-accent)" },
-  special: { bg: "var(--sk-special-secondary)", color: "var(--text-text-special)" },
-  positive: { bg: "var(--sk-positive-secondary)", color: "var(--sk-text-positive)" },
-  warning: { bg: "var(--sk-warning-secondary)", color: "var(--sk-text-warning-dark)" },
-};
-function EventPill({ label, count, active, hue, onClick }) {
-  const activeColors = hue
-    ? PILL_HUES[hue]
-    : { bg: "var(--graphite-graphite-0)", color: "var(--sk-text-contrast)" }; // "Все события"
-  return (
-    <button type="button" onClick={onClick} className="sk-clickable" style={{
-      display: "inline-flex", alignItems: "center", gap: 6, height: 32, padding: "0 14px",
-      borderRadius: "var(--sk-radius-full)", border: "none",
-      background: active ? activeColors.bg : "var(--graphite-graphite-97)",
-      color: active ? activeColors.color : "var(--sk-text-secondary)",
-      font: "var(--sk-label-3-regular)", cursor: "pointer", whiteSpace: "nowrap",
-    }}>
-      {label}
-      {typeof count === "number" && <span style={{ opacity: active ? 0.75 : 0.6 }}>{count}</span>}
-    </button>
-  );
-}
-
 // ---- Событие: тип + иконка + акцентный цвет тега (см. hr/plans.html — тот же принцип
 // компактных подписей вместо тяжёлой раскраски таблицы). ----
 const EVENT_META = {
@@ -94,8 +53,7 @@ function ColumnsMenu({ all, visible, onChange }) {
   }, []);
   return (
     <div ref={ref} style={{ position: "relative" }}>
-      <Button mode="secondary" icon={<Icons.IconColumns size={16} />} onClick={() => setOpen((o) => !o)}
-        style={{ background: "var(--sk-surface-page)", border: "1px solid var(--sk-stroke)" }}>Столбцы</Button>
+      <Button mode="secondary" icon={<Icons.IconColumns size={16} />} onClick={() => setOpen((o) => !o)}>Столбцы</Button>
       {open && (
         <div className="sk-scroll" style={{
           position: "absolute", top: "calc(100% + 6px)", right: 0, zIndex: 50, background: "var(--sk-surface-page)",
@@ -139,23 +97,10 @@ function PeriodMenu({ value, onChange }) {
   }, []);
   const current = PERIOD_PRESETS.find((p) => p.id === value) || null;
   return (
-    <div ref={ref} style={{ position: "relative", width: 190 }}>
-      <label className="sk-col" style={{ gap: 6, font: "var(--sk-label-3)" }}>
-        <span style={{ color: "var(--sk-text-primary)" }}>Дата события</span>
-        <button type="button" onClick={() => setOpen((o) => !o)} className="sk-clickable" style={{
-          display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, height: 48,
-          padding: "0 12px", borderRadius: "var(--sk-radius-form)", border: "none",
-          background: "var(--sk-surface-page)", boxShadow: "inset 0 0 0 1px var(--sk-stroke)",
-          font: "var(--sk-label-3-regular)", color: current ? "var(--sk-text-primary)" : "var(--sk-text-secondary)",
-          textAlign: "left", cursor: "pointer",
-        }}>
-          <span className="sk-row sk-gap-2" style={{ alignItems: "center" }}>
-            <IconCalendar size={18} color="var(--sk-icon-secondary)" />
-            {current ? current.label : "Все"}
-          </span>
-          <IconChevronDown size={16} color="var(--sk-icon-secondary)" style={{ transform: open ? "rotate(180deg)" : "none" }} />
-        </button>
-      </label>
+    <div ref={ref} style={{ position: "relative" }}>
+      <Button mode="secondary" icon={<IconCalendar size={16} />} onClick={() => setOpen((o) => !o)}>
+        {current ? current.label : "Дата события"}
+      </Button>
       {open && (
         <div style={{
           position: "absolute", top: "calc(100% + 6px)", left: 0, zIndex: 50, background: "var(--sk-surface-page)",
@@ -271,6 +216,7 @@ function ExcludeModal({ people, onClose, onConfirm }) {
 // ------------------------------ Вкладка "К назначению" ------------------------------
 const PENDING_COLUMNS_ALL = [
   { key: "name", title: "Сотрудник", locked: true },
+  { key: "reason", title: "Причина появления в очереди" },
   { key: "eventType", title: "Тип события" },
   { key: "eventDate", title: "Дата события" },
   { key: "department", title: "Подразделение" },
@@ -281,12 +227,7 @@ const PENDING_COLUMNS_ALL = [
 function PendingTab({ rows, setRows, onExcludeToOtherTab }) {
   const [q, setQ] = React.useState("");
   const [eventFilter, setEventFilter] = React.useState("");
-  const [planTypeFilter, setPlanTypeFilter] = React.useState("");
-  const [positionFilter, setPositionFilter] = React.useState("");
-  const [departmentFilter, setDepartmentFilter] = React.useState("");
-  const [managerFilter, setManagerFilter] = React.useState("");
   const [period, setPeriod] = React.useState("");
-  const [filtersOpen, setFiltersOpen] = React.useState(false);
   const [selected, setSelected] = React.useState(() => new Set());
   const [visibleCols, setVisibleCols] = React.useState(PENDING_COLUMNS_ALL.map((c) => c.key));
   const [assignPerson, setAssignPerson] = React.useState(null);
@@ -297,17 +238,9 @@ function PendingTab({ rows, setRows, onExcludeToOtherTab }) {
   function showToast(msg) { setToast(msg); window.setTimeout(() => setToast(null), 2600); }
 
   const needle = q.trim().toLowerCase();
-  const planTypeOptions = [...new Set(rows.map((p) => p.planTypeNeeded))];
-  const positionOptions = [...new Set(rows.map((p) => p.position))];
-  const departmentOptions = [...new Set(rows.map((p) => p.department))];
-  const managerOptions = [...new Set(rows.map((p) => p.manager).filter(Boolean))];
   const list = rows.filter((p) => {
     if (needle && !p.name.toLowerCase().includes(needle)) return false;
     if (eventFilter && p.eventType !== eventFilter) return false;
-    if (planTypeFilter && p.planTypeNeeded !== planTypeFilter) return false;
-    if (positionFilter && p.position !== positionFilter) return false;
-    if (departmentFilter && p.department !== departmentFilter) return false;
-    if (managerFilter && p.manager !== managerFilter) return false;
     return true;
   });
 
@@ -355,12 +288,9 @@ function PendingTab({ rows, setRows, onExcludeToOtherTab }) {
         <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{p.position}</span>
       </div>
     ),
-    eventType: (p) => (
-      <Tooltip content={p.reason}>
-        <span><Tag size="s" hue={EVENT_META[p.eventType].hue}>{EVENT_META[p.eventType].label}</Tag></span>
-      </Tooltip>
-    ),
-    eventDate: (p) => fmtEventDate(p.eventDate),
+    reason: (p) => <span className="sk-label-4-regular" style={{ color: "var(--sk-text-secondary)" }}>{p.reason}</span>,
+    eventType: (p) => <Tag size="s" hue={EVENT_META[p.eventType].hue}>{EVENT_META[p.eventType].label}</Tag>,
+    eventDate: (p) => p.eventDate,
     department: (p) => p.department,
     position: (p) => p.position,
     planType: (p) => <Tag size="s" hue="neutral">{p.planTypeNeeded}</Tag>,
@@ -372,12 +302,10 @@ function PendingTab({ rows, setRows, onExcludeToOtherTab }) {
         <window.SkillazCoreDesignSystem_bf9566.Checkbox checked={selected.has(p.id)} onChange={() => toggleOne(p.id)} />
       </div>
     ) },
-    ...PENDING_COLUMNS_ALL.filter((c) => visibleCols.includes(c.key)).map((c) => ({
-      key: c.key, title: c.title, width: c.key === "name" ? 260 : undefined, render: columnRenderers[c.key],
-    })),
+    ...PENDING_COLUMNS_ALL.filter((c) => visibleCols.includes(c.key)).map((c) => ({ key: c.key, title: c.title, render: columnRenderers[c.key] })),
     { key: "actions", title: "", width: 190, render: (p) => (
       <div className="sk-row sk-gap-2" onClick={(e) => e.stopPropagation()}>
-        <Button size="s" variant="accent" mode="primary" onClick={() => setAssignPerson(p)}>Назначить план</Button>
+        <Button size="s" variant="accent" mode="secondary" onClick={() => setAssignPerson(p)}>Назначить план</Button>
         <Tooltip content="Исключить из очереди">
           <Button size="s" mode="tertiary" onClick={() => setExcludeTargets([p])}><IconUserX size={15} /></Button>
         </Tooltip>
@@ -385,50 +313,33 @@ function PendingTab({ rows, setRows, onExcludeToOtherTab }) {
     ) },
   ];
 
-  const extraFilterCount = [planTypeFilter, positionFilter, departmentFilter, managerFilter, period].filter(Boolean).length;
-  const hasActiveFilters = extraFilterCount > 0;
+  const hasActiveFilters = !!(eventFilter || period);
 
   return (
     <div className="sk-col sk-gap-4">
       <div className="sk-col sk-gap-3">
-        <div className="sk-row sk-gap-2" style={{ alignItems: "center", flexWrap: "wrap" }}>
-          <Input size="s" icon={<IconSearch size={18} />} placeholder="Поиск по сотруднику" value={q}
-            onChange={(e) => setQ(e.target.value || "")} style={{ maxWidth: 420, flex: 1 }} />
-          <Button mode="secondary" icon={<IconFilter size={16} />} onClick={() => setFiltersOpen((o) => !o)}
-            style={{ background: "var(--sk-surface-page)", border: "1px solid var(--sk-stroke)" }}>
-            Фильтры{hasActiveFilters ? " · " + extraFilterCount : ""}
-          </Button>
-          <div style={{ marginLeft: "auto" }}>
-            <ColumnsMenu all={PENDING_COLUMNS_ALL} visible={visibleCols}
-              onChange={(key) => setVisibleCols((v) => v.includes(key) ? v.filter((k) => k !== key) : [...v, key])} />
-          </div>
+        <div className="sk-row sk-gap-2">
+          <Input icon={<IconSearch size={20} />} placeholder="Поиск по сотруднику" value={q}
+            onChange={(e) => setQ(e.target.value || "")} style={{ flex: 1 }} />
+          <ColumnsMenu all={PENDING_COLUMNS_ALL} visible={visibleCols}
+            onChange={(key) => setVisibleCols((v) => v.includes(key) ? v.filter((k) => k !== key) : [...v, key])} />
         </div>
-        {filtersOpen && (
-          <div className="sk-row sk-gap-2" style={{ flexWrap: "wrap", alignItems: "flex-end" }}>
-            <Select label="Тип плана" placeholder="Все" value={planTypeFilter || null}
-              options={planTypeOptions.map((v) => ({ value: v, label: v }))}
-              onChange={(v) => setPlanTypeFilter(v || "")} style={{ width: 190 }} />
-            <Select label="Должность" placeholder="Все" value={positionFilter || null}
-              options={positionOptions.map((v) => ({ value: v, label: v }))}
-              onChange={(v) => setPositionFilter(v || "")} style={{ width: 220 }} />
-            <Select label="Подразделение" placeholder="Все" value={departmentFilter || null}
-              options={departmentOptions.map((v) => ({ value: v, label: v }))}
-              onChange={(v) => setDepartmentFilter(v || "")} style={{ width: 240 }} />
-            <Select label="Руководитель" placeholder="Все" value={managerFilter || null}
-              options={managerOptions.map((v) => ({ value: v, label: v }))}
-              onChange={(v) => setManagerFilter(v || "")} style={{ width: 200 }} />
-            <PeriodMenu value={period} onChange={setPeriod} />
-            {hasActiveFilters && (
-              <button className="sk-link-btn sk-label-4-regular" style={{ height: 48 }}
-                onClick={() => { setPeriod(""); setPlanTypeFilter(""); setPositionFilter(""); setDepartmentFilter(""); setManagerFilter(""); }}>Сбросить</button>
-            )}
-          </div>
-        )}
         <div className="sk-row sk-gap-2" style={{ flexWrap: "wrap", alignItems: "center" }}>
           {EVENT_QUICK_FILTERS.map((f) => (
-            <EventPill key={f.value || "all"} label={f.label} active={eventFilter === f.value}
-              hue={f.value ? EVENT_META[f.value].hue : null} onClick={() => setEventFilter(f.value)} />
+            <button key={f.value || "all"} onClick={() => setEventFilter(f.value)}
+              className="sk-label-4-regular"
+              style={{
+                padding: "8px 14px", borderRadius: "var(--sk-radius-full, 999px)", cursor: "pointer", border: "none",
+                background: eventFilter === f.value ? "var(--sk-accent-secondary)" : "var(--graphite-graphite-97)",
+                color: eventFilter === f.value ? "var(--sk-text-accent)" : "var(--sk-text-secondary)",
+              }}>
+              {f.label}
+            </button>
           ))}
+          <PeriodMenu value={period} onChange={setPeriod} />
+          {hasActiveFilters && (
+            <button className="sk-link-btn sk-label-4-regular" onClick={() => { setEventFilter(""); setPeriod(""); }}>Сбросить</button>
+          )}
         </div>
       </div>
 
@@ -455,10 +366,10 @@ function PendingTab({ rows, setRows, onExcludeToOtherTab }) {
         <div style={{
           position: "fixed", left: "50%", bottom: 24, transform: "translateX(-50%)", zIndex: 90,
           display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", borderRadius: "var(--sk-radius-4)",
-          background: "var(--sk-accent)", boxShadow: "var(--sk-shadow-l)", color: "#fff",
+          background: "var(--sk-text-primary)", boxShadow: "var(--sk-shadow-l)", color: "#fff",
         }}>
           <span className="sk-label-3" style={{ color: "#fff", whiteSpace: "nowrap" }}>Выбрано: {selected.size}</span>
-          <Button mode="secondary" onClick={() => setBulkAssign(true)}>Назначить план</Button>
+          <Button variant="accent" onClick={() => setBulkAssign(true)}>Назначить план</Button>
           <Button mode="secondary" onClick={() => setExcludeTargets(list.filter((p) => selected.has(p.id)))}>Исключить</Button>
           <IconButtonClose onClick={() => setSelected(new Set())} />
         </div>
@@ -543,10 +454,9 @@ function ExcludedTab({ rows, setRows, onRestoreToOtherTab }) {
     <div className="sk-col sk-gap-4">
       <div className="sk-col sk-gap-3">
         <div className="sk-row sk-gap-2">
-          <Input size="s" icon={<IconSearch size={18} />} placeholder="Поиск по сотруднику" value={q}
-            onChange={(e) => setQ(e.target.value || "")} style={{ maxWidth: 420, flex: 1 }} />
-          <Button mode="secondary" icon={<IconFilter size={16} />} onClick={() => setFiltersOpen((o) => !o)}
-            style={{ background: "var(--sk-surface-page)", border: "1px solid var(--sk-stroke)" }}>
+          <Input icon={<IconSearch size={20} />} placeholder="Поиск по сотруднику" value={q}
+            onChange={(e) => setQ(e.target.value || "")} style={{ flex: 1 }} />
+          <Button mode="secondary" icon={<IconFilter size={16} />} onClick={() => setFiltersOpen((o) => !o)}>
             Фильтры{hasActiveFilters ? " · " + Object.values(filters).filter(Boolean).length : ""}
           </Button>
         </div>
@@ -608,6 +518,7 @@ function Page() {
     <AppShell role="hr" active="hr-queue" base="..">
       <div className="sk-col sk-gap-2">
         <div className="sk-title-4">Очередь назначения</div>
+        <div className="sk-muted">Сотрудники и кандидаты, которым нужно назначить план — по приёму на работу, переводу, возврату из отпуска или началу стажировки.</div>
       </div>
 
       <Tabs items={[

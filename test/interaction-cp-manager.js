@@ -37,7 +37,7 @@ const target = path.resolve(__dirname, "..", "manager", "plan.html");
 (async () => {
   try {
     // ---- Сценарий A (read-only): план Алексея, КТ 60 дней назначена на Дмитрия Волкова —
-    // руководитель Анна Козлова видит форму, но не может её редактировать. ----
+    // сотрудник уже заполнил опрос, но руководитель Анна Козлова видит форму без права её редактировать. ----
     const w1 = loadPage(target, "employee=alexey&tab=max");
     await tick(150);
     const cp2Row = [...w1.document.querySelectorAll(".sk-label-4")].find(el => el.textContent.includes("2 марта"));

@@ -231,8 +231,8 @@ function NavChildItem({ label, href, selected, disabled }) {
   if (disabled) {
     return (
       <div style={{
-        display: "flex", alignItems: "center", height: 36, padding: "0 12px 0 42px",
-        color: "var(--sk-text-tertiary)", font: "var(--sk-label-4-regular)", cursor: "default",
+        display: "flex", alignItems: "center", height: 40, padding: "0 12px 0 42px",
+        color: "var(--sk-text-tertiary)", font: "var(--sk-label-3-regular)", cursor: "default",
       }}>
         {label}
       </div>
@@ -240,9 +240,9 @@ function NavChildItem({ label, href, selected, disabled }) {
   }
   return (
     <a href={href} onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)} style={{
-      display: "flex", alignItems: "center", height: 36, padding: "0 12px 0 42px", borderRadius: "var(--sk-radius-3)",
+      display: "flex", alignItems: "center", height: 40, padding: "0 12px 0 42px", borderRadius: "var(--sk-radius-3)",
       background: selected ? "var(--sk-hover-nav)" : hover ? "var(--sk-hover-nav)" : "transparent",
-      color: "var(--sk-text-primary)", font: selected ? "var(--sk-label-4)" : "var(--sk-label-4-regular)",
+      color: "var(--sk-text-primary)", font: selected ? "var(--sk-label-3)" : "var(--sk-label-3-regular)",
     }}>
       {label}
     </a>

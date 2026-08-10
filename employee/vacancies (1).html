@@ -16,7 +16,7 @@
 <div id="root"></div>
 <script type="text/babel">
 const { Card, Tag, Input, Button, Select, Checkbox } = window.SkillazCoreDesignSystem_bf9566;
-const { AppShell, Icons, directionHue } = window.Site;
+const { AppShell, Icons } = window.Site;
 const { IconSearch, IconMapPin, IconBriefcase, IconCheck, IconFilter } = Icons;
 const D = window.SITE_DATA;
 
@@ -25,9 +25,7 @@ function toOptions(list) { return list.map((v) => ({ value: v, label: v })); }
 
 const emptyFilters = { departments: [], experience: [], cities: [], formats: [], employments: [], showClosed: false };
 
-// Пилюля направления — некликабельный тег сверху карточки использует те же hue, что и
-// на детальном экране вакансии (directionHue), чтобы направления визуально совпадали
-// между витриной и карточкой.
+// Пилюля направления — некликабельный фильтр-таб сверху списка вакансий.
 function DirectionPill({ direction, active, count, onClick }) {
   return (
     <button type="button" onClick={onClick} className="sk-clickable" style={{
@@ -47,17 +45,16 @@ function VacancyCard({ vacancy, hasResponse }) {
   const closed = vacancy.status === "closed";
   return (
     <a href={"vacancy.html?id=" + vacancy.id} style={{ textDecoration: "none" }}>
-      <Card bordered
-        style={{
-          cursor: "pointer", height: "100%",
-          ...(hasResponse ? { background: "var(--sk-surface-secondary)", borderColor: "var(--sk-stroke)" } : null),
-        }}>
+      <Card bordered style={{ cursor: "pointer", height: "100%" }}>
         <div className="sk-col sk-gap-3" style={{ height: "100%" }}>
           <div className="sk-row" style={{ justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
-            <Tag size="s" hue={directionHue(vacancy.direction)}>{vacancy.direction}</Tag>
-            {hasResponse
-              ? <Tag size="s" hue="accent" icon={<IconCheck size={12} />}>Есть отклик</Tag>
-              : (closed && <Tag size="s" hue="neutral">Закрыта</Tag>)}
+            <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{vacancy.direction}</span>
+            {hasResponse && (
+              <span className="sk-row sk-gap-1" style={{ font: "var(--sk-label-4-regular)", color: "var(--sk-text-secondary)" }}>
+                <IconCheck size={13} />Есть отклик
+              </span>
+            )}
+            {!hasResponse && closed && <Tag size="s" hue="neutral">Закрыта</Tag>}
           </div>
 
           <div className="sk-col sk-gap-1" style={{ flex: 1 }}>

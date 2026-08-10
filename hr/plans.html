@@ -41,6 +41,7 @@ const QUICK_INDICATORS = [
   { id: "no_goals", label: "Без целей", icon: IconFlag, bg: "var(--sk-warning-secondary)", fg: "var(--sk-text-warning-dark)", test: (p) => !p.goalsPublished },
   { id: "overdue_cp", label: "Просрочка КТ", icon: IconClock, bg: "var(--sk-special-secondary)", fg: "var(--sk-special)", test: (p) => p.overdueCheckpoint },
   { id: "review", label: "Ждут ревью", icon: IconCheck, bg: "var(--sk-positive-secondary)", fg: "var(--sk-icon-positive)", test: (p) => p.finalReview === "pending" },
+  { id: "ending_soon", label: "Скоро завершатся", icon: IconCalendar, bg: "var(--sk-warning-secondary)", fg: "var(--sk-text-warning-dark)", test: (p) => !!p.endingSoon },
 ];
 
 const GROUP_OPTIONS = [
@@ -141,112 +142,7 @@ function ColumnsMenu({ all, visible, onChange }) {
   );
 }
 
-// ---- Быстрые пресеты периода назначения — тот же паттерн, что и "Дата события" в
-// hr/queue.html: триггер оформлен как поле Select (label сверху, высота 48), а не
-// отдельная кнопка с иконкой календаря, чтобы не выбиваться среди остальных фильтров. ----
-const PERIOD_PRESETS = [
-  { id: "today", label: "Сегодня" },
-  { id: "week", label: "Неделя" },
-  { id: "month", label: "Месяц" },
-  { id: "quarter", label: "Квартал" },
-  { id: "custom", label: "Свой период" },
-];
-function PeriodMenu({ value, onChange }) {
-  const [open, setOpen] = React.useState(false);
-  const ref = React.useRef(null);
-  React.useEffect(() => {
-    function onDocClick(e) { if (ref.current && !ref.current.contains(e.target)) setOpen(false); }
-    document.addEventListener("mousedown", onDocClick);
-    return () => document.removeEventListener("mousedown", onDocClick);
-  }, []);
-  const current = PERIOD_PRESETS.find((p) => p.id === value) || null;
-  return (
-    <div ref={ref} style={{ position: "relative", width: 190 }}>
-      <label className="sk-col" style={{ gap: 6, font: "var(--sk-label-3)" }}>
-        <span style={{ color: "var(--sk-text-primary)" }}>Период назначения</span>
-        <button type="button" onClick={() => setOpen((o) => !o)} className="sk-clickable" style={{
-          display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, height: 48,
-          padding: "0 12px", borderRadius: "var(--sk-radius-form)", border: "none",
-          background: "var(--sk-surface-page)", boxShadow: "inset 0 0 0 1px var(--sk-stroke)",
-          font: "var(--sk-label-3-regular)", color: current ? "var(--sk-text-primary)" : "var(--sk-text-secondary)",
-          textAlign: "left", cursor: "pointer",
-        }}>
-          <span className="sk-row sk-gap-2" style={{ alignItems: "center", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-            <IconCalendar size={18} color="var(--sk-icon-secondary)" />
-            {current ? current.label : "Все"}
-          </span>
-          <IconChevronDown size={16} color="var(--sk-icon-secondary)" style={{ flexShrink: 0, transform: open ? "rotate(180deg)" : "none" }} />
-        </button>
-      </label>
-      {open && (
-        <div style={{
-          position: "absolute", top: "calc(100% + 6px)", left: 0, zIndex: 50, background: "var(--sk-surface-page)",
-          borderRadius: "var(--sk-radius-3)", boxShadow: "var(--sk-shadow-m)", padding: 8, minWidth: 200,
-        }}>
-          <div className="sk-col sk-gap-1">
-            {PERIOD_PRESETS.map((p) => (
-              <div key={p.id} style={{ padding: "8px 10px", borderRadius: "var(--sk-radius-2)" }}>
-                <Radio checked={value === p.id} onChange={() => { onChange(p.id); setOpen(false); }} label={p.label} />
-              </div>
-            ))}
-            {value && (
-              <button className="sk-link-btn sk-label-4-regular" style={{ padding: "8px 10px", textAlign: "left" }}
-                onClick={() => { onChange(""); setOpen(false); }}>Сбросить</button>
-            )}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ---- "Таблетки"-табы: активная — чёрная капсула, неактивные — светло-серые.
-// Тот же цветовой язык, что у Button variant="neutral" mode="primary" (чёрный/белый
-// текст) — просто применён к переключателю вкладок вместо подчёркивания. ----
-function PillTabs({ items, active, onChange }) {
-  return (
-    <div className="sk-row sk-gap-2" style={{ flexWrap: "wrap" }}>
-      {items.map((it) => {
-        const sel = it.id === active;
-        return (
-          <button key={it.id} type="button" onClick={() => onChange(it.id)} className="sk-clickable" style={{
-            display: "inline-flex", alignItems: "center", gap: 6, height: 32, padding: "0 14px",
-            borderRadius: "var(--sk-radius-full)", border: "none",
-            background: sel ? "var(--graphite-graphite-0)" : "var(--graphite-graphite-97)",
-            color: sel ? "var(--sk-text-contrast)" : "var(--sk-text-secondary)",
-            font: "var(--sk-label-3-regular)", cursor: "pointer", whiteSpace: "nowrap",
-          }}>
-            {it.label}
-            {it.count !== undefined && <span style={{ opacity: sel ? 0.75 : 0.6 }}>{it.count}</span>}
-          </button>
-        );
-      })}
-    </div>
-  );
-}
-
 const emptyFilters = { status: "", planType: "", department: "", template: "", manager: "", assignMethod: "", risk: "" };
-
-// Разбор дат в формате "DD.MM.YY" (тот же формат, что и в hr/queue.html) — нужен, чтобы
-// пресеты периода назначения ("Неделя", "Месяц" и т.д.) реально фильтровали список,
-// а не были декоративной кнопкой.
-function parseShortDate(d) {
-  const m = /^(\d{2})\.(\d{2})\.(\d{2})$/.exec(d || "");
-  if (!m) return null;
-  return new Date(2000 + parseInt(m[3], 10), parseInt(m[2], 10) - 1, parseInt(m[1], 10));
-}
-function isInPeriod(dateStr, period) {
-  if (!period) return true;
-  const date = parseShortDate(dateStr);
-  if (!date) return false;
-  const today = new Date(); today.setHours(0, 0, 0, 0);
-  const diffDays = Math.round((today - date) / 86400000);
-  if (period === "today") return diffDays === 0;
-  if (period === "week") return diffDays >= 0 && diffDays <= 7;
-  if (period === "month") return diffDays >= 0 && diffDays <= 31;
-  if (period === "quarter") return diffDays >= 0 && diffDays <= 92;
-  return true; // "custom" — пресет без диапазона в прототипе, не сужает список
-}
 
 function DraftCard({ d }) {
   return (
@@ -359,30 +255,6 @@ function BulkManagerModal({ people, managers, onClose, onConfirm }) {
   );
 }
 
-// "Сменить срок плана" массово — единая новая дата окончания для всей выборки. Дата
-// начала не трогаем (план уже идёт), сдвигаем только plannedEndDate — тот же принцип,
-// что и остальные bulk-модалки: одно новое значение применяется ко всем выбранным.
-function BulkRescheduleModal({ people, onClose, onConfirm }) {
-  const { DatePicker } = window.SkillazCoreDesignSystem_bf9566;
-  const [date, setDate] = React.useState(null);
-  function fmt(d) {
-    if (!d) return "";
-    const dt = d instanceof Date ? d : new Date(d);
-    return dt.toLocaleDateString("ru-RU", { day: "2-digit", month: "2-digit", year: "numeric" });
-  }
-  return (
-    <Modal open title={"Сменить срок плана: " + people.length} onClose={onClose} size="s"
-      secondary={<Button mode="secondary" onClick={onClose}>Отмена</Button>}
-      primary={<Button variant="accent" disabled={!date} onClick={() => onConfirm(fmt(date))}>Сменить срок</Button>}>
-      <div className="sk-col sk-gap-3">
-        <div className="sk-muted">Новая дата окончания будет установлена для всех выбранных планов. Сотрудники и руководители получат уведомление об изменении срока.</div>
-        <DatePicker label="Новая дата окончания" onChange={setDate} />
-        <SelectedList people={people} note={(p) => "сейчас до: " + p.plannedEndDate} />
-      </div>
-    </Modal>
-  );
-}
-
 // "Заменить / удалить элемент в назначенных планах" — доступно только при активной
 // группировке по шаблону (ТЗ п. "Массовые действия"): сценарий тип элемента → элемент
 // для замены → новый элемент → подтверждение, с итогом успешно/частично выполнено.
@@ -403,35 +275,41 @@ const ELEMENT_CATALOG = {
   survey: ["Опрос по итогам первых 30 дней", "Опросник для линейных сотрудников"],
 };
 
-// Единое окно без пошагового визарда: поля раскрываются каскадно по мере выбора
-// (тип → элемент → новый элемент), но всё видно и редактируемо сразу, без "Далее".
 function BulkReplaceElementModal({ people, mode, onClose, onConfirm }) {
   // mode: "replace" | "delete"
   const [type, setType] = React.useState(null);
   const [fromEl, setFromEl] = React.useState(null);
   const [toEl, setToEl] = React.useState(null);
+  const [step, setStep] = React.useState(1);
   const catalog = type ? ELEMENT_CATALOG[type] || [] : [];
-  const canConfirm = mode === "delete" ? !!fromEl : !!fromEl && !!toEl;
+  const canNext = step === 1 ? !!type : step === 2 ? !!fromEl : mode === "delete" ? true : !!toEl;
+  const lastStep = mode === "delete" ? 2 : 3;
   const title = mode === "delete" ? "Удалить элемент из назначенных планов" : "Заменить элемент в назначенных планах";
+
+  function next() {
+    if (step < lastStep) { setStep(step + 1); return; }
+    onConfirm({ type, fromEl, toEl: mode === "delete" ? null : toEl });
+  }
 
   return (
     <Modal open title={title + ": " + people.length} onClose={onClose} size="m"
       secondary={<Button mode="secondary" onClick={onClose}>Отмена</Button>}
-      primary={<Button variant={mode === "delete" ? "negative" : "accent"} disabled={!canConfirm}
-        onClick={() => onConfirm({ type, fromEl, toEl: mode === "delete" ? null : toEl })}>
-        {mode === "delete" ? "Удалить" : "Заменить"}
+      primary={<Button variant={mode === "delete" ? "negative" : "accent"} disabled={!canNext} onClick={next}>
+        {step < lastStep ? "Далее" : mode === "delete" ? "Удалить" : "Заменить"}
       </Button>}>
       <div className="sk-col sk-gap-4">
         <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>
           Действие применится только к планам из выбранной группы (общий шаблон), где найден указанный элемент. Планы без этого элемента не изменятся.
         </div>
-        <Select label="Тип элемента" placeholder="Выберите тип" value={type}
-          options={ELEMENT_TYPES} onChange={(v) => { setType(v); setFromEl(null); setToEl(null); }} />
-        {type && (
-          <Select label={mode === "delete" ? "Элемент для удаления" : "Элемент, который нужно заменить"} placeholder="Выберите элемент" value={fromEl}
-            options={catalog.map((c) => ({ value: c, label: c }))} onChange={(v) => { setFromEl(v); setToEl(null); }} />
+        {step >= 1 && (
+          <Select label="Тип элемента" placeholder="Выберите тип" value={type}
+            options={ELEMENT_TYPES} onChange={(v) => { setType(v); setFromEl(null); setToEl(null); }} />
         )}
-        {fromEl && mode === "replace" && (
+        {step >= 2 && (
+          <Select label={mode === "delete" ? "Элемент для удаления" : "Элемент, который нужно заменить"} placeholder="Выберите элемент" value={fromEl}
+            options={catalog.map((c) => ({ value: c, label: c }))} onChange={setFromEl} />
+        )}
+        {step >= 3 && mode === "replace" && (
           <Select label="Новый элемент" placeholder="Выберите новый элемент" value={toEl}
             options={catalog.filter((c) => c !== fromEl).map((c) => ({ value: c, label: c }))} onChange={setToEl} />
         )}
@@ -469,7 +347,6 @@ function AssignedTable() {
   const [q, setQ] = React.useState("");
   const [activeIndicator, setActiveIndicator] = React.useState(null);
   const [filters, setFilters] = React.useState(emptyFilters);
-  const [period, setPeriod] = React.useState("");
   const [filtersOpen, setFiltersOpen] = React.useState(false);
   const [showHiddenStatuses, setShowHiddenStatuses] = React.useState(false);
   const [groupBy, setGroupBy] = React.useState("");
@@ -479,17 +356,16 @@ function AssignedTable() {
   const [plans, setPlans] = React.useState(D.hrAssignedPlans);
   const [selected, setSelected] = React.useState(() => new Set());
   const [visibleCols, setVisibleCols] = React.useState(ASSIGNED_COLUMNS_META.map((c) => c.key));
-  const [bulkAction, setBulkAction] = React.useState(null); // "unassign" | "reassign" | "manager" | "reschedule" | "replace" | "delete"
+  const [bulkAction, setBulkAction] = React.useState(null); // "unassign" | "reassign" | "manager" | "replace" | "delete"
   const [bulkResult, setBulkResult] = React.useState(null);
-  const [sort, setSort] = React.useState({ key: null, dir: "asc" }); // сортировка по столбцам (ТЗ DEV-62512)
 
   function showToast(msg) { setToast(msg); window.setTimeout(() => setToast(null), 2600); }
 
   const departments = [...new Set(D.hrAssignedPlans.map((p) => p.department))];
   const managers = [...new Set(D.hrAssignedPlans.map((p) => p.manager))];
   const planTypes = [...new Set(D.hrAssignedPlans.map((p) => p.planType))];
-  const hasActiveFilters = !!(filters.status || filters.planType || filters.department || filters.template || filters.manager || filters.assignMethod || filters.risk || period);
-  const activeFilterCount = Object.values(filters).filter(Boolean).length + (period ? 1 : 0);
+  const hasActiveFilters = !!(filters.status || filters.planType || filters.department || filters.template || filters.manager || filters.assignMethod || filters.risk);
+  const activeFilterCount = Object.values(filters).filter(Boolean).length;
 
   const needle = q.trim().toLowerCase();
   let list = plans.filter((p) => {
@@ -506,33 +382,8 @@ function AssignedTable() {
     if (filters.assignMethod && p.assignMethod !== filters.assignMethod) return false;
     if (filters.risk === "risk" && p.risks.length === 0) return false;
     if (filters.risk === "no_risk" && p.risks.length > 0) return false;
-    if (period && !isInPeriod(p.assignedDate, period)) return false;
     return true;
   });
-
-  // Сортировка по столбцам — доступна для колонок с однозначным порядком (текст/дата/
-  // прогресс); группировка ниже применяется поверх уже отсортированного списка.
-  const SORT_ACCESSORS = {
-    name: (p) => p.name,
-    plan: (p) => p.planTitle,
-    status: (p) => STATUS_META[p.status] ? STATUS_META[p.status].label : p.status,
-    progress: (p) => p.checklistProgress,
-    manager: (p) => p.manager,
-    dates: (p) => p.assignedDate,
-    assignMethod: (p) => p.assignMethod,
-    lastActivity: (p) => p.lastActivity,
-  };
-  if (sort.key && SORT_ACCESSORS[sort.key]) {
-    const acc = SORT_ACCESSORS[sort.key];
-    list = [...list].sort((a, b) => {
-      const av = acc(a), bv = acc(b);
-      const cmp = typeof av === "number" && typeof bv === "number" ? av - bv : String(av).localeCompare(String(bv), "ru");
-      return sort.dir === "asc" ? cmp : -cmp;
-    });
-  }
-  function toggleSort(key) {
-    setSort((s) => s.key === key ? { key, dir: s.dir === "asc" ? "desc" : "asc" } : { key, dir: "asc" });
-  }
 
   function cancelPlanConfirm(reason) {
     setPlans((list) => list.map((x) => x.id === cancelPlan.id ? { ...x, status: "cancelled", risks: [...x.risks, "Отменено HR: " + reason] } : x));
@@ -589,34 +440,11 @@ function AssignedTable() {
     runBulkResult(selectedPeople, (x) => ({ ...x, manager }));
     setBulkAction(null);
   }
-  function bulkReschedule(newEndDate) {
-    runBulkResult(selectedPeople, (x) => ({ ...x, plannedEndDate: newEndDate }));
-    setBulkAction(null);
-  }
   function bulkReplaceElement(payload) {
     // В прототипе нет модели элементов внутри плана — засчитываем как применённое ко
     // всем редактируемым планам текущей группы (по шаблону), демонстрируя сам сценарий.
     runBulkResult(selectedPeople, (x) => x);
     setBulkAction(null);
-  }
-
-  // Кликабельный заголовок с индикатором направления — Table.jsx рендерит col.title
-  // как есть, поэтому сортировка реализована здесь через тот же title-слот.
-  function SortableHeader({ label, sortKey }) {
-    const activeSort = sort.key === sortKey;
-    return (
-      <button type="button" onClick={() => toggleSort(sortKey)} className="sk-clickable sk-row sk-gap-1" style={{
-        border: "none", background: "transparent", padding: 0, font: "inherit", color: "inherit",
-        cursor: "pointer", alignItems: "center",
-      }}>
-        {label}
-        <span className="sk-col" style={{ lineHeight: 0, opacity: activeSort ? 1 : 0.35 }}>
-          {activeSort && sort.dir === "desc"
-            ? <IconChevronDown size={13} />
-            : <Icons.IconChevronUp size={13} />}
-        </span>
-      </button>
-    );
   }
 
   const columnRenderers = {
@@ -666,7 +494,7 @@ function AssignedTable() {
       </div>
     ) },
     ...ASSIGNED_COLUMNS_META.filter((c) => visibleCols.includes(c.key)).map((c) => ({
-      key: c.key, title: <SortableHeader label={c.title} sortKey={c.key} />, width: c.key === "plan" ? 280 : c.key === "status" ? 150 : c.key === "progress" ? 220
+      key: c.key, title: c.title, width: c.key === "plan" ? 280 : c.key === "status" ? 150 : c.key === "progress" ? 220
         : c.key === "manager" ? 180 : c.key === "dates" ? 180 : c.key === "assignMethod" ? 190 : c.key === "lastActivity" ? 140 : 260,
       render: columnRenderers[c.key],
     })),
@@ -689,20 +517,20 @@ function AssignedTable() {
 
   return (
     <div className="sk-col sk-gap-4">
-      <div className="sk-row sk-gap-2" style={{ flexWrap: "wrap" }}>
+      <div style={{ display: "flex", gap: 12 }}>
         {QUICK_INDICATORS.map((ind) => {
           const count = plans.filter((p) => (!HIDDEN_BY_DEFAULT.includes(p.status) || showHiddenStatuses) && ind.test(p)).length;
           const active = activeIndicator === ind.id;
           return (
-            <Card key={ind.id} bordered padding={16}
-              style={{ cursor: "pointer", flex: "1 1 200px", minWidth: 0, outline: active ? "2px solid var(--sk-stroke-accent)" : "none" }}>
-              <div className="sk-row sk-gap-3 sk-clickable" style={{ alignItems: "center" }} onClick={() => setActiveIndicator(active ? null : ind.id)}>
-                <span style={{ width: 44, height: 44, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", background: ind.bg, color: ind.fg }}>
-                  <ind.icon size={20} />
+            <Card key={ind.id} bordered padding={12}
+              style={{ cursor: "pointer", flex: "1 1 0", minWidth: 0, outline: active ? "2px solid var(--sk-stroke-accent)" : "none" }}>
+              <div className="sk-row sk-gap-2 sk-clickable" onClick={() => setActiveIndicator(active ? null : ind.id)} style={{ alignItems: "center" }}>
+                <span style={{ width: 28, height: 28, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", background: ind.bg, color: ind.fg }}>
+                  <ind.icon size={15} />
                 </span>
-                <div className="sk-col" style={{ gap: 2, minWidth: 0 }}>
+                <div className="sk-col" style={{ gap: 0, minWidth: 0 }}>
+                  <div className="sk-label-2">{count}</div>
                   <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{ind.label}</div>
-                  <div className="sk-title-5">{count}</div>
                 </div>
               </div>
             </Card>
@@ -711,22 +539,15 @@ function AssignedTable() {
       </div>
 
       <div className="sk-col sk-gap-3">
-        <div className="sk-row sk-gap-2" style={{ alignItems: "center", flexWrap: "wrap" }}>
-          <Input size="s" icon={<IconSearch size={18} />} placeholder="Сотрудник, план, должность, руководитель, шаблон" value={q}
-            onChange={(e) => setQ(e.target.value || "")} style={{ maxWidth: 480, flex: 1 }} />
-          <Button mode="secondary" icon={<Icons.IconFilter size={16} />} onClick={() => setFiltersOpen((o) => !o)}
-            style={{ background: "var(--sk-surface-page)", border: "1px solid var(--sk-stroke)" }}>
+        <div className="sk-row sk-gap-2">
+          <Input icon={<IconSearch size={20} />} placeholder="Сотрудник, план, должность, руководитель, шаблон" value={q}
+            onChange={(e) => setQ(e.target.value || "")} style={{ flex: 1 }} />
+          <Button mode="secondary" icon={<Icons.IconFilter size={16} />} onClick={() => setFiltersOpen((o) => !o)}>
             Фильтры{hasActiveFilters ? " · " + activeFilterCount : ""}
           </Button>
-          <div className="sk-row sk-gap-2" style={{ marginLeft: "auto", alignItems: "center" }}>
-            <GroupByMenu value={groupBy} onChange={setGroupBy} />
-            <ColumnsMenu all={ASSIGNED_COLUMNS_META} visible={visibleCols}
-              onChange={(key) => setVisibleCols((v) => v.includes(key) ? v.filter((k) => k !== key) : [...v, key])} />
-          </div>
         </div>
         {filtersOpen && (
           <div className="sk-row sk-gap-2" style={{ flexWrap: "wrap", alignItems: "flex-end" }}>
-            <PeriodMenu value={period} onChange={setPeriod} />
             <Select label="Статус" placeholder="Все" value={filters.status || null}
               options={Object.entries(STATUS_META).map(([v, m]) => ({ value: v, label: m.label }))}
               onChange={(v) => setFilters((f) => ({ ...f, status: v || "" }))} style={{ width: 180 }} />
@@ -745,18 +566,29 @@ function AssignedTable() {
               options={[{ value: "risk", label: "С риском" }, { value: "no_risk", label: "Без риска" }]}
               onChange={(v) => setFilters((f) => ({ ...f, risk: v || "" }))} style={{ width: 150 }} />
             {(hasActiveFilters || q || activeIndicator) && (
-              <button className="sk-link-btn sk-label-4-regular" style={{ height: 48 }} onClick={() => { setFilters(emptyFilters); setPeriod(""); setQ(""); setActiveIndicator(null); }}>Сбросить</button>
+              <button className="sk-link-btn sk-label-4-regular" style={{ height: 48 }} onClick={() => { setFilters(emptyFilters); setQ(""); setActiveIndicator(null); }}>Сбросить</button>
             )}
           </div>
         )}
       </div>
 
-      <div className="sk-row sk-gap-4" style={{ alignItems: "center", flexWrap: "wrap" }}>
-        <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Найдено планов: {list.length}</span>
-        <label className="sk-row sk-gap-2 sk-clickable" style={{ font: "var(--sk-label-4-regular)", color: "var(--sk-text-secondary)" }}>
-          <input type="checkbox" checked={showHiddenStatuses} onChange={(e) => setShowHiddenStatuses(e.target.checked)} />
-          Показывать завершённые / неуспешные / отменённые
-        </label>
+      <div className="sk-row" style={{ justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
+        <div className="sk-row sk-gap-4" style={{ alignItems: "center" }}>
+          <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Найдено планов: {list.length}</span>
+
+          <label className="sk-row sk-gap-2 sk-clickable" style={{ font: "var(--sk-label-4-regular)", color: "var(--sk-text-secondary)" }}>
+            <input type="checkbox" checked={showHiddenStatuses} onChange={(e) => setShowHiddenStatuses(e.target.checked)} />
+            Показывать завершённые / неуспешные / отменённые
+          </label>
+        </div>
+        <div className="sk-row sk-gap-2" style={{ alignItems: "center" }}>
+          <GroupByMenu value={groupBy} onChange={setGroupBy} />
+          <ColumnsMenu all={ASSIGNED_COLUMNS_META} visible={visibleCols}
+            onChange={(key) => setVisibleCols((v) => v.includes(key) ? v.filter((k) => k !== key) : [...v, key])} />
+          <Tooltip content="Переход в раздел отчётов по планам адаптации.">
+            <Button mode="secondary" disabled>Отчёты</Button>
+          </Tooltip>
+        </div>
       </div>
 
       {list.length > 0 && (
@@ -796,25 +628,22 @@ function AssignedTable() {
 
       {selected.size > 0 && (
         <div style={{
-          position: "fixed", left: 24, right: 24, bottom: 24, zIndex: 90,
-          display: "flex", alignItems: "center", gap: 10, padding: "12px 20px", borderRadius: "var(--sk-radius-4)",
-          background: "var(--sk-accent)", boxShadow: "var(--sk-shadow-l)", color: "#fff", flexWrap: "wrap",
+          position: "fixed", left: "50%", bottom: 24, transform: "translateX(-50%)", zIndex: 90,
+          display: "flex", alignItems: "center", gap: 10, padding: "12px 16px", borderRadius: "var(--sk-radius-4)",
+          background: "var(--sk-text-primary)", boxShadow: "var(--sk-shadow-l)", color: "#fff", flexWrap: "wrap",
         }}>
           <span className="sk-label-3" style={{ color: "#fff", whiteSpace: "nowrap" }}>Выбрано: {selected.size}</span>
-          <div className="sk-row sk-gap-2" style={{ flex: 1, flexWrap: "wrap" }}>
-            <Button mode="secondary" icon={<IconUnlink size={15} />} onClick={() => setBulkAction("unassign")}>Снять назначение</Button>
-            <Button mode="secondary" icon={<IconRepeat size={15} />} onClick={() => setBulkAction("reassign")}>Назначить / переназначить</Button>
-            <Button mode="secondary" icon={<IconUserSwitch size={15} />} onClick={() => setBulkAction("manager")}>Заменить руководителя</Button>
-            <Button mode="secondary" icon={<IconCalendar size={15} />} onClick={() => setBulkAction("reschedule")}>Сменить срок плана</Button>
-            {groupBy === "templateId" && (
-              <>
-                <Button mode="secondary" onClick={() => setBulkAction("replace")}>Заменить элемент</Button>
-                <Button mode="secondary" onClick={() => setBulkAction("delete")}>Удалить элемент</Button>
-              </>
-            )}
-          </div>
+          <Button mode="secondary" icon={<IconUnlink size={15} />} onClick={() => setBulkAction("unassign")}>Снять назначение</Button>
+          <Button mode="secondary" icon={<IconRepeat size={15} />} onClick={() => setBulkAction("reassign")}>Назначить / переназначить</Button>
+          <Button mode="secondary" icon={<IconUserSwitch size={15} />} onClick={() => setBulkAction("manager")}>Заменить руководителя</Button>
+          {groupBy === "templateId" && (
+            <>
+              <Button mode="secondary" onClick={() => setBulkAction("replace")}>Заменить элемент</Button>
+              <Button mode="secondary" onClick={() => setBulkAction("delete")}>Удалить элемент</Button>
+            </>
+          )}
           <button onClick={clearSelection} style={{
-            width: 32, height: 32, borderRadius: "50%", border: "none", background: "rgba(255,255,255,0.18)",
+            width: 32, height: 32, borderRadius: "50%", border: "none", background: "rgba(255,255,255,0.12)",
             color: "#fff", display: "inline-flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0,
           }}>
             <IconX size={16} />
@@ -825,7 +654,6 @@ function AssignedTable() {
       {bulkAction === "unassign" && <BulkUnassignModal people={selectedPeople} onClose={() => setBulkAction(null)} onConfirm={bulkUnassign} />}
       {bulkAction === "reassign" && <BulkReassignModal people={selectedPeople} onClose={() => setBulkAction(null)} onConfirm={bulkReassign} />}
       {bulkAction === "manager" && <BulkManagerModal people={selectedPeople} managers={managers} onClose={() => setBulkAction(null)} onConfirm={bulkManager} />}
-      {bulkAction === "reschedule" && <BulkRescheduleModal people={selectedPeople} onClose={() => setBulkAction(null)} onConfirm={bulkReschedule} />}
       {(bulkAction === "replace" || bulkAction === "delete") && (
         <BulkReplaceElementModal people={selectedPeople} mode={bulkAction} onClose={() => setBulkAction(null)} onConfirm={bulkReplaceElement} />
       )}
@@ -844,14 +672,12 @@ function Page() {
   const [tab, setTab] = React.useState("assigned");
   return (
     <AppShell role="hr" active="hr-plans" base="..">
-      <div className="sk-row" style={{ justifyContent: "space-between", alignItems: "center" }}>
-        <div className="sk-title-4">Планы сотрудников</div>
-        <div className="sk-row sk-gap-2" style={{ alignItems: "center" }}>
-          <Tooltip content="Переход в раздел отчётов по планам адаптации.">
-            <Button mode="tertiary" icon={<Icons.IconFileText size={16} />} disabled>Отчёты</Button>
-          </Tooltip>
-          <Button variant="accent" icon={<IconPlusSm size={16} />} onClick={() => {}}>Создать план</Button>
+      <div className="sk-row" style={{ justifyContent: "space-between", alignItems: "flex-start" }}>
+        <div className="sk-col sk-gap-2">
+          <div className="sk-title-4">Планы сотрудников</div>
+          <div className="sk-muted">Индивидуальные планы, назначенные сотрудникам, и черновики, которые ещё не назначены.</div>
         </div>
+        <Button variant="accent" icon={<IconPlusSm size={16} />} disabled>Создать план</Button>
       </div>
 
       <Tabs items={[{ id: "assigned", label: "Назначенные планы", count: D.hrAssignedPlans.length }, { id: "drafts", label: "Черновики", count: D.planDrafts.length }]}
