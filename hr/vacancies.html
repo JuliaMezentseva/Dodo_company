@@ -20,7 +20,10 @@ const { AppShell, Icons } = window.Site;
 const { IconPlusSm, IconUpload, IconSearch, IconEdit, IconMapPin, IconBriefcase, IconFileText } = Icons;
 
 const D = window.SITE_DATA;
-function fmtMoney(n) { return n.toLocaleString("ru-RU"); }
+function fmtMoney(n) {
+  if (n === undefined || n === null || n === "") return "—";
+  return Number(n).toLocaleString("ru-RU");
+}
 function splitLines(text) { return text.split("\n").map((s) => s.trim()).filter(Boolean); }
 function splitCsv(text) { return text.split(",").map((s) => s.trim()).filter(Boolean); }
 
