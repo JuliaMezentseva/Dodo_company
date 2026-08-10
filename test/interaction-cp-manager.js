@@ -60,7 +60,7 @@ const target = path.resolve(__dirname, "..", "manager", "plan.html");
     await tick(80);
     body = w2.document.body.textContent;
     console.log("[B] Drawer title greets employee by name:", body.includes("Как проходит адаптация — Юлия") ? "PASS" : "FAIL");
-    console.log("[B] Survey answers section shown ('Заполнено' badge):", body.includes("Заполнено") ? "PASS" : "FAIL");
+    console.log("[B] Survey answers section shown ('Ответы сотрудника'):", body.includes("Ответы сотрудника") ? "PASS" : "FAIL");
     console.log("[B] Textareas are editable (not disabled):", [...w2.document.querySelectorAll("textarea")].every(t => !t.disabled) ? "PASS" : "FAIL");
     console.log("[B] Risk level pills present (отсутствует/Низкий/Средний/Высокий):",
       body.includes("отсутствует") && body.includes("Низкий") && body.includes("Средний") && body.includes("Высокий") ? "PASS" : "FAIL");

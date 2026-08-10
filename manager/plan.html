@@ -75,12 +75,13 @@ const SCALE_MOUTHS = {
   4: "M8.2 14.4c1.4 1 6.2 1 7.6 0",
   5: "M7.6 13.8c1.9 2.6 6.9 2.6 8.8 0",
 };
+// viewBox уже, чем 24 — черты лица занимают почти весь кружок вместо мелкой картинки по центру
 function ScaleFace({ n, size = 22, color }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-      <circle cx="9" cy="10" r="1.25" fill={color} />
-      <circle cx="15" cy="10" r="1.25" fill={color} />
-      <path d={SCALE_MOUTHS[n]} stroke={color} strokeWidth="1.6" strokeLinecap="round" fill="none" />
+    <svg width={size} height={size} viewBox="4 4 16 16" fill="none">
+      <circle cx="9" cy="10" r="1.35" fill={color} />
+      <circle cx="15" cy="10" r="1.35" fill={color} />
+      <path d={SCALE_MOUTHS[n]} stroke={color} strokeWidth="1.7" strokeLinecap="round" fill="none" />
     </svg>
   );
 }
@@ -940,6 +941,7 @@ const RISK_LEVELS = [
   { value: "medium", label: "Средний риск" },
   { value: "high", label: "Высокий риск" },
 ];
+const RISK_HUE = { none: "positive", low: "neutral", medium: "warning", high: "negative" };
 
 // Тёплая плашка статуса КТ — аналог блока "Обратная связь по итогам" у сотрудника
 // (CheckpointModal в employee/plan.html): вместо сухого чек-листа "кто что заполнил"
@@ -951,11 +953,11 @@ function CheckpointStatusBanner({ done, surveyReady, reportReady }) {
   else if (!reportReady) { title = "Готово к завершению"; note = "Заполните обязательные поля выше, чтобы завершить контрольную точку."; }
   else { title = "Всё заполнено"; note = "Можно завершить контрольную точку."; }
   return (
-    <div className="sk-row sk-gap-3" style={{ padding: 14, background: CP_YELLOW_BG, borderRadius: "var(--sk-radius-3)", alignItems: "center" }}>
+    <div className="sk-row sk-gap-3" style={{ padding: 14, background: done ? "var(--sk-positive-secondary)" : "var(--sk-surface-secondary)", borderRadius: "var(--sk-radius-3)", alignItems: "flex-start" }}>
       <span style={{ width: 32, height: 32, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "var(--sk-surface-page)" }}>
-        <IconClock size={16} color="var(--sk-icon-secondary)" />
+        {done ? <IconCheck size={16} color="var(--sk-icon-positive)" /> : <IconClock size={16} color="var(--sk-icon-secondary)" />}
       </span>
-      <div className="sk-col" style={{ gap: 0 }}>
+      <div className="sk-col sk-gap-1">
         <div className="sk-label-3">{title}</div>
         <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{note}</div>
       </div>
@@ -1004,15 +1006,12 @@ function ManagerCheckpointDrawer({ checkpoint, viewerName, employee, canEdit, on
 
         {done && <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Срок: {checkpoint.dateLabel || checkpoint.date}</div>}
 
-        <div className="sk-col sk-gap-3" style={{ padding: 16, background: "var(--sk-surface-secondary)", borderRadius: "var(--sk-radius-3)" }}>
+        <div className="sk-col sk-gap-2" style={{ padding: 16, background: "var(--sk-surface-secondary)", borderRadius: "var(--sk-radius-3)" }}>
           <div className="sk-label-3">Повестка</div>
-          <div className="sk-col sk-gap-2">
+          <div className="sk-col sk-gap-1">
             {checkpoint.agenda.map((a, i) => (
               <div key={i} className="sk-row sk-gap-2" style={{ alignItems: "flex-start" }}>
-                <span style={{
-                  width: 22, height: 22, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center",
-                  background: "var(--sk-surface-dark)", color: "var(--sk-text-contrast)", font: "var(--sk-label-4)",
-                }}>{i + 1}</span>
+                <span className="sk-muted" style={{ font: "var(--sk-label-3)", width: 14, flexShrink: 0 }}>{i + 1}.</span>
                 <div className="sk-label-3-regular">{a}</div>
               </div>
             ))}
@@ -1023,35 +1022,17 @@ function ManagerCheckpointDrawer({ checkpoint, viewerName, employee, canEdit, on
           <Alert hue="warning">Сотрудник ещё не заполнил опрос — итог можно зафиксировать после того, как он ответит.</Alert>
         ) : (
           <div className="sk-col sk-gap-4">
-            <div className="sk-row sk-gap-2" style={{ alignItems: "center" }}>
-              <span className="sk-label-3">Ответы сотрудника</span>
-              <Tag size="s" hue="positive">Заполнено</Tag>
-            </div>
+            <div className="sk-label-3">Ответы сотрудника</div>
             {checkpoint.survey.map((q, i) => (
               <div key={i} className="sk-col sk-gap-2">
                 <div className="sk-label-3-regular">{q.q}</div>
                 {q.type === "scale" ? (
-                  <div className="sk-col sk-gap-1">
-                    <div className="sk-row sk-gap-2">
-                      {[1, 2, 3, 4, 5].map((n) => {
-                        const active = q.answer === n;
-                        return (
-                          <span key={n} style={{
-                            width: 34, height: 34, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center",
-                            background: SCALE_TINTS[n],
-                            border: (active ? "2.5px" : "1.5px") + " solid " + SCALE_BORDERS[n],
-                            boxShadow: active ? "0 0 0 3px " + SCALE_TINTS[n] : "none",
-                            opacity: q.answer !== null && !active ? 0.35 : 1,
-                          }}><ScaleFace n={n} size={16} color={SCALE_BORDERS[n]} /></span>
-                        );
-                      })}
-                    </div>
-                    {(q.minLabel || q.maxLabel) && (
-                      <div className="sk-row" style={{ justifyContent: "space-between" }}>
-                        <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{q.minLabel}</span>
-                        <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{q.maxLabel}</span>
-                      </div>
-                    )}
+                  <div className="sk-row sk-gap-2" style={{ alignItems: "center" }}>
+                    <span style={{
+                      width: 34, height: 34, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center",
+                      background: SCALE_TINTS[q.answer], border: "1.5px solid " + SCALE_BORDERS[q.answer],
+                    }}><ScaleFace n={q.answer} size={22} color={SCALE_BORDERS[q.answer]} /></span>
+                    <span className="sk-label-3-regular">{[q.minLabel, null, null, null, q.maxLabel][q.answer - 1] || (q.answer + " из 5")}</span>
                   </div>
                 ) : (
                   <div className="sk-label-3-regular" style={{ color: "var(--sk-text-secondary)", background: "var(--sk-surface-secondary)", borderRadius: "var(--sk-radius-2)", padding: "10px 12px" }}>{q.answer}</div>
@@ -1084,7 +1065,7 @@ function ManagerCheckpointDrawer({ checkpoint, viewerName, employee, canEdit, on
         <div className="sk-col sk-gap-2">
           <div className="sk-row sk-gap-1"><span className="sk-label-3">Уровень риска</span><span style={{ color: "var(--sk-text-negative)" }}>*</span></div>
           {done ? (
-            <Tag size="s" hue={riskLevel === "high" ? "negative" : riskLevel === "medium" ? "warning" : riskLevel === "low" ? "warning" : "positive"} style={{ alignSelf: "flex-start" }}>
+            <Tag size="s" hue={RISK_HUE[riskLevel] || "neutral"} style={{ alignSelf: "flex-start" }}>
               {(RISK_LEVELS.find((r) => r.value === riskLevel) || {}).label || "—"}
             </Tag>
           ) : (

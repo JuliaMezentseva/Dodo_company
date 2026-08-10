@@ -44,8 +44,8 @@ setTimeout(() => {
   cpRow.closest(".sk-clickable").dispatchEvent(new w.MouseEvent("click", { bubbles: true }));
   setTimeout(() => {
     console.log("Drawer opened with survey:", w.document.body.textContent.includes("Опрос") ? "PASS" : "FAIL");
-    // Шкальные вопросы рендерятся как круглые 44x44 кнопки с SVG ScaleFace внутри (без текста/эмодзи) — ищем по размеру
-    const scaleButtons = [...w.document.querySelectorAll("button")].filter(b => b.style.width === "44px" && b.querySelector("svg"));
+    // Шкальные вопросы рендерятся как круглые 38x38 кнопки с SVG ScaleFace внутри (без текста/эмодзи) — ищем по размеру
+    const scaleButtons = [...w.document.querySelectorAll("button")].filter(b => b.style.width === "38px" && b.querySelector("svg"));
     console.log("Scale buttons found:", scaleButtons.length);
     // кликаем по 4-й кнопке (индекс 3) в каждой группе из 5 - для первых двух вопросов
     for (let i = 0; i < 5; i++) scaleButtons[i].dispatchEvent(new w.MouseEvent("click", { bubbles: true }));

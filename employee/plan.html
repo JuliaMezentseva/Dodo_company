@@ -68,12 +68,13 @@ const SCALE_MOUTHS = {
   4: "M8.2 14.4c1.4 1 6.2 1 7.6 0",
   5: "M7.6 13.8c1.9 2.6 6.9 2.6 8.8 0",
 };
+// viewBox уже, чем 24 — черты лица занимают почти весь кружок вместо мелкой картинки по центру
 function ScaleFace({ n, size = 22, color }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-      <circle cx="9" cy="10" r="1.25" fill={color} />
-      <circle cx="15" cy="10" r="1.25" fill={color} />
-      <path d={SCALE_MOUTHS[n]} stroke={color} strokeWidth="1.6" strokeLinecap="round" fill="none" />
+    <svg width={size} height={size} viewBox="4 4 16 16" fill="none">
+      <circle cx="9" cy="10" r="1.35" fill={color} />
+      <circle cx="15" cy="10" r="1.35" fill={color} />
+      <path d={SCALE_MOUTHS[n]} stroke={color} strokeWidth="1.7" strokeLinecap="round" fill="none" />
     </svg>
   );
 }
@@ -444,20 +445,19 @@ function CheckpointModal({ checkpoint, onClose, onSubmitSurvey }) {
           )}
         </div>
 
-        <div className="sk-col sk-gap-3" style={{ padding: 16, background: "var(--sk-surface-secondary)", borderRadius: "var(--sk-radius-3)" }}>
-          <div className="sk-label-3">Шаги</div>
-          <div className="sk-col sk-gap-2">
-            {CHECKPOINT_STEPS.map((s, i) => (
-              <div key={i} className="sk-row sk-gap-2" style={{ alignItems: "flex-start" }}>
-                <span style={{
-                  width: 22, height: 22, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center",
-                  background: "var(--sk-surface-dark)", color: "var(--sk-text-contrast)", font: "var(--sk-label-4)",
-                }}>{i + 1}</span>
-                <div className="sk-label-3-regular">{s}</div>
-              </div>
-            ))}
+        {!submitted && (
+          <div className="sk-col sk-gap-2" style={{ padding: 16, background: "var(--sk-surface-secondary)", borderRadius: "var(--sk-radius-3)" }}>
+            <div className="sk-label-3">Шаги</div>
+            <div className="sk-col sk-gap-1">
+              {CHECKPOINT_STEPS.map((s, i) => (
+                <div key={i} className="sk-row sk-gap-2" style={{ alignItems: "flex-start" }}>
+                  <span className="sk-muted" style={{ font: "var(--sk-label-3)", width: 14, flexShrink: 0 }}>{i + 1}.</span>
+                  <div className="sk-label-3-regular">{s}</div>
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
 
         <div className="sk-col sk-gap-5">
           <div className="sk-label-3">Опрос</div>
@@ -465,27 +465,35 @@ function CheckpointModal({ checkpoint, onClose, onSubmitSurvey }) {
             <div key={i} className="sk-col sk-gap-2">
               <div className="sk-label-3-regular">{q.q}</div>
               {q.type === "scale" ? (
-                <div className="sk-col sk-gap-1">
-                  <div className="sk-row sk-gap-2">
-                    {[1, 2, 3, 4, 5].map((n) => (
-                      <button key={n} type="button" disabled={submitted} onClick={() => setAnswers((a) => a.map((x, ix) => ix === i ? n : x))}
-                        style={{
-                          width: 44, height: 44, borderRadius: "50%", cursor: submitted ? "default" : "pointer",
-                          background: SCALE_TINTS[n],
-                          border: (answers[i] === n ? "2.5px" : "1.5px") + " solid " + SCALE_BORDERS[n],
-                          boxShadow: answers[i] === n ? "0 0 0 3px " + SCALE_TINTS[n] : "none",
-                          opacity: submitted && answers[i] !== n ? 0.4 : 1,
-                          display: "flex", alignItems: "center", justifyContent: "center",
-                        }}><ScaleFace n={n} size={22} color={SCALE_BORDERS[n]} /></button>
-                    ))}
+                submitted ? (
+                  <div className="sk-row sk-gap-2" style={{ alignItems: "center" }}>
+                    <span style={{
+                      width: 38, height: 38, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center",
+                      background: SCALE_TINTS[answers[i]], border: "1.5px solid " + SCALE_BORDERS[answers[i]],
+                    }}><ScaleFace n={answers[i]} size={24} color={SCALE_BORDERS[answers[i]]} /></span>
+                    <span className="sk-label-3-regular">{[q.minLabel, null, null, null, q.maxLabel][answers[i] - 1] || (answers[i] + " из 5")}</span>
                   </div>
-                  {(q.minLabel || q.maxLabel) && (
-                    <div className="sk-row" style={{ justifyContent: "space-between" }}>
-                      <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{q.minLabel}</span>
-                      <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{q.maxLabel}</span>
+                ) : (
+                  <div className="sk-col sk-gap-1">
+                    <div className="sk-row sk-gap-2">
+                      {[1, 2, 3, 4, 5].map((n) => (
+                        <button key={n} type="button" onClick={() => setAnswers((a) => a.map((x, ix) => ix === i ? n : x))}
+                          style={{
+                            width: 38, height: 38, borderRadius: "50%", cursor: "pointer",
+                            background: SCALE_TINTS[n],
+                            border: (answers[i] === n ? "2px" : "1.5px") + " solid " + SCALE_BORDERS[n],
+                            display: "flex", alignItems: "center", justifyContent: "center",
+                          }}><ScaleFace n={n} size={24} color={SCALE_BORDERS[n]} /></button>
+                      ))}
                     </div>
-                  )}
-                </div>
+                    {(q.minLabel || q.maxLabel) && (
+                      <div className="sk-row" style={{ justifyContent: "space-between" }}>
+                        <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{q.minLabel}</span>
+                        <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{q.maxLabel}</span>
+                      </div>
+                    )}
+                  </div>
+                )
               ) : (
                 submitted ? (
                   <div className="sk-label-3-regular">{answers[i]}</div>
@@ -508,13 +516,13 @@ function CheckpointModal({ checkpoint, onClose, onSubmitSurvey }) {
           )}
         </div>
 
-        <div className="sk-row sk-gap-3" style={{ padding: 14, background: "var(--sk-surface-secondary)", borderRadius: "var(--sk-radius-3)", alignItems: "center" }}>
+        <div className="sk-row sk-gap-3" style={{ padding: 14, background: done ? "var(--sk-positive-secondary)" : "var(--sk-surface-secondary)", borderRadius: "var(--sk-radius-3)", alignItems: "flex-start" }}>
           <span style={{ width: 32, height: 32, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "var(--sk-surface-page)" }}>
-            <IconClock size={16} color="var(--sk-icon-secondary)" />
+            {done ? <IconCheck size={16} color="var(--sk-icon-positive)" /> : <IconClock size={16} color="var(--sk-icon-secondary)" />}
           </span>
-          <div className="sk-col" style={{ gap: 0 }}>
+          <div className="sk-col sk-gap-1">
             <div className="sk-label-3">Обратная связь по итогам</div>
-            <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{done ? checkpoint.employeeSummary : "Ожидает заполнения проверяющим"}</div>
+            <div className={done ? "sk-label-3-regular" : "sk-muted"} style={{ font: "var(--sk-label-4-regular)" }}>{done ? checkpoint.employeeSummary : "Ожидает заполнения проверяющим"}</div>
           </div>
         </div>
       </div>
