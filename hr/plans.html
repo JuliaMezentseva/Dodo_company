@@ -350,6 +350,7 @@ function BulkManagerModal({ people, managers, onClose, onConfirm }) {
       secondary={<Button mode="secondary" onClick={onClose}>Отмена</Button>}
       primary={<Button variant="accent" disabled={!manager} onClick={() => onConfirm(manager)}>Заменить</Button>}>
       <div className="sk-col sk-gap-3">
+        <div className="sk-muted">Новый руководитель станет ответственным за подтверждение целей и контрольные точки во всех выбранных планах.</div>
         <Select label="Новый руководитель" placeholder="Выберите руководителя" value={manager}
           options={managers.map((m) => ({ value: m, label: m }))} onChange={setManager} />
         <SelectedList people={people} note={(p) => "сейчас: " + p.manager} />
@@ -358,7 +359,7 @@ function BulkManagerModal({ people, managers, onClose, onConfirm }) {
   );
 }
 
-// "Продлить срок плана" массово — единая новая дата окончания для всей выборки. Дата
+// "Сменить срок плана" массово — единая новая дата окончания для всей выборки. Дата
 // начала не трогаем (план уже идёт), сдвигаем только plannedEndDate — тот же принцип,
 // что и остальные bulk-модалки: одно новое значение применяется ко всем выбранным.
 function BulkRescheduleModal({ people, onClose, onConfirm }) {
@@ -370,10 +371,11 @@ function BulkRescheduleModal({ people, onClose, onConfirm }) {
     return dt.toLocaleDateString("ru-RU", { day: "2-digit", month: "2-digit", year: "numeric" });
   }
   return (
-    <Modal open title={"Продлить срок плана: " + people.length} onClose={onClose} size="s"
+    <Modal open title={"Сменить срок плана: " + people.length} onClose={onClose} size="s"
       secondary={<Button mode="secondary" onClick={onClose}>Отмена</Button>}
-      primary={<Button variant="accent" disabled={!date} onClick={() => onConfirm(fmt(date))}>Продлить срок</Button>}>
+      primary={<Button variant="accent" disabled={!date} onClick={() => onConfirm(fmt(date))}>Сменить срок</Button>}>
       <div className="sk-col sk-gap-3">
+        <div className="sk-muted">Новая дата окончания будет установлена для всех выбранных планов. Сотрудники и руководители получат уведомление об изменении срока.</div>
         <DatePicker label="Новая дата окончания" onChange={setDate} />
         <SelectedList people={people} note={(p) => "сейчас до: " + p.plannedEndDate} />
       </div>
@@ -710,8 +712,8 @@ function AssignedTable() {
 
       <div className="sk-col sk-gap-3">
         <div className="sk-row sk-gap-2" style={{ alignItems: "center", flexWrap: "wrap" }}>
-          <Input size="s" icon={<IconSearch size={20} />} placeholder="Сотрудник, план, должность, руководитель, шаблон" value={q}
-            onChange={(e) => setQ(e.target.value || "")} style={{ maxWidth: 520, flex: 1 }} />
+          <Input size="s" icon={<IconSearch size={18} />} placeholder="Сотрудник, план, должность, руководитель, шаблон" value={q}
+            onChange={(e) => setQ(e.target.value || "")} style={{ maxWidth: 480, flex: 1 }} />
           <Button mode="secondary" icon={<Icons.IconFilter size={16} />} onClick={() => setFiltersOpen((o) => !o)}
             style={{ background: "var(--sk-surface-page)", border: "1px solid var(--sk-stroke)" }}>
             Фильтры{hasActiveFilters ? " · " + activeFilterCount : ""}
@@ -803,7 +805,7 @@ function AssignedTable() {
             <Button mode="secondary" icon={<IconUnlink size={15} />} onClick={() => setBulkAction("unassign")}>Снять назначение</Button>
             <Button mode="secondary" icon={<IconRepeat size={15} />} onClick={() => setBulkAction("reassign")}>Назначить / переназначить</Button>
             <Button mode="secondary" icon={<IconUserSwitch size={15} />} onClick={() => setBulkAction("manager")}>Заменить руководителя</Button>
-            <Button mode="secondary" icon={<IconCalendar size={15} />} onClick={() => setBulkAction("reschedule")}>Продлить срок плана</Button>
+            <Button mode="secondary" icon={<IconCalendar size={15} />} onClick={() => setBulkAction("reschedule")}>Сменить срок плана</Button>
             {groupBy === "templateId" && (
               <>
                 <Button mode="secondary" onClick={() => setBulkAction("replace")}>Заменить элемент</Button>

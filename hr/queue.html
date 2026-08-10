@@ -37,13 +37,25 @@ function fmtEventDate(d) {
 // ---- Пилюли событий над таблицей — активная ("Все события" по умолчанию) залита
 // насыщенным акцентным синим (variant="accent" mode="primary"), как кнопка "Мои отклики"
 // на referece-скрине из employee/vacancies.html. Высота 32 — компактнее прежней 40. ----
-function EventPill({ label, count, active, onClick }) {
+// ---- Пилюли событий: "Все события" — чёрная (нейтральный акцент "сбросить фильтр"),
+// остальные — используют тот же hue, что и тег события в таблице (EVENT_META), чтобы
+// цвет пилюли совпадал с цветом тега, который получит сотрудник в списке. ----
+const PILL_HUES = {
+  accent: { bg: "var(--sk-accent-secondary)", color: "var(--sk-text-accent)" },
+  special: { bg: "var(--sk-special-secondary)", color: "var(--text-text-special)" },
+  positive: { bg: "var(--sk-positive-secondary)", color: "var(--sk-text-positive)" },
+  warning: { bg: "var(--sk-warning-secondary)", color: "var(--sk-text-warning-dark)" },
+};
+function EventPill({ label, count, active, hue, onClick }) {
+  const activeColors = hue
+    ? PILL_HUES[hue]
+    : { bg: "var(--graphite-graphite-0)", color: "var(--sk-text-contrast)" }; // "Все события"
   return (
     <button type="button" onClick={onClick} className="sk-clickable" style={{
       display: "inline-flex", alignItems: "center", gap: 6, height: 32, padding: "0 14px",
       borderRadius: "var(--sk-radius-full)", border: "none",
-      background: active ? "var(--sk-accent)" : "var(--graphite-graphite-97)",
-      color: active ? "var(--sk-text-contrast)" : "var(--sk-text-secondary)",
+      background: active ? activeColors.bg : "var(--graphite-graphite-97)",
+      color: active ? activeColors.color : "var(--sk-text-secondary)",
       font: "var(--sk-label-3-regular)", cursor: "pointer", whiteSpace: "nowrap",
     }}>
       {label}
@@ -365,7 +377,7 @@ function PendingTab({ rows, setRows, onExcludeToOtherTab }) {
     })),
     { key: "actions", title: "", width: 190, render: (p) => (
       <div className="sk-row sk-gap-2" onClick={(e) => e.stopPropagation()}>
-        <Button size="s" variant="accent" mode="secondary" onClick={() => setAssignPerson(p)}>Назначить план</Button>
+        <Button size="s" variant="accent" mode="primary" onClick={() => setAssignPerson(p)}>Назначить план</Button>
         <Tooltip content="Исключить из очереди">
           <Button size="s" mode="tertiary" onClick={() => setExcludeTargets([p])}><IconUserX size={15} /></Button>
         </Tooltip>
@@ -380,20 +392,16 @@ function PendingTab({ rows, setRows, onExcludeToOtherTab }) {
     <div className="sk-col sk-gap-4">
       <div className="sk-col sk-gap-3">
         <div className="sk-row sk-gap-2" style={{ alignItems: "center", flexWrap: "wrap" }}>
-          <Input icon={<IconSearch size={20} />} placeholder="Поиск по сотруднику" value={q}
+          <Input size="s" icon={<IconSearch size={18} />} placeholder="Поиск по сотруднику" value={q}
             onChange={(e) => setQ(e.target.value || "")} style={{ maxWidth: 420, flex: 1 }} />
-          <Button mode="secondary" icon={<IconFilter size={16} />} onClick={() => setFiltersOpen((o) => !o)}>
+          <Button mode="secondary" icon={<IconFilter size={16} />} onClick={() => setFiltersOpen((o) => !o)}
+            style={{ background: "var(--sk-surface-page)", border: "1px solid var(--sk-stroke)" }}>
             Фильтры{hasActiveFilters ? " · " + extraFilterCount : ""}
           </Button>
           <div style={{ marginLeft: "auto" }}>
             <ColumnsMenu all={PENDING_COLUMNS_ALL} visible={visibleCols}
               onChange={(key) => setVisibleCols((v) => v.includes(key) ? v.filter((k) => k !== key) : [...v, key])} />
           </div>
-        </div>
-        <div className="sk-row sk-gap-2" style={{ flexWrap: "wrap", alignItems: "center" }}>
-          {EVENT_QUICK_FILTERS.map((f) => (
-            <EventPill key={f.value || "all"} label={f.label} active={eventFilter === f.value} onClick={() => setEventFilter(f.value)} />
-          ))}
         </div>
         {filtersOpen && (
           <div className="sk-row sk-gap-2" style={{ flexWrap: "wrap", alignItems: "flex-end" }}>
@@ -416,6 +424,12 @@ function PendingTab({ rows, setRows, onExcludeToOtherTab }) {
             )}
           </div>
         )}
+        <div className="sk-row sk-gap-2" style={{ flexWrap: "wrap", alignItems: "center" }}>
+          {EVENT_QUICK_FILTERS.map((f) => (
+            <EventPill key={f.value || "all"} label={f.label} active={eventFilter === f.value}
+              hue={f.value ? EVENT_META[f.value].hue : null} onClick={() => setEventFilter(f.value)} />
+          ))}
+        </div>
       </div>
 
       <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>В очереди: {list.length}</span>
@@ -529,9 +543,10 @@ function ExcludedTab({ rows, setRows, onRestoreToOtherTab }) {
     <div className="sk-col sk-gap-4">
       <div className="sk-col sk-gap-3">
         <div className="sk-row sk-gap-2">
-          <Input icon={<IconSearch size={20} />} placeholder="Поиск по сотруднику" value={q}
+          <Input size="s" icon={<IconSearch size={18} />} placeholder="Поиск по сотруднику" value={q}
             onChange={(e) => setQ(e.target.value || "")} style={{ maxWidth: 420, flex: 1 }} />
-          <Button mode="secondary" icon={<IconFilter size={16} />} onClick={() => setFiltersOpen((o) => !o)}>
+          <Button mode="secondary" icon={<IconFilter size={16} />} onClick={() => setFiltersOpen((o) => !o)}
+            style={{ background: "var(--sk-surface-page)", border: "1px solid var(--sk-stroke)" }}>
             Фильтры{hasActiveFilters ? " · " + Object.values(filters).filter(Boolean).length : ""}
           </Button>
         </div>
