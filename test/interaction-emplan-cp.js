@@ -38,9 +38,9 @@ setTimeout(() => {
   console.log("Found 'План адаптации' tab:", !!maxTab ? "PASS" : "FAIL");
   maxTab.dispatchEvent(new w.MouseEvent("click", { bubbles: true }));
 setTimeout(() => {
-  // Открыть контрольную точку cp2 (dateLabel "16 апреля", pending, первая незавершённая — значит текущая и кликабельная)
-  const cpRow = [...w.document.querySelectorAll(".sk-label-4")].find(el => el.textContent.includes("16 апреля"));
-  console.log("CP2 row found:", !!cpRow);
+  // Открыть контрольную точку cp1 (dateLabel "31 марта", pending, первая незавершённая — значит текущая и кликабельная)
+  const cpRow = [...w.document.querySelectorAll(".sk-label-4")].find(el => el.textContent.includes("31 марта"));
+  console.log("CP1 row found:", !!cpRow);
   cpRow.closest(".sk-clickable").dispatchEvent(new w.MouseEvent("click", { bubbles: true }));
   setTimeout(() => {
     console.log("Drawer opened with survey:", w.document.body.textContent.includes("Опрос") ? "PASS" : "FAIL");
