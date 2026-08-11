@@ -591,16 +591,11 @@ function AssignedTable() {
           const count = plans.filter((p) => (!HIDDEN_BY_DEFAULT.includes(p.status) || showHiddenStatuses) && ind.test(p)).length;
           const active = activeIndicator === ind.id;
           return (
-            <Card key={ind.id} bordered padding={12}
+            <Card key={ind.id} bordered padding={14}
               style={{ cursor: "pointer", flex: "1 1 0", minWidth: 0, outline: active ? "2px solid var(--sk-stroke-accent)" : "none" }}>
-              <div className="sk-row sk-gap-2 sk-clickable" onClick={() => setActiveIndicator(active ? null : ind.id)} style={{ alignItems: "center" }}>
-                <span style={{ width: 28, height: 28, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", background: ind.bg, color: ind.fg }}>
-                  <ind.icon size={15} />
-                </span>
-                <div className="sk-col" style={{ gap: 0, minWidth: 0 }}>
-                  <div className="sk-label-2">{count}</div>
-                  <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{ind.label}</div>
-                </div>
+              <div className="sk-col sk-gap-2 sk-clickable" onClick={() => setActiveIndicator(active ? null : ind.id)}>
+                <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{ind.label}</div>
+                <div className="sk-title-5">{count}</div>
               </div>
             </Card>
           );
@@ -608,13 +603,18 @@ function AssignedTable() {
       </div>
 
       <div className="sk-col sk-gap-3">
-        <div className="sk-row sk-gap-2">
-          <Input icon={<IconSearch size={20} />} placeholder="Сотрудник, план, должность, руководитель, шаблон" value={q}
-            onChange={(e) => setQ(e.target.value || "")} style={{ flex: 1 }} />
+        <div className="sk-row sk-gap-2" style={{ alignItems: "center" }}>
+          <Input size="s" icon={<IconSearch size={20} />} placeholder="Сотрудник, план, должность, руководитель, шаблон" value={q}
+            onChange={(e) => setQ(e.target.value || "")} style={{ width: 360 }} />
           <Button mode="secondary" icon={<Icons.IconFilter size={16} />} onClick={() => setFiltersOpen((o) => !o)}
             style={{ background: "var(--sk-surface-page)", border: "1px solid var(--sk-stroke)" }}>
             Фильтры{hasActiveFilters ? " · " + activeFilterCount : ""}
           </Button>
+          <div style={{ marginLeft: "auto" }} className="sk-row sk-gap-2">
+            <GroupByMenu value={groupBy} onChange={setGroupBy} />
+            <ColumnsMenu all={ASSIGNED_COLUMNS_META} visible={visibleCols}
+              onChange={(key) => setVisibleCols((v) => v.includes(key) ? v.filter((k) => k !== key) : [...v, key])} />
+          </div>
         </div>
         {filtersOpen && (
           <div className="sk-row sk-gap-2" style={{ flexWrap: "wrap", alignItems: "flex-end" }}>
@@ -642,20 +642,13 @@ function AssignedTable() {
         )}
       </div>
 
-      <div className="sk-row" style={{ justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
-        <div className="sk-row sk-gap-4" style={{ alignItems: "center" }}>
-          <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Найдено планов: {list.length}</span>
+      <div className="sk-row sk-gap-4" style={{ alignItems: "center" }}>
+        <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Найдено планов: {list.length}</span>
 
-          <label className="sk-row sk-gap-2 sk-clickable" style={{ font: "var(--sk-label-4-regular)", color: "var(--sk-text-secondary)" }}>
-            <input type="checkbox" checked={showHiddenStatuses} onChange={(e) => setShowHiddenStatuses(e.target.checked)} />
-            Показывать завершённые / неуспешные / отменённые
-          </label>
-        </div>
-        <div className="sk-row sk-gap-2" style={{ alignItems: "center" }}>
-          <GroupByMenu value={groupBy} onChange={setGroupBy} />
-          <ColumnsMenu all={ASSIGNED_COLUMNS_META} visible={visibleCols}
-            onChange={(key) => setVisibleCols((v) => v.includes(key) ? v.filter((k) => k !== key) : [...v, key])} />
-        </div>
+        <label className="sk-row sk-gap-2 sk-clickable" style={{ font: "var(--sk-label-4-regular)", color: "var(--sk-text-secondary)" }}>
+          <input type="checkbox" checked={showHiddenStatuses} onChange={(e) => setShowHiddenStatuses(e.target.checked)} />
+          Показывать завершённые / неуспешные / отменённые
+        </label>
       </div>
 
       {list.length > 0 && (
@@ -695,8 +688,9 @@ function AssignedTable() {
 
       {selected.size > 0 && (
         <div style={{
+          position: "fixed", left: "50%", bottom: 24, transform: "translateX(-50%)", zIndex: 90,
           display: "flex", alignItems: "center", gap: 10, padding: "12px 16px", borderRadius: "var(--sk-radius-4)",
-          background: "var(--sk-accent)", color: "#fff", flexWrap: "wrap", width: "100%",
+          background: "var(--sk-accent)", boxShadow: "var(--sk-shadow-l)", color: "#fff", flexWrap: "wrap", maxWidth: "calc(100vw - 48px)",
         }}>
           <span className="sk-label-3" style={{ color: "#fff", whiteSpace: "nowrap" }}>Выбрано: {selected.size}</span>
           <Button mode="secondary" icon={<IconUnlink size={15} />} onClick={() => setBulkAction("unassign")}>Снять назначение</Button>
