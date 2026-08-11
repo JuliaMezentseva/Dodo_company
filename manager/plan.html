@@ -755,15 +755,18 @@ function StepAssessmentPicker({ templateId, setTemplateId }) {
   }
 
   return (
-    <div className="sk-col sk-gap-2">
+    <div className="sk-col sk-gap-1">
       <div className="sk-row sk-gap-3 sk-clickable" style={{ alignItems: "flex-start" }} onClick={toggle}>
         <div style={{ paddingTop: 1 }}><Checkbox checked={checked} onChange={toggle} /></div>
         <span className="sk-label-4">Добавить оценочный лист</span>
       </div>
-      <div className="sk-col sk-gap-2" style={{ marginLeft: 32 }}>
-        <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Готовые критерии помогут оценить выполнение шага</span>
+      <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)", marginLeft: 32 }}>Готовые критерии помогут оценить выполнение шага</span>
+      <div style={{ marginLeft: 32, marginTop: 8 }}>
         {checked ? (
-          <Select value={templateId} options={templates.map(t => ({ value: t.id, label: t.title }))} onChange={setTemplateId} />
+          <React.Fragment>
+            <Select value={templateId} options={templates.map(t => ({ value: t.id, label: t.title }))} onChange={setTemplateId} />
+            <div style={{ height: 220 }} />
+          </React.Fragment>
         ) : (
           <div style={{ padding: "12px 14px", background: "var(--sk-surface-secondary)", borderRadius: "var(--sk-radius-2)" }}>
             <span className="sk-label-3-regular">
