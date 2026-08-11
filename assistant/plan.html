@@ -608,6 +608,46 @@ function SubgoalCreateModal({ onClose, onCreate }) {
   );
 }
 
+// ---------------- Комментарии подцели — оформлены как вкладка (не просто список),
+// по референсу: заголовок "Комментарии N" с подчёркиванием, карточка ввода с рамкой
+// и скрепкой для вложений, список сообщений ниже. Простая Textarea вместо полноценного
+// rich-text редактора — в прототипе это визуальный паттерн, не текстовый движок. ----------------
+function CommentsPanel({ comments, comment, setComment, onAdd, disabled }) {
+  const list = comments || [];
+  return (
+    <div className="sk-col sk-gap-3">
+      <div className="sk-row sk-gap-4" style={{ borderBottom: "1px solid var(--sk-stroke)" }}>
+        <div className="sk-col sk-gap-2" style={{ paddingBottom: 10, borderBottom: "2px solid var(--sk-text-primary)" }}>
+          <span className="sk-label-3">Комментарии <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{list.length}</span></span>
+        </div>
+      </div>
+
+      {!disabled && (
+        <div className="sk-col sk-gap-2">
+          <Textarea placeholder="Написать комментарий" rows={2} value={comment} onChange={(e) => setComment(e.target.value || "")} />
+          <div className="sk-row" style={{ justifyContent: "space-between", alignItems: "center" }}>
+            <button className="sk-link-btn" style={{ display: "inline-flex" }}><Icons.IconPaperclip size={17} color="var(--sk-icon-secondary)" /></button>
+            {comment.trim() && (
+              <Button size="s" onClick={() => { onAdd(comment.trim()); setComment(""); }}>Отправить</Button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {list.slice().reverse().map((c, i) => (
+        <div key={i} className="sk-row sk-gap-3" style={{ alignItems: "flex-start" }}>
+          <Avatar src={personPhoto(c.author)} name={c.author} size={28} />
+          <div className="sk-col sk-gap-1" style={{ flex: 1 }}>
+            <div className="sk-row sk-gap-2"><span className="sk-label-4">{c.author}</span><span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{c.date}</span></div>
+            <div className="sk-label-3-regular">{c.text}</div>
+          </div>
+        </div>
+      ))}
+      {!list.length && <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Комментариев пока нет</div>}
+    </div>
+  );
+}
+
 // ---------------- Дровер подцели (редактирование / просмотр / подтверждение-возврат) ----------------
 function SubgoalDrawer({ plan, goal, subgoal, onClose, onChange, onOpenChecklistPicker, onUnlinkChecklist, onAddComment, onConfirm, onReturn, onNotDone }) {
   const [comment, setComment] = React.useState("");
@@ -670,23 +710,8 @@ function SubgoalDrawer({ plan, goal, subgoal, onClose, onChange, onOpenChecklist
           </div>
         </CollapsibleSection>
 
-        <div className="sk-col sk-gap-3">
-          <div className="sk-label-3">Комментарии</div>
-          <Textarea placeholder="Написать комментарий" rows={2} value={comment} onChange={(e) => setComment(e.target.value || "")} />
-          {comment.trim() && (
-            <Button size="s" mode="secondary" style={{ alignSelf: "flex-start" }}
-              onClick={() => { onAddComment(comment.trim()); setComment(""); }}>Отправить комментарий</Button>
-          )}
-          {(subgoal.comments || []).slice().reverse().map((c, i) => (
-            <div key={i} className="sk-row sk-gap-3" style={{ alignItems: "flex-start" }}>
-              <Avatar src={personPhoto(c.author)} name={c.author} size={28} />
-              <div className="sk-col sk-gap-1" style={{ flex: 1 }}>
-                <div className="sk-row sk-gap-2"><span className="sk-label-4">{c.author}</span><span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{c.date}</span></div>
-                <div className="sk-label-3-regular">{c.text}</div>
-              </div>
-            </div>
-          ))}
-        </div>
+        <CommentsPanel comments={subgoal.comments} comment={comment} setComment={setComment}
+          onAdd={onAddComment} disabled={false} />
 
         {isReview && (
           <div className="sk-col sk-gap-2" style={{ position: "sticky", bottom: 0, background: "var(--sk-surface-page)", paddingTop: 8 }}>
@@ -818,6 +843,14 @@ const RISK_LEVELS = [
   { value: "high", label: "Высокий риск" },
 ];
 const RISK_HUE = { none: "positive", low: "neutral", medium: "warning", high: "negative" };
+// Цвета для активной риск-кнопки в незавершённой КТ — те же токены, что у Tag (SK_TAG_HUES),
+// чтобы выбранная пилюля до завершения совпадала по цвету с финальным Tag после завершения.
+const RISK_BUTTON_COLORS = {
+  positive: { bg: "var(--sk-positive-secondary)", color: "var(--sk-text-positive)", stroke: "var(--sk-text-positive)" },
+  neutral: { bg: "var(--sk-surface-secondary)", color: "var(--sk-text-primary)", stroke: "var(--sk-stroke-accent)" },
+  warning: { bg: "var(--sk-warning-secondary)", color: "var(--sk-text-warning-dark)", stroke: "var(--sk-text-warning-dark)" },
+  negative: { bg: "var(--sk-negative-secondary)", color: "var(--sk-text-negative)", stroke: "var(--sk-text-negative)" },
+};
 
 function CheckpointStatusRow({ label, done }) {
   return (
@@ -833,17 +866,18 @@ function CheckpointStatusRow({ label, done }) {
 
 // Тёплая плашка статуса КТ — аналог блока "Обратная связь по итогам" у сотрудника
 // (CheckpointModal в employee/plan.html): вместо сухого чек-листа "кто что заполнил"
-// показываем один итоговый статус с пояснением, что делать дальше.
+// показываем один итоговый статус с пояснением, что делать дальше. Когда КТ уже завершена,
+// баннер не рендерится вовсе — этот статус уже показан StatusTag'ом в шапке дровера, дублировать не нужно.
 function CheckpointStatusBanner({ done, surveyReady, reportReady }) {
+  if (done) return null;
   let title, note;
-  if (done) { title = "Контрольная точка завершена"; note = "Итоги зафиксированы и доступны сотруднику."; }
-  else if (!surveyReady) { title = "Ожидает сотрудника"; note = "Форма станет доступна для заполнения, как только сотрудник ответит на опрос."; }
+  if (!surveyReady) { title = "Ожидает сотрудника"; note = "Форма станет доступна для заполнения, как только сотрудник ответит на опрос."; }
   else if (!reportReady) { title = "Готово к завершению"; note = "Заполните обязательные поля выше, чтобы завершить контрольную точку."; }
   else { title = "Всё заполнено"; note = "Можно завершить контрольную точку."; }
   return (
-    <div className="sk-row sk-gap-3" style={{ padding: 14, background: done ? "var(--sk-positive-secondary)" : "var(--sk-surface-secondary)", borderRadius: "var(--sk-radius-3)", alignItems: "flex-start" }}>
+    <div className="sk-row sk-gap-3" style={{ padding: 14, background: "var(--sk-surface-secondary)", borderRadius: "var(--sk-radius-3)", alignItems: "flex-start" }}>
       <span style={{ width: 32, height: 32, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "var(--sk-surface-page)" }}>
-        {done ? <IconCheck size={16} color="var(--sk-icon-positive)" /> : <IconClock size={16} color="var(--sk-icon-secondary)" />}
+        <IconClock size={16} color="var(--sk-icon-secondary)" />
       </span>
       <div className="sk-col sk-gap-1">
         <div className="sk-label-3">{title}</div>
@@ -963,12 +997,13 @@ function ManagerCheckpointDrawer({ checkpoint, viewerName, employee, canEdit, on
             <div className="sk-row sk-gap-2" style={{ flexWrap: "wrap" }}>
               {RISK_LEVELS.map((r) => {
                 const active = riskLevel === r.value;
+                const c = RISK_BUTTON_COLORS[RISK_HUE[r.value]] || RISK_BUTTON_COLORS.neutral;
                 return (
                   <button key={r.value} type="button" disabled={fieldsDisabled} onClick={() => setRiskLevel(r.value)}
                     className={fieldsDisabled ? "" : "sk-clickable"} style={{
-                      padding: "7px 14px", borderRadius: "var(--sk-radius-full)", border: "1.5px solid " + (active ? "var(--sk-stroke-accent)" : "var(--sk-stroke)"),
-                      background: active ? "var(--sk-accent-secondary)" : "var(--sk-surface-page)",
-                      color: active ? "var(--sk-text-accent)" : "var(--sk-text-secondary)",
+                      padding: "7px 14px", borderRadius: "var(--sk-radius-full)", border: "1.5px solid " + (active ? c.stroke : "var(--sk-stroke)"),
+                      background: active ? c.bg : "var(--sk-surface-page)",
+                      color: active ? c.color : "var(--sk-text-secondary)",
                       font: active ? "var(--sk-label-3)" : "var(--sk-label-3-regular)",
                       cursor: fieldsDisabled ? "default" : "pointer", opacity: fieldsDisabled ? 0.5 : 1,
                     }}>{r.label.replace(" риск", "").replace("Риск ", "")}</button>
@@ -981,22 +1016,8 @@ function ManagerCheckpointDrawer({ checkpoint, viewerName, employee, canEdit, on
         <CheckpointStatusBanner done={done} surveyReady={surveyReady} reportReady={reportReady} />
 
         <Divider />
-        <div className="sk-col sk-gap-3">
-          <div className="sk-label-3">Комментарии {(checkpoint.comments || []).length}</div>
-          <div className="sk-row sk-gap-2">
-            <Input placeholder="Введите свой комментарий" value={comment} onChange={(e) => setComment(e.target.value || "")} style={{ flex: 1 }} />
-            {comment.trim() && <Button size="s" icon={<IconSend size={15} />} onClick={() => { onAddComment(comment.trim()); setComment(""); }} />}
-          </div>
-          {(checkpoint.comments || []).slice().reverse().map((c, i) => (
-            <div key={i} className="sk-row sk-gap-3" style={{ alignItems: "flex-start" }}>
-              <Avatar src={personPhoto(c.author)} name={c.author} size={26} />
-              <div className="sk-col sk-gap-1" style={{ flex: 1 }}>
-                <div className="sk-row sk-gap-2"><span className="sk-label-4">{c.author}</span><span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{c.date}</span></div>
-                <div className="sk-label-3-regular">{c.text}</div>
-              </div>
-            </div>
-          ))}
-        </div>
+        <CommentsPanel comments={checkpoint.comments} comment={comment} setComment={setComment}
+          onAdd={onAddComment} disabled={false} />
       </div>
     </Drawer>
   );

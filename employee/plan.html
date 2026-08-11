@@ -85,8 +85,8 @@ const CHECKPOINT_STEPS = [
   "Обратная связь по итогам — появится здесь после встречи",
 ];
 
-const MIN_TAB_NOTE = "Формальный порог входа в роль: доступы, культура, регламенты. Отмечайте пункты по мере прохождения.";
-const MAX_TAB_NOTE = "Ваш персональный план на результат в роли. Открывайте цель, чтобы увидеть шаги и отправить их на проверку.";
+const MIN_TAB_NOTE = "Первые шаги на новом месте: доступы, знакомство с командой и правилами. Отмечайте пункты по мере прохождения.";
+const MAX_TAB_NOTE = "Здесь — ваши рабочие цели по плану. Откройте цель, чтобы увидеть шаги и отслеживать прогресс.";
 
 function goalProgress(goal) {
   const total = goal.subgoals.length;
@@ -153,7 +153,7 @@ function StageBlock({ stage, index, onOpenItem, onOpenCheckpoint }) {
                 <Checkbox checked={!!item.done} onChange={() => onOpenItem(item, true)} />
               </div>
               <div className="sk-col" style={{ flex: 1, gap: item.done ? 0 : 2 }}>
-                <div className="sk-label-3-regular" style={{ textDecoration: item.done ? "line-through" : "none", color: item.done ? "var(--sk-text-secondary)" : "var(--sk-text-primary)" }}>{item.title}</div>
+                <div className="sk-label-3-regular" style={{ color: item.done ? "var(--sk-text-secondary)" : "var(--sk-text-primary)" }}>{item.title}</div>
                 {!item.done && <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{ELEMENT_LABEL[item.kind]}{item.date ? " · " + item.date : ""}</div>}
               </div>
               {!item.done && item.highlight === "warning" && <Tag size="s" hue="warning">Скоро дедлайн</Tag>}

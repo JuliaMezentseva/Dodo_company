@@ -31,15 +31,15 @@ function loadPage(htmlPath, query) {
   return window;
 }
 const target = path.resolve(__dirname, "..", "assistant", "plan.html");
-const w = loadPage(target, "employee=alexey");
+const w = loadPage(target, "employee=yulia2");
 setTimeout(() => {
   // Переключиться на вкладку "План адаптации" — по умолчанию открыта "Базовые действия"
   const maxTab = [...w.document.querySelectorAll("span")].find(el => el.textContent.includes("План адаптации"));
   console.log("Found 'План адаптации' tab:", !!maxTab ? "PASS" : "FAIL");
   maxTab.dispatchEvent(new w.MouseEvent("click", { bubbles: true }));
 setTimeout(() => {
-  // Открыть подцель alg1s2 "Пройти code review с тимлидом" (reviewer = Дмитрий Волков, статус pending_review)
-  const row = [...w.document.querySelectorAll(".sk-label-3-regular")].find(el => el.textContent.includes("Пройти code review с тимлидом"));
+  // Открыть подцель g2s3 "Проанализировать 3 компании из подборки" (reviewer = Дмитрий Волков, статус pending_review)
+  const row = [...w.document.querySelectorAll(".sk-label-3-regular")].find(el => el.textContent.includes("Проанализировать 3 компании"));
   console.log("Subgoal row found:", !!row);
   row.closest(".sk-clickable").dispatchEvent(new w.MouseEvent("click", { bubbles: true }));
   setTimeout(() => {
@@ -49,13 +49,15 @@ setTimeout(() => {
     setTimeout(() => {
       console.log("Toast after confirm:", w.document.body.textContent.includes("подтверждена") ? "PASS" : "FAIL");
 
-      // Открыть КТ "60 дней" (acp2, dateLabel "2 марта", reviewer = Дмитрий Волков) через правую панель
-      const cpRow = [...w.document.querySelectorAll(".sk-label-4")].find(el => el.textContent.includes("2 марта"));
+      // Открыть КТ "60 дней" (cp2, dateLabel "16 апреля", reviewer = Дмитрий Волков) через правую панель.
+      // Опрос сотрудника ещё не пройден (surveySubmitted: false) — кнопка завершения должна быть
+      // видна (assistant — назначенный reviewer), но disabled, пока сотрудник не ответит.
+      const cpRow = [...w.document.querySelectorAll(".sk-label-4")].find(el => el.textContent.includes("16 апреля"));
       console.log("CP2 row found:", !!cpRow);
       cpRow.closest(".sk-clickable").dispatchEvent(new w.MouseEvent("click", { bubbles: true }));
       setTimeout(() => {
-        const hasFinish = [...w.document.querySelectorAll("button")].some(b => b.textContent.includes("Завершить контрольную точку"));
-        console.log("Assistant CAN finish cp2 (is reviewer):", hasFinish ? "PASS" : "FAIL");
+        const finishBtn = [...w.document.querySelectorAll("button")].find(b => b.textContent.includes("Завершить контрольную точку"));
+        console.log("Assistant sees finish button as reviewer (disabled, survey not ready):", finishBtn && finishBtn.disabled ? "PASS" : "FAIL");
       }, 50);
     }, 50);
   }, 50);

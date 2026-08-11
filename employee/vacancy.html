@@ -16,7 +16,7 @@
 <div id="root"></div>
 <script type="text/babel">
 const { Card, Tag, TextList, Divider, Modal, Input, Textarea, Button, Avatar, Snackbar, Alert } = window.SkillazCoreDesignSystem_bf9566;
-const { AppShell, Icons, directionHue } = window.Site;
+const { AppShell, StatusTag, Icons, directionHue } = window.Site;
 const { IconArrowLeft, IconMapPin, IconMail, IconPhone, IconUpload, IconFileText, IconTarget, IconCheck, IconGift, IconLayers, IconClock, IconPlusSm, IconBriefcase } = Icons;
 const D = window.SITE_DATA;
 
@@ -38,7 +38,6 @@ function DetailRow({ label, value }) {
 function Page() {
   const vacancy = D.vacancies.find(v => v.id === vacancyIdFromUrl());
   const closed = vacancy.status === "closed";
-  const hasSalary = vacancy.salaryFrom && vacancy.salaryTo;
   const [responses, setResponses] = React.useState(D.myResponses);
   const [modalOpen, setModalOpen] = React.useState(false);
   const [toast, setToast] = React.useState(null);
@@ -125,20 +124,22 @@ function Page() {
         <div style={{ width: 300, flexShrink: 0 }}>
           <Card bordered>
             <div className="sk-col sk-gap-4">
-              {hasSalary ? (
-                <div style={{ background: "var(--sk-accent-secondary)", borderRadius: "var(--sk-radius-3)", padding: "14px 16px" }}>
+              <div style={{ background: "var(--sk-accent-secondary)", borderRadius: "var(--sk-radius-3)", padding: "14px 16px" }}>
+                {vacancy.salaryFrom && vacancy.salaryTo ? (
                   <div className="sk-title-5" style={{ color: "var(--sk-text-accent)" }}>{fmtMoney(vacancy.salaryFrom)} – {fmtMoney(vacancy.salaryTo)} ₽</div>
-                </div>
-              ) : (
-                <div style={{ background: "var(--sk-surface-secondary)", borderRadius: "var(--sk-radius-3)", padding: "14px 16px" }}>
-                  <div className="sk-label-3" style={{ color: "var(--sk-text-secondary)" }}>Зарплата по договорённости</div>
-                </div>
-              )}
+                ) : (
+                  <div className="sk-title-5" style={{ color: "var(--sk-text-accent)" }}>По договорённости</div>
+                )}
+              </div>
 
               <div className="sk-col">
+                <DetailRow label="Регион" value={vacancy.city} />
+                <Divider />
                 <DetailRow label="Опыт работы" value={vacancy.experience} />
                 <Divider />
                 <DetailRow label="Тип занятости" value={vacancy.employment} />
+                <Divider />
+                <DetailRow label="Формат" value={vacancy.format} />
                 <Divider />
                 <DetailRow label="Подразделение" value={vacancy.department} />
                 <Divider />

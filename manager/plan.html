@@ -516,7 +516,7 @@ function ManagerSubgoalRow({ subgoal, goalDueLabel, plan, onOpen, onOpenMaterial
       <div className="sk-row sk-gap-2" style={{ flex: 1, minWidth: 0, alignItems: "center" }}>
         {cfg && <span style={{ width: 18, height: 18, borderRadius: "50%", flexShrink: 0, background: cfg.bg, color: cfg.fg, display: "flex", alignItems: "center", justifyContent: "center" }}><cfg.icon size={11} /></span>}
         <div className="sk-col sk-gap-1" style={{ minWidth: 0 }}>
-          <div className="sk-label-3-regular" style={{ textDecoration: isDone ? "line-through" : "none", color: isDone ? "var(--sk-text-secondary)" : "var(--sk-text-primary)" }}>{subgoal.title || "Без названия"}</div>
+          <div className="sk-label-3-regular" style={{ color: isDone ? "var(--sk-text-secondary)" : "var(--sk-text-primary)" }}>{subgoal.title || "Без названия"}</div>
           {showOwnDue && <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{ownDue}</div>}
         </div>
       </div>
@@ -1063,6 +1063,14 @@ const RISK_LEVELS = [
   { value: "high", label: "Высокий риск" },
 ];
 const RISK_HUE = { none: "positive", low: "neutral", medium: "warning", high: "negative" };
+// Цвета для активной риск-кнопки в незавершённой КТ — те же токены, что у Tag (SK_TAG_HUES),
+// чтобы выбранная пилюля до завершения совпадала по цвету с финальным Tag после завершения.
+const RISK_BUTTON_COLORS = {
+  positive: { bg: "var(--sk-positive-secondary)", color: "var(--sk-text-positive)", stroke: "var(--sk-text-positive)" },
+  neutral: { bg: "var(--sk-surface-secondary)", color: "var(--sk-text-primary)", stroke: "var(--sk-stroke-accent)" },
+  warning: { bg: "var(--sk-warning-secondary)", color: "var(--sk-text-warning-dark)", stroke: "var(--sk-text-warning-dark)" },
+  negative: { bg: "var(--sk-negative-secondary)", color: "var(--sk-text-negative)", stroke: "var(--sk-text-negative)" },
+};
 
 // Тёплая плашка статуса КТ — аналог блока "Обратная связь по итогам" у сотрудника
 // (CheckpointModal в employee/plan.html): вместо сухого чек-листа "кто что заполнил"
@@ -1197,12 +1205,13 @@ function ManagerCheckpointDrawer({ checkpoint, viewerName, employee, canEdit, on
             <div className="sk-row sk-gap-2" style={{ flexWrap: "wrap" }}>
               {RISK_LEVELS.map((r) => {
                 const active = riskLevel === r.value;
+                const c = RISK_BUTTON_COLORS[RISK_HUE[r.value]] || RISK_BUTTON_COLORS.neutral;
                 return (
                   <button key={r.value} type="button" disabled={fieldsDisabled} onClick={() => setRiskLevel(r.value)}
                     className={fieldsDisabled ? "" : "sk-clickable"} style={{
-                      padding: "7px 14px", borderRadius: "var(--sk-radius-full)", border: "1.5px solid " + (active ? "var(--sk-stroke-accent)" : "var(--sk-stroke)"),
-                      background: active ? "var(--sk-accent-secondary)" : "var(--sk-surface-page)",
-                      color: active ? "var(--sk-text-accent)" : "var(--sk-text-secondary)",
+                      padding: "7px 14px", borderRadius: "var(--sk-radius-full)", border: "1.5px solid " + (active ? c.stroke : "var(--sk-stroke)"),
+                      background: active ? c.bg : "var(--sk-surface-page)",
+                      color: active ? c.color : "var(--sk-text-secondary)",
                       font: active ? "var(--sk-label-3)" : "var(--sk-label-3-regular)",
                       cursor: fieldsDisabled ? "default" : "pointer", opacity: fieldsDisabled ? 0.5 : 1,
                     }}>{r.label.replace(" риск", "").replace("Риск ", "")}</button>
@@ -1215,22 +1224,8 @@ function ManagerCheckpointDrawer({ checkpoint, viewerName, employee, canEdit, on
         <CheckpointStatusBanner done={done} surveyReady={surveyReady} reportReady={reportReady} />
 
         <Divider />
-        <div className="sk-col sk-gap-3">
-          <div className="sk-label-3">Комментарии {(checkpoint.comments || []).length}</div>
-          <div className="sk-row sk-gap-2">
-            <Input placeholder="Введите свой комментарий" value={comment} onChange={(e) => setComment(e.target.value || "")} style={{ flex: 1 }} />
-            {comment.trim() && <Button size="s" icon={<IconSend size={15} />} onClick={() => { onAddComment(comment.trim()); setComment(""); }} />}
-          </div>
-          {(checkpoint.comments || []).slice().reverse().map((c, i) => (
-            <div key={i} className="sk-row sk-gap-3" style={{ alignItems: "flex-start" }}>
-              <Avatar src={personPhoto(c.author)} name={c.author} size={26} />
-              <div className="sk-col sk-gap-1" style={{ flex: 1 }}>
-                <div className="sk-row sk-gap-2"><span className="sk-label-4">{c.author}</span><span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{c.date}</span></div>
-                <div className="sk-label-3-regular">{c.text}</div>
-              </div>
-            </div>
-          ))}
-        </div>
+        <CommentsPanel comments={checkpoint.comments} comment={comment} setComment={setComment}
+          onAdd={onAddComment} disabled={false} />
       </div>
     </Drawer>
   );

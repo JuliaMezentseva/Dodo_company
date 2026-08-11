@@ -15,7 +15,7 @@
 <body>
 <div id="root"></div>
 <script type="text/babel">
-const { Card, Tag, Table, Tabs, Input, Select, ProgressBar, Button, Tooltip, Modal, Textarea, Snackbar, Alert, Checkbox, Radio } = window.SkillazCoreDesignSystem_bf9566;
+const { Card, Tag, Table, Tabs, Input, Select, ProgressBar, Button, Tooltip, Modal, Textarea, Snackbar, Alert, Checkbox, Radio, DatePicker } = window.SkillazCoreDesignSystem_bf9566;
 const { AppShell, Icons } = window.Site;
 const {
   IconSearch, IconPlusSm, IconAlertCircle, IconTarget, IconClock, IconCheck, IconFlag, IconUsers,
@@ -255,6 +255,71 @@ function BulkManagerModal({ people, managers, onClose, onConfirm }) {
   );
 }
 
+// "Перенести срок плана" массово — у выбранных планов разный текущий plannedEndDate,
+// поэтому сдвигаем на N дней относительно него (а не задаём одну дату на всех), плюс
+// точечная возможность указать конкретную новую дату — для случая, когда все выбранные
+// планы уже нужно свести к общему дедлайну (например, единая волна адаптации).
+function parseRuDate(d) {
+  const [dd, mm, yy] = (d || "").split(".").map(Number);
+  if (!dd || !mm || !yy) return null;
+  return new Date(2000 + yy, mm - 1, dd);
+}
+function fmtRuDate(date) {
+  const dd = String(date.getDate()).padStart(2, "0");
+  const mm = String(date.getMonth() + 1).padStart(2, "0");
+  const yy = String(date.getFullYear()).slice(-2);
+  return dd + "." + mm + "." + yy;
+}
+function shiftPlannedEndDate(current, payload) {
+  if (payload.type === "date") return fmtRuDate(payload.date);
+  const base = parseRuDate(current) || new Date();
+  base.setDate(base.getDate() + payload.days);
+  return fmtRuDate(base);
+}
+const POSTPONE_PRESETS = [3, 7, 14, 30];
+function BulkPostponeModal({ people, onClose, onConfirm }) {
+  const [mode, setMode] = React.useState("shift"); // "shift" | "date"
+  const [days, setDays] = React.useState(null);
+  const [customDays, setCustomDays] = React.useState("");
+  const [date, setDate] = React.useState(null);
+  const effectiveDays = days === "custom" ? parseInt(customDays, 10) : days;
+  const canConfirm = mode === "shift" ? !!effectiveDays && effectiveDays > 0 : !!date;
+
+  return (
+    <Modal open title={"Перенести срок плана: " + people.length} onClose={onClose} size="s"
+      secondary={<Button mode="secondary" onClick={onClose}>Отмена</Button>}
+      primary={<Button variant="accent" disabled={!canConfirm}
+        onClick={() => onConfirm(mode === "shift" ? { type: "shift", days: effectiveDays } : { type: "date", date })}>
+        Перенести
+      </Button>}>
+      <div className="sk-col sk-gap-4">
+        <div className="sk-muted">Новый срок применится к плановой дате завершения (Сроки) во всех выбранных планах.</div>
+        <div className="sk-row sk-gap-2">
+          <Button mode={mode === "shift" ? "primary" : "secondary"} variant={mode === "shift" ? "accent" : "gray"}
+            onClick={() => setMode("shift")} style={{ flex: 1 }}>Сдвинуть на N дней</Button>
+          <Button mode={mode === "date" ? "primary" : "secondary"} variant={mode === "date" ? "accent" : "gray"}
+            onClick={() => setMode("date")} style={{ flex: 1 }}>Задать дату</Button>
+        </div>
+        {mode === "shift" ? (
+          <div className="sk-col sk-gap-2">
+            <div className="sk-row sk-gap-2" style={{ flexWrap: "wrap" }}>
+              {POSTPONE_PRESETS.map((d) => (
+                <Button key={d} size="s" mode={days === d ? "primary" : "secondary"} variant={days === d ? "accent" : "gray"}
+                  onClick={() => setDays(d)}>+{d} дн.</Button>
+              ))}
+            </div>
+            <Input label="Или своё количество дней" placeholder="Например, 10" value={days === "custom" ? customDays : ""}
+              onChange={(e) => { setCustomDays(e.target.value.replace(/\D/g, "")); setDays("custom"); }} />
+          </div>
+        ) : (
+          <DatePicker label="Новая дата завершения" value={date} onChange={setDate} />
+        )}
+        <SelectedList people={people} note={(p) => "сейчас: " + p.plannedEndDate} />
+      </div>
+    </Modal>
+  );
+}
+
 // "Заменить / удалить элемент в назначенных планах" — доступно только при активной
 // группировке по шаблону (ТЗ п. "Массовые действия"): сценарий тип элемента → элемент
 // для замены → новый элемент → подтверждение, с итогом успешно/частично выполнено.
@@ -440,6 +505,10 @@ function AssignedTable() {
     runBulkResult(selectedPeople, (x) => ({ ...x, manager }));
     setBulkAction(null);
   }
+  function bulkPostpone(payload) {
+    runBulkResult(selectedPeople, (x) => ({ ...x, plannedEndDate: shiftPlannedEndDate(x.plannedEndDate, payload) }));
+    setBulkAction(null);
+  }
   function bulkReplaceElement(payload) {
     // В прототипе нет модели элементов внутри плана — засчитываем как применённое ко
     // всем редактируемым планам текущей группы (по шаблону), демонстрируя сам сценарий.
@@ -542,7 +611,8 @@ function AssignedTable() {
         <div className="sk-row sk-gap-2">
           <Input icon={<IconSearch size={20} />} placeholder="Сотрудник, план, должность, руководитель, шаблон" value={q}
             onChange={(e) => setQ(e.target.value || "")} style={{ flex: 1 }} />
-          <Button mode="secondary" icon={<Icons.IconFilter size={16} />} onClick={() => setFiltersOpen((o) => !o)}>
+          <Button mode="secondary" icon={<Icons.IconFilter size={16} />} onClick={() => setFiltersOpen((o) => !o)}
+            style={{ background: "var(--sk-surface-page)", border: "1px solid var(--sk-stroke)" }}>
             Фильтры{hasActiveFilters ? " · " + activeFilterCount : ""}
           </Button>
         </div>
@@ -585,9 +655,6 @@ function AssignedTable() {
           <GroupByMenu value={groupBy} onChange={setGroupBy} />
           <ColumnsMenu all={ASSIGNED_COLUMNS_META} visible={visibleCols}
             onChange={(key) => setVisibleCols((v) => v.includes(key) ? v.filter((k) => k !== key) : [...v, key])} />
-          <Tooltip content="Переход в раздел отчётов по планам адаптации.">
-            <Button mode="secondary" disabled>Отчёты</Button>
-          </Tooltip>
         </div>
       </div>
 
@@ -628,14 +695,14 @@ function AssignedTable() {
 
       {selected.size > 0 && (
         <div style={{
-          position: "fixed", left: "50%", bottom: 24, transform: "translateX(-50%)", zIndex: 90,
           display: "flex", alignItems: "center", gap: 10, padding: "12px 16px", borderRadius: "var(--sk-radius-4)",
-          background: "var(--sk-text-primary)", boxShadow: "var(--sk-shadow-l)", color: "#fff", flexWrap: "wrap",
+          background: "var(--sk-accent)", color: "#fff", flexWrap: "wrap", width: "100%",
         }}>
           <span className="sk-label-3" style={{ color: "#fff", whiteSpace: "nowrap" }}>Выбрано: {selected.size}</span>
           <Button mode="secondary" icon={<IconUnlink size={15} />} onClick={() => setBulkAction("unassign")}>Снять назначение</Button>
           <Button mode="secondary" icon={<IconRepeat size={15} />} onClick={() => setBulkAction("reassign")}>Назначить / переназначить</Button>
           <Button mode="secondary" icon={<IconUserSwitch size={15} />} onClick={() => setBulkAction("manager")}>Заменить руководителя</Button>
+          <Button mode="secondary" icon={<IconCalendar size={15} />} onClick={() => setBulkAction("postpone")}>Перенести срок</Button>
           {groupBy === "templateId" && (
             <>
               <Button mode="secondary" onClick={() => setBulkAction("replace")}>Заменить элемент</Button>
@@ -644,7 +711,7 @@ function AssignedTable() {
           )}
           <button onClick={clearSelection} style={{
             width: 32, height: 32, borderRadius: "50%", border: "none", background: "rgba(255,255,255,0.12)",
-            color: "#fff", display: "inline-flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0,
+            color: "#fff", display: "inline-flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0, marginLeft: "auto",
           }}>
             <IconX size={16} />
           </button>
@@ -654,6 +721,7 @@ function AssignedTable() {
       {bulkAction === "unassign" && <BulkUnassignModal people={selectedPeople} onClose={() => setBulkAction(null)} onConfirm={bulkUnassign} />}
       {bulkAction === "reassign" && <BulkReassignModal people={selectedPeople} onClose={() => setBulkAction(null)} onConfirm={bulkReassign} />}
       {bulkAction === "manager" && <BulkManagerModal people={selectedPeople} managers={managers} onClose={() => setBulkAction(null)} onConfirm={bulkManager} />}
+      {bulkAction === "postpone" && <BulkPostponeModal people={selectedPeople} onClose={() => setBulkAction(null)} onConfirm={bulkPostpone} />}
       {(bulkAction === "replace" || bulkAction === "delete") && (
         <BulkReplaceElementModal people={selectedPeople} mode={bulkAction} onClose={() => setBulkAction(null)} onConfirm={bulkReplaceElement} />
       )}
@@ -673,11 +741,13 @@ function Page() {
   return (
     <AppShell role="hr" active="hr-plans" base="..">
       <div className="sk-row" style={{ justifyContent: "space-between", alignItems: "flex-start" }}>
-        <div className="sk-col sk-gap-2">
-          <div className="sk-title-4">Планы сотрудников</div>
-          <div className="sk-muted">Индивидуальные планы, назначенные сотрудникам, и черновики, которые ещё не назначены.</div>
+        <div className="sk-title-4">Планы сотрудников</div>
+        <div className="sk-row sk-gap-2">
+          <Tooltip content="Переход в раздел отчётов по планам адаптации.">
+            <Button mode="secondary" disabled>Отчёты</Button>
+          </Tooltip>
+          <Button variant="accent" icon={<IconPlusSm size={16} />} disabled>Создать план</Button>
         </div>
-        <Button variant="accent" icon={<IconPlusSm size={16} />} disabled>Создать план</Button>
       </div>
 
       <Tabs items={[{ id: "assigned", label: "Назначенные планы", count: D.hrAssignedPlans.length }, { id: "drafts", label: "Черновики", count: D.planDrafts.length }]}

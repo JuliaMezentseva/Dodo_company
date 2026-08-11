@@ -34,12 +34,11 @@ function fmtEventDate(d) {
   return date ? date.getDate() + " " + MONTHS_SHORT[date.getMonth()] + " " + date.getFullYear() : (d || "—");
 }
 
-// ---- Пилюли событий над таблицей — активная ("Все события" по умолчанию) залита
-// насыщенным акцентным синим (variant="accent" mode="primary"), как кнопка "Мои отклики"
-// на referece-скрине из employee/vacancies.html. Высота 32 — компактнее прежней 40. ----
-// ---- Пилюли событий: "Все события" — чёрная (нейтральный акцент "сбросить фильтр"),
-// остальные — используют тот же hue, что и тег события в таблице (EVENT_META), чтобы
-// цвет пилюли совпадал с цветом тега, который получит сотрудник в списке. ----
+// ---- Пилюли событий: тот же паттерн, что DirectionPill в employee/vacancies.html —
+// активная "Все события" залита насыщенным акцентным синим (sk-accent) с белым текстом,
+// неактивные — светлый фон с тонкой серой обводкой. Остальные пилюли (не "Все события")
+// при активации используют hue соответствующего события (EVENT_META), чтобы цвет совпадал
+// с тегом события в таблице. ----
 const PILL_HUES = {
   accent: { bg: "var(--sk-accent-secondary)", color: "var(--sk-text-accent)" },
   special: { bg: "var(--sk-special-secondary)", color: "var(--text-text-special)" },
@@ -49,17 +48,17 @@ const PILL_HUES = {
 function EventPill({ label, count, active, hue, onClick }) {
   const activeColors = hue
     ? PILL_HUES[hue]
-    : { bg: "var(--graphite-graphite-0)", color: "var(--sk-text-contrast)" }; // "Все события"
+    : { bg: "var(--sk-accent)", color: "var(--sk-text-contrast)" }; // "Все события" — насыщенный синий
   return (
     <button type="button" onClick={onClick} className="sk-clickable" style={{
       display: "inline-flex", alignItems: "center", gap: 6, height: 32, padding: "0 14px",
-      borderRadius: "var(--sk-radius-full)", border: "none",
-      background: active ? activeColors.bg : "var(--graphite-graphite-97)",
-      color: active ? activeColors.color : "var(--sk-text-secondary)",
+      borderRadius: "var(--sk-radius-full)", border: "1px solid " + (active ? "transparent" : "var(--sk-stroke)"),
+      background: active ? activeColors.bg : "var(--sk-surface-page)",
+      color: active ? activeColors.color : "var(--sk-text-primary)",
       font: "var(--sk-label-3-regular)", cursor: "pointer", whiteSpace: "nowrap",
     }}>
       {label}
-      {typeof count === "number" && <span style={{ opacity: active ? 0.75 : 0.6 }}>{count}</span>}
+      {typeof count === "number" && <span style={{ opacity: active ? 0.85 : 0.6 }}>{count}</span>}
     </button>
   );
 }

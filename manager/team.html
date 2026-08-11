@@ -405,9 +405,14 @@ function RiskBadge({ risks }) {
 function PlanRow({ m, onOpen }) {
   const pct = employeePlanProgress(m);
   const atRisk = m.risks.length > 0;
+  const [hovered, setHovered] = React.useState(false);
   return (
-    <Card bordered style={{ cursor: "pointer", borderLeft: atRisk ? "4px solid var(--sk-negative)" : undefined }}>
-      <div className="sk-clickable" onClick={onOpen}>
+    <Card bordered style={{
+      cursor: "pointer",
+      borderLeft: atRisk ? "4px solid var(--sk-negative)" : undefined,
+      boxShadow: hovered ? "inset 0 0 0 1.5px var(--sk-stroke-accent)" : "inset 0 0 0 1px var(--sk-stroke)",
+    }} onClick={onOpen} onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}>
+      <div>
         <div className="sk-row sk-gap-4" style={{ justifyContent: "space-between", alignItems: "flex-start" }}>
           <div className="sk-row sk-gap-3" style={{ flex: 1 }}>
           <Avatar src={personPhoto(m.name)} name={m.name} size={44} />
