@@ -748,40 +748,29 @@ function StepMaterialsPicker({ plan, selected, onToggle }) {
 // (Шаг выполнен / Не выполнен / Требует доработки) без промежуточных критериев. ----------------
 function StepAssessmentPicker({ templateId, setTemplateId }) {
   const templates = D.assessmentTemplates || [];
-  const [mode, setMode] = React.useState(null); // null (ничего не выбрано) | "checklist" | "manual"
+  const checked = !!templateId;
 
-  function selectChecklist() {
-    setMode("checklist");
-    if (!templateId) setTemplateId(templates[0] && templates[0].id);
-  }
-  function selectManual() {
-    setMode("manual");
-    setTemplateId(null);
+  function toggle() {
+    setTemplateId(checked ? null : (templates[0] && templates[0].id));
   }
 
   return (
-    <div className="sk-col sk-gap-3">
-      <div className="sk-col" style={{ gap: 0 }}>
-        <div className="sk-row sk-gap-3 sk-clickable" style={{ alignItems: "flex-start" }} onClick={selectChecklist}>
-          <div style={{ paddingTop: 1 }}><Radio checked={mode === "checklist"} onChange={selectChecklist} name="step-assessment-mode" /></div>
-          <span className="sk-label-4">Через оценочный лист</span>
-        </div>
-        <div className="sk-col sk-gap-2" style={{ marginLeft: 32, marginTop: 2 }}>
-          <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Готовые критерии помогут оценить выполнение шага</span>
-          {mode === "checklist" && (
-            <Select value={templateId} options={templates.map(t => ({ value: t.id, label: t.title }))} onChange={setTemplateId} />
-          )}
-        </div>
+    <div className="sk-col sk-gap-2">
+      <div className="sk-row sk-gap-3 sk-clickable" style={{ alignItems: "flex-start" }} onClick={toggle}>
+        <div style={{ paddingTop: 1 }}><Checkbox checked={checked} onChange={toggle} /></div>
+        <span className="sk-label-4">Добавить оценочный лист</span>
       </div>
-
-      <div className="sk-col" style={{ gap: 0 }}>
-        <div className="sk-row sk-gap-3 sk-clickable" style={{ alignItems: "flex-start" }} onClick={selectManual}>
-          <div style={{ paddingTop: 1 }}><Radio checked={mode === "manual"} onChange={selectManual} name="step-assessment-mode" /></div>
-          <span className="sk-label-4">На усмотрение проверяющего</span>
-        </div>
-        <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)", marginLeft: 32, marginTop: 2 }}>
-          Итог проставляется без оценочного листа: «Шаг выполнен», «Не выполнен» или «Требует доработки».
-        </span>
+      <div className="sk-col sk-gap-2" style={{ marginLeft: 32 }}>
+        <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Готовые критерии помогут оценить выполнение шага</span>
+        {checked ? (
+          <Select value={templateId} options={templates.map(t => ({ value: t.id, label: t.title }))} onChange={setTemplateId} />
+        ) : (
+          <div style={{ padding: "12px 14px", background: "var(--sk-surface-secondary)", borderRadius: "var(--sk-radius-2)" }}>
+            <span className="sk-label-3-regular">
+              Без оценочного листа итог выставляется на усмотрение проверяющего: «Шаг выполнен», «Не выполнен» или «Требует доработки».
+            </span>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -1023,13 +1012,13 @@ function SubgoalDrawer({ plan, goal, subgoal, onClose, onChange, onOpenChecklist
             {needsAssessment && isReview && (
               <div className="sk-row sk-gap-3" style={{
                 alignItems: "center", justifyContent: "space-between", padding: "12px 14px",
-                background: "var(--sk-special-secondary)", borderRadius: "var(--sk-radius-3)",
+                background: "var(--sk-accent-secondary)", borderRadius: "var(--sk-radius-3)",
               }}>
                 <div className="sk-col sk-gap-1">
-                  <div className="sk-label-3" style={{ color: "var(--sk-special)" }}>Оцените результаты</div>
+                  <div className="sk-label-3" style={{ color: "var(--sk-text-accent)" }}>Оцените результаты</div>
                   <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Оценить уровень выполнения поможет оценочный лист</div>
                 </div>
-                <Button onClick={() => setAssessmentOpen(true)} style={{ background: "var(--sk-special)", color: "var(--sk-text-contrast)", flexShrink: 0 }}>Оценить</Button>
+                <Button onClick={() => setAssessmentOpen(true)} style={{ background: "var(--sk-accent)", color: "var(--sk-text-contrast)", flexShrink: 0 }}>Оценить</Button>
               </div>
             )}
 

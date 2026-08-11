@@ -593,9 +593,14 @@ function AssignedTable() {
           return (
             <Card key={ind.id} bordered padding={14}
               style={{ cursor: "pointer", flex: "1 1 0", minWidth: 0, outline: active ? "2px solid var(--sk-stroke-accent)" : "none" }}>
-              <div className="sk-col sk-gap-2 sk-clickable" onClick={() => setActiveIndicator(active ? null : ind.id)}>
-                <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{ind.label}</div>
-                <div className="sk-title-5">{count}</div>
+              <div className="sk-row sk-gap-3 sk-clickable" onClick={() => setActiveIndicator(active ? null : ind.id)} style={{ alignItems: "center" }}>
+                <span style={{ width: 32, height: 32, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", background: ind.bg, color: ind.fg }}>
+                  <ind.icon size={16} />
+                </span>
+                <div className="sk-col" style={{ gap: 2, minWidth: 0 }}>
+                  <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{ind.label}</div>
+                  <div className="sk-title-5">{count}</div>
+                </div>
               </div>
             </Card>
           );
