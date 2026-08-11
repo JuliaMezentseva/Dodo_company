@@ -122,7 +122,6 @@ function Page() {
   const [checklistPicker, setChecklistPicker] = React.useState(null); // { goalId, subgoalId }
   const [publishConfirm, setPublishConfirm] = React.useState(false);
   const [returnModal, setReturnModal] = React.useState(null); // { goalId, subgoalId }
-  const [notDoneConfirm, setNotDoneConfirm] = React.useState(null);
   const [deleteGoal, setDeleteGoal] = React.useState(null);
   const [deleteSubgoal, setDeleteSubgoal] = React.useState(null);
   const [taskModal, setTaskModal] = React.useState(null);
@@ -139,7 +138,8 @@ function Page() {
     const id = "g" + Date.now();
     const subgoals = (draft.subgoals || []).map((sg, i) => ({
       id: "sg" + Date.now() + "_" + i, title: sg.title, description: sg.description,
-      dueLabel: fmtDate(sg.dueDate), reviewer: sg.reviewer, status: "not_started", checklistRefs: [], comments: [],
+      dueLabel: fmtDate(sg.dueDate), reviewer: sg.reviewer, status: "not_started",
+      checklistRefs: sg.checklistRefs || [], comments: [], assessmentChecklist: sg.assessmentChecklist || null,
     }));
     setPlan(prev => ({ ...prev, goals: [...prev.goals, {
       id, title: draft.title, description: draft.description, dueLabel: fmtDate(draft.dueDate),
@@ -160,7 +160,8 @@ function Page() {
     setPlan(prev => ({ ...prev, goals: prev.goals.map(g => g.id !== goalId ? g : {
       ...g, subgoals: [...g.subgoals, {
         id, title: draft.title, description: draft.description, dueLabel: fmtDate(draft.dueDate),
-        reviewer: draft.reviewer, status: "not_started", checklistRefs: [], comments: [],
+        reviewer: draft.reviewer, status: "not_started", checklistRefs: draft.checklistRefs || [], comments: [],
+        assessmentChecklist: draft.assessmentChecklist || null,
       }],
     }) }));
     return id;
@@ -352,7 +353,7 @@ function Page() {
 
       {/* ---- Модалка создания подцели ---- */}
       {subgoalModal && (
-        <SubgoalCreateModal onClose={() => setSubgoalModal(null)}
+        <SubgoalCreateModal plan={plan} onClose={() => setSubgoalModal(null)}
           onCreate={(draft) => {
             if (subgoalModal.context === "draft") {
               setNewGoalDraft(d => ({ ...d, subgoals: [...d.subgoals, draft] }));
@@ -373,7 +374,7 @@ function Page() {
           onAddComment={(text) => addComment(subgoalDrawer.goalId, subgoalDrawer.subgoalId, text)}
           onConfirm={() => confirmSubgoal(subgoalDrawer.goalId, subgoalDrawer.subgoalId)}
           onReturn={() => setReturnModal(subgoalDrawer)}
-          onNotDone={() => setNotDoneConfirm(subgoalDrawer)} />
+          onNotDone={() => markNotDone(subgoalDrawer.goalId, subgoalDrawer.subgoalId)} />
       )}
 
       {checklistPicker && (
@@ -400,17 +401,6 @@ function Page() {
       {returnModal && (
         <ReturnCommentModal onClose={() => setReturnModal(null)}
           onSubmit={(comment) => returnSubgoal(returnModal.goalId, returnModal.subgoalId, comment)} />
-      )}
-
-      {notDoneConfirm && (
-        <Modal open title={null} onClose={() => setNotDoneConfirm(null)} size="s"
-          secondary={<Button mode="secondary" onClick={() => setNotDoneConfirm(null)}>Отменить</Button>}
-          primary={<Button variant="negative" onClick={() => markNotDone(notDoneConfirm.goalId, notDoneConfirm.subgoalId)}>Отметить не выполненной</Button>}>
-          <div className="sk-col sk-gap-2" style={{ alignItems: "center", textAlign: "center", padding: "8px 0" }}>
-            <div className="sk-label-2">Отметить подцель не выполненной?</div>
-            <div className="sk-muted">Это финальное решение руководителя — изменить статус позже будет нельзя.</div>
-          </div>
-        </Modal>
       )}
 
       {deleteGoal && (
@@ -696,23 +686,140 @@ function GoalDrawer({ goal, plan, editable, onClose, onChange, onAddSubgoal, onO
 }
 
 // ---------------- Модалка: создание подцели ----------------
-function SubgoalCreateModal({ onClose, onCreate }) {
+// ---------------- Выбор полезных материалов прямо из формы шага — тот же список
+// элементов чек-листа, что и ChecklistPickerModal, но встроен в форму, чтобы не
+// заставлять руководителя сначала создать шаг, а материалы добавлять вторым заходом. ----------------
+function StepMaterialsPicker({ plan, selected, onToggle }) {
+  const [open, setOpen] = React.useState(false);
+  const [q, setQ] = React.useState("");
+  const allItems = plan.stages.flatMap(s => s.items.filter(i => i.kind !== "checkpoint").map(i => ({ item: i, stage: s })));
+  const list = q.trim() ? allItems.filter(x => x.item.title.toLowerCase().includes(q.trim().toLowerCase())) : allItems;
+  const selectedItems = selected.map(id => allItems.find(x => x.item.id === id)).filter(Boolean);
+
+  return (
+    <div className="sk-col sk-gap-2">
+      <span className="sk-label-4" style={{ color: "var(--sk-text-secondary)" }}>Полезные материалы</span>
+      <div className="sk-col sk-gap-2" style={{ padding: 12, background: "var(--sk-accent-secondary)", borderRadius: "var(--sk-radius-3)" }}>
+        {!selectedItems.length && <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Материалы помогут сотруднику разобраться, что нужно сделать</div>}
+        {selectedItems.map(({ item, stage }) => (
+          <div key={item.id} className="sk-row" style={{ justifyContent: "space-between", padding: 10, background: "var(--sk-surface-page)", border: "1px solid var(--sk-stroke)", borderRadius: "var(--sk-radius-2)" }}>
+            <div className="sk-col sk-gap-1">
+              <div className="sk-label-4">{item.title}</div>
+              <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{ELEMENT_LABEL[item.kind]} · Этап «{stage.title}»</div>
+            </div>
+            <button className="sk-link-btn" onClick={() => onToggle(item.id)}><IconX size={15} color="var(--sk-icon-secondary)" /></button>
+          </div>
+        ))}
+        <button className="sk-link-btn sk-label-3-regular" onClick={() => setOpen(true)}
+          style={{ alignSelf: "flex-start", color: "var(--sk-text-accent)" }}>
+          <span className="sk-row sk-gap-1"><IconPlusSm size={16} />Добавить</span>
+        </button>
+      </div>
+
+      {open && (
+        <Modal open title="Полезные материалы" onClose={() => setOpen(false)} size="m"
+          secondary={<Button mode="secondary" onClick={() => setOpen(false)}>Отменить</Button>}
+          primary={<Button onClick={() => setOpen(false)}>Готово</Button>}
+          options={<Input icon={<IconSearch size={18} />} placeholder="Поиск по названию" value={q} onChange={(e) => setQ(e.target.value || "")} />}>
+          <div className="sk-col sk-gap-1 sk-modal-scroll">
+            {list.map(({ item, stage }) => (
+              <div key={item.id} className="sk-row sk-gap-3 sk-clickable" style={{ padding: "10px 4px" }} onClick={() => onToggle(item.id)}>
+                <Checkbox checked={selected.includes(item.id)} onChange={() => onToggle(item.id)} />
+                <div className="sk-col sk-gap-1" style={{ flex: 1 }}>
+                  <div className="sk-label-3-regular">{item.title}</div>
+                  <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{ELEMENT_LABEL[item.kind]} · Этап «{stage.title}»</div>
+                </div>
+              </div>
+            ))}
+            {!list.length && <div className="sk-muted" style={{ padding: "16px 0", textAlign: "center" }}>Ничего не нашлось</div>}
+          </div>
+        </Modal>
+      )}
+    </div>
+  );
+}
+
+// ---------------- Выбор способа проверки шага — обязательное решение при создании:
+// либо привязать готовый оценочный лист (критерии, по которым будет приниматься
+// решение), либо оставить без него — тогда проверяющий просто выставит итог
+// (Шаг выполнен / На доработку / Шаг не выполнен) без промежуточных критериев. ----------------
+function StepAssessmentPicker({ templateId, setTemplateId }) {
+  const templates = D.assessmentTemplates || [];
+  const checked = !!templateId;
+
+  return (
+    <div className="sk-col sk-gap-2">
+      <div className="sk-row sk-gap-3 sk-clickable" style={{ alignItems: "flex-start" }}
+        onClick={() => setTemplateId(checked ? null : (templates[0] && templates[0].id))}>
+        <div style={{ paddingTop: 1 }}><Checkbox checked={checked} onChange={() => setTemplateId(checked ? null : (templates[0] && templates[0].id))} /></div>
+        <div className="sk-col sk-gap-1">
+          <span className="sk-label-4">Добавить оценочный лист</span>
+          <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Критерии, по которым проверяющий примет решение по шагу</span>
+        </div>
+      </div>
+
+      {checked ? (
+        <Select value={templateId} options={templates.map(t => ({ value: t.id, label: t.title }))}
+          onChange={setTemplateId} style={{ marginLeft: 30 }} />
+      ) : (
+        <div className="sk-row sk-gap-2" style={{ marginLeft: 30, padding: "10px 12px", background: "var(--sk-surface-secondary)", borderRadius: "var(--sk-radius-2)" }}>
+          <IconInfo size={16} color="var(--sk-icon-secondary)" style={{ flexShrink: 0, marginTop: 1 }} />
+          <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>
+            Без оценочного листа по шагу просто выставляется итог: «Шаг выполнен», «На доработку» или «Шаг не выполнен».
+          </span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SubgoalCreateModal({ plan, onClose, onCreate }) {
   const [title, setTitle] = React.useState("");
   const [description, setDescription] = React.useState("");
+  const [descriptionOpen, setDescriptionOpen] = React.useState(false);
   const [dueDate, setDueDate] = React.useState(new Date(2026, 0, 20));
   const [reviewer, setReviewer] = React.useState(D.manager.name);
+  const [checklistRefs, setChecklistRefs] = React.useState([]);
+  const [templateId, setTemplateId] = React.useState(null);
   const canCreate = title.trim().length > 0;
+
+  function toggleMaterial(itemId) {
+    setChecklistRefs(prev => prev.includes(itemId) ? prev.filter(x => x !== itemId) : [...prev, itemId]);
+  }
+
+  function handleCreate() {
+    const template = templateId ? (D.assessmentTemplates || []).find(t => t.id === templateId) : null;
+    const assessmentChecklist = template ? {
+      title: template.title, hint: template.hint, submitted: false,
+      criteria: template.criteria.map(c => ({ ...c, checked: null })),
+      note: "",
+    } : null;
+    onCreate({ title, description, dueDate, reviewer, checklistRefs, assessmentChecklist });
+  }
+
   return (
     <Modal open title="Шаг для выполнения цели" onClose={onClose} size="m"
       secondary={<Button mode="secondary" onClick={onClose}>Отменить</Button>}
-      primary={<Button disabled={!canCreate} onClick={() => onCreate({ title, description, dueDate, reviewer })}>Добавить</Button>}>
+      primary={<Button disabled={!canCreate} onClick={handleCreate}>Добавить</Button>}>
       <div className="sk-col sk-gap-4">
-        <Input label="Название" required value={title} onChange={(e) => setTitle(e.target.value || "")} />
-        <Textarea label="Описание" rows={3} maxLength={1000} showCount value={description} onChange={(e) => setDescription(e.target.value || "")} />
+        <div className="sk-col sk-gap-2">
+          <Input label="Название" required value={title} onChange={(e) => setTitle(e.target.value || "")} />
+          {descriptionOpen ? (
+            <Textarea label="Описание" rows={3} maxLength={1000} showCount value={description} onChange={(e) => setDescription(e.target.value || "")} />
+          ) : (
+            <button className="sk-link-btn sk-label-3-regular" onClick={() => setDescriptionOpen(true)}
+              style={{ alignSelf: "flex-start", color: "var(--sk-text-accent)" }}>
+              <span className="sk-row sk-gap-1"><IconPlusSm size={16} />Добавить описание</span>
+            </button>
+          )}
+        </div>
         <div className="sk-row sk-gap-3">
           <DatePicker label="Дата завершения" required value={dueDate} onChange={setDueDate} style={{ flex: 1 }} />
           <Select label="Проверяющий" value={reviewer} options={REVIEWER_OPTIONS} onChange={setReviewer} style={{ flex: 1 }} />
         </div>
+        <StepMaterialsPicker plan={plan} selected={checklistRefs} onToggle={toggleMaterial} />
+        <Divider />
+        <StepAssessmentPicker templateId={templateId} setTemplateId={setTemplateId} />
       </div>
     </Modal>
   );
@@ -755,12 +862,23 @@ function AssessmentChecklistCard({ checklist, onChange, readOnly }) {
 
 // ---------------- Модалка оценочного листа — отдельное окно поверх дровера подцели.
 // Здесь и заполнение критериев, и итоговое решение (3 кнопки), чтобы не дублировать
-// решение в двух местах и не перегружать сам дровер подцели. ----------------
+// решение в двух местах и не перегружать сам дровер подцели.
+// "Шаг выполнен" и "Не выполнен" — финальные, необратимые решения, поэтому перед
+// применением показываем защиту от дурака (см. AssessmentConfirmStep). "Вернуть на
+// доработку" не финально — статус можно будет пересмотреть позже, подтверждение не нужно. ----------------
 function AssessmentModal({ subgoal, onClose, onChange, onConfirm, onReturn, onNotDone }) {
   const checklist = subgoal.assessmentChecklist;
   const criteria = checklist.criteria || [];
   const answeredCount = criteria.filter(c => c.checked !== null).length;
   const allAnswered = answeredCount === criteria.length && criteria.length > 0;
+  const [pendingAction, setPendingAction] = React.useState(null); // "done" | "not_done"
+
+  if (pendingAction) {
+    return (
+      <FinalDecisionConfirm action={pendingAction} onBack={() => setPendingAction(null)}
+        onConfirm={() => { const a = pendingAction; setPendingAction(null); a === "done" ? onConfirm() : onNotDone(); }} />
+    );
+  }
 
   return (
     <Modal open title={checklist.title || "Оценочный лист"} onClose={onClose} size="m">
@@ -773,10 +891,30 @@ function AssessmentModal({ subgoal, onClose, onChange, onConfirm, onReturn, onNo
         )}
         <Divider />
         <div className="sk-row sk-gap-2" style={{ flexWrap: "wrap" }}>
-          <Button disabled={!allAnswered} onClick={onConfirm}>Подтвердить</Button>
-          <Button mode="secondary" disabled={!allAnswered} onClick={onReturn}>Вернуть на доработку</Button>
-          <Button mode="tertiary" variant="negative" disabled={!allAnswered} onClick={onNotDone}>Не выполнена</Button>
+          <Button variant="positive" disabled={!allAnswered} onClick={() => setPendingAction("done")}>Шаг выполнен</Button>
+          <Button mode="secondary" variant="gray" disabled={!allAnswered} onClick={onReturn}>На доработку</Button>
+          <Button variant="negative" mode="secondary" disabled={!allAnswered} onClick={() => setPendingAction("not_done")}>Не выполнен</Button>
         </div>
+      </div>
+    </Modal>
+  );
+}
+
+// ---------------- Защита от дурака перед финальным (необратимым) решением по шагу —
+// общий шаг подтверждения и для оценочного листа, и для ручного решения без него. ----------------
+const FINAL_DECISION_COPY = {
+  done: { title: "Отметить шаг выполненным?", body: "Шаг будет считаться выполненным. Изменить решение потом будет нельзя.", label: "Да, шаг выполнен", variant: "positive" },
+  not_done: { title: "Отметить шаг невыполненным?", body: "Шаг будет считаться невыполненным. Изменить решение потом будет нельзя.", label: "Да, не выполнен", variant: "negative" },
+};
+function FinalDecisionConfirm({ action, onBack, onConfirm }) {
+  const c = FINAL_DECISION_COPY[action];
+  return (
+    <Modal open title={null} onClose={onBack} size="s"
+      secondary={<Button mode="secondary" onClick={onBack}>Отменить</Button>}
+      primary={<Button variant={c.variant} onClick={onConfirm}>{c.label}</Button>}>
+      <div className="sk-col sk-gap-2" style={{ alignItems: "center", textAlign: "center", padding: "8px 0" }}>
+        <div className="sk-label-2">{c.title}</div>
+        <div className="sk-muted">{c.body}</div>
       </div>
     </Modal>
   );
@@ -814,6 +952,21 @@ function CommentsPanel({ comments, comment, setComment, onAdd, disabled }) {
           <div className="sk-col sk-gap-1" style={{ flex: 1 }}>
             <div className="sk-row sk-gap-2"><span className="sk-label-4">{c.author}</span><span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{c.date}</span></div>
             <div className="sk-label-3-regular">{c.text}</div>
+            {c.attachment && (
+              <div className="sk-row sk-gap-2" style={{
+                alignItems: "center", marginTop: 2, padding: "8px 10px", maxWidth: 280,
+                border: "1px solid var(--sk-stroke)", borderRadius: "var(--sk-radius-2)", background: "var(--sk-surface-page)",
+              }}>
+                <div style={{
+                  width: 28, height: 28, borderRadius: "var(--sk-radius-2)", flexShrink: 0,
+                  background: "var(--sk-negative-secondary)", display: "flex", alignItems: "center", justifyContent: "center",
+                }}><IconFileText size={15} color="var(--sk-text-negative)" /></div>
+                <div className="sk-col" style={{ gap: 0, minWidth: 0 }}>
+                  <div className="sk-label-4" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.attachment.name}</div>
+                  <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{c.attachment.size}</div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       ))}
@@ -837,6 +990,7 @@ function SubgoalDrawer({ plan, goal, subgoal, onClose, onChange, onOpenChecklist
   // и то, и другое в одной модалке (AssessmentModal), не в самом дровере.
   const needsAssessment = !!subgoal.assessmentChecklist;
   const [assessmentOpen, setAssessmentOpen] = React.useState(false);
+  const [pendingAction, setPendingAction] = React.useState(null); // "done" | "not_done" — защита от дурака без оценочного листа
 
   return (
     <React.Fragment>
@@ -864,7 +1018,7 @@ function SubgoalDrawer({ plan, goal, subgoal, onClose, onChange, onOpenChecklist
                 background: "var(--sk-special-secondary)", borderRadius: "var(--sk-radius-3)",
               }}>
                 <div className="sk-col sk-gap-1">
-                  <div className="sk-label-3" style={{ color: "var(--text-text-special)" }}>Цель на проверке</div>
+                  <div className="sk-label-3" style={{ color: "var(--text-text-special)" }}>Подтвердите выполнение</div>
                   <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Оценить уровень выполнения поможет оценочный лист</div>
                 </div>
                 <Button onClick={() => setAssessmentOpen(true)} style={{ background: "var(--sk-special)", color: "#fff", flexShrink: 0 }}>Оценить</Button>
@@ -877,7 +1031,6 @@ function SubgoalDrawer({ plan, goal, subgoal, onClose, onChange, onOpenChecklist
                   <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Дата завершения</span>
                   <span className="sk-label-4">{subgoal.dueLabel}</span>
                 </div>
-                <Divider />
                 <div className="sk-row" style={{ justifyContent: "space-between", padding: "8px 0" }}>
                   <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Проверяющий</span>
                   <div className="sk-row sk-gap-2"><Avatar src={personPhoto(subgoal.reviewer)} name={subgoal.reviewer} size={22} /><span className="sk-label-4">{subgoal.reviewer}</span></div>
@@ -920,9 +1073,9 @@ function SubgoalDrawer({ plan, goal, subgoal, onClose, onChange, onOpenChecklist
           <div className="sk-col sk-gap-2" style={{ position: "sticky", bottom: 0, background: "var(--sk-surface-page)", paddingTop: 8 }}>
             <Divider />
             <div className="sk-row sk-gap-2" style={{ flexWrap: "wrap" }}>
-              <Button onClick={onConfirm}>Подтвердить</Button>
-              <Button mode="secondary" onClick={onReturn}>Вернуть в работу</Button>
-              <Button mode="tertiary" variant="negative" onClick={onNotDone}>Отметить не выполненной</Button>
+              <Button variant="positive" onClick={() => setPendingAction("done")}>Шаг выполнен</Button>
+              <Button mode="secondary" variant="gray" onClick={onReturn}>На доработку</Button>
+              <Button variant="negative" mode="secondary" onClick={() => setPendingAction("not_done")}>Не выполнен</Button>
             </div>
           </div>
         )}
@@ -931,7 +1084,7 @@ function SubgoalDrawer({ plan, goal, subgoal, onClose, onChange, onOpenChecklist
             <Divider />
             <Alert hue="neutral">Ожидает подтверждения от {subgoal.reviewer}.</Alert>
             <div className="sk-row sk-gap-2">
-              <Button mode="tertiary" variant="negative" onClick={onNotDone}>Отметить не выполненной</Button>
+              <Button variant="negative" mode="secondary" onClick={() => setPendingAction("not_done")}>Не выполнен</Button>
             </div>
           </div>
         )}
@@ -943,6 +1096,10 @@ function SubgoalDrawer({ plan, goal, subgoal, onClose, onChange, onOpenChecklist
         onConfirm={() => { setAssessmentOpen(false); onConfirm(); }}
         onReturn={() => { setAssessmentOpen(false); onReturn(); }}
         onNotDone={() => { setAssessmentOpen(false); onNotDone(); }} />
+    )}
+    {pendingAction && (
+      <FinalDecisionConfirm action={pendingAction} onBack={() => setPendingAction(null)}
+        onConfirm={() => { const a = pendingAction; setPendingAction(null); a === "done" ? onConfirm() : onNotDone(); }} />
     )}
     </React.Fragment>
   );
