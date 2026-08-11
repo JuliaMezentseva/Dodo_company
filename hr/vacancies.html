@@ -119,7 +119,7 @@ function Page() {
       </div>
     ) },
     { key: "direction", title: "Направление", render: (v) => <Tag size="s" hue="neutral">{v.direction}</Tag> },
-    { key: "salary", title: "Оклад", render: (v) => fmtMoney(v.salaryFrom) + "–" + fmtMoney(v.salaryTo) + " ₽" },
+    { key: "salary", title: "Оклад", render: (v) => (v.salaryFrom && v.salaryTo) ? fmtMoney(v.salaryFrom) + "–" + fmtMoney(v.salaryTo) + " ₽" : "По договорённости" },
     { key: "status", title: "Статус", render: (v) => <Tag size="s" hue={v.status === "open" ? "positive" : "neutral"}>{v.status === "open" ? "Идёт поиск" : "Закрыта"}</Tag> },
     { key: "responses", title: "Отклики", render: (v) => (
       v.responsesCount > 0 ? (
@@ -185,7 +185,7 @@ function Page() {
           initial={formModal.mode === "edit" ? {
             title: formModal.vacancy.title, direction: formModal.vacancy.direction, department: formModal.vacancy.department,
             city: formModal.vacancy.city, format: formModal.vacancy.format, grade: formModal.vacancy.grade,
-            employment: formModal.vacancy.employment, salaryFrom: String(formModal.vacancy.salaryFrom), salaryTo: String(formModal.vacancy.salaryTo),
+            employment: formModal.vacancy.employment, salaryFrom: formModal.vacancy.salaryFrom ? String(formModal.vacancy.salaryFrom) : "", salaryTo: formModal.vacancy.salaryTo ? String(formModal.vacancy.salaryTo) : "",
             experience: formModal.vacancy.experience, responsibilities: (formModal.vacancy.responsibilities || []).join("\n"),
             requirements: (formModal.vacancy.requirements || []).join("\n"), conditions: (formModal.vacancy.conditions || []).join("\n"),
             requiredSkills: (formModal.vacancy.requiredSkills || []).join(", "),
