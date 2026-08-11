@@ -164,16 +164,13 @@ function Page() {
 
   return (
     <AppShell role="employee" active="vacancies" base="..">
-      <div className="sk-title-4" style={{ marginBottom: 4 }}>Откройте новые карьерные возможности</div>
-      <div className="sk-muted" style={{ font: "var(--sk-label-3-regular)", marginBottom: 20 }}>
-        {visibleVacancies.length} открытых вакансий внутри компании
-      </div>
+      <div className="sk-title-4" style={{ marginBottom: 12 }}>Откройте новые карьерные возможности</div>
 
       <div className="sk-row sk-gap-2" style={{ alignItems: "center" }}>
-        <Input icon={<IconSearch size={20} />} placeholder="По названию, должности или подразделению"
+        <Input size="s" icon={<IconSearch size={20} />} placeholder="По названию, должности или подразделению"
           value={q} onChange={(e) => setQ(e.target.value || "")} style={{ width: 460, flexShrink: 0 }} />
         <a href="my-responses.html" style={{ textDecoration: "none", flexShrink: 0 }}>
-          <Button style={{ background: "var(--sk-special-secondary)", color: "var(--sk-special)" }} icon={<Icons.IconClipboard size={16} />}>Мои отклики{responses.length ? " · " + responses.length : ""}</Button>
+          <Button style={{ background: "var(--sk-special)", color: "var(--sk-text-contrast)" }} icon={<Icons.IconClipboard size={16} />}>Мои отклики{responses.length ? " · " + responses.length : ""}</Button>
         </a>
       </div>
 
