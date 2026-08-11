@@ -98,10 +98,11 @@ function check(label, ok) {
     }
     check("[1b] выбранный материал отображается в форме шага", /Этап «/.test(w1.document.body.textContent));
 
-    // 1c. Оценочный лист — карточка-кнопка «Добавить лист» (вариант C); заметная подсказка в пустом состоянии
+    // 1c. Оценочный лист — карточка-кнопка «Добавить лист» (вариант C); заголовок секции и заметная подсказка
+    check("[1c] заголовок секции «Проверка выполнения шага» присутствует", w1.document.body.textContent.includes("Проверка выполнения шага"));
     check("[1c] текст «Оценочный лист не добавлен» присутствует", w1.document.body.textContent.includes("Оценочный лист не добавлен"));
     check("[1c] подсказка про итог без листа видна изначально (без привязки к роли)",
-      w1.document.body.textContent.includes("итог выставляется просто") && !/руководител/i.test(w1.document.body.textContent.split("итог выставляется просто")[0].slice(-80)));
+      w1.document.body.textContent.includes("итог выставляется сразу") && !/руководител/i.test(w1.document.body.textContent.split("итог выставляется сразу")[0].slice(-80)));
     const addAssessBtn = findButtonByText(w1, "+ Добавить лист");
     check("[1c] кнопка «+ Добавить лист» найдена", !!addAssessBtn);
     click(addAssessBtn, w1);
