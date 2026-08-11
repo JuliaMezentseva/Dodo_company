@@ -745,72 +745,32 @@ function StepMaterialsPicker({ plan, selected, onToggle }) {
 // ---------------- Выбор способа проверки шага — обязательное решение при создании:
 // либо привязать готовый оценочный лист (критерии, по которым будет приниматься
 // решение), либо оставить без него — тогда проверяющий просто выставит итог
-// (Шаг выполнен / Не выполнен / Требуется доработка) без промежуточных критериев.
-// Карточка-кнопка вместо чекбокса: пустое состояние — пунктирная карточка с CTA
-// "Добавить лист"; после выбора — карточка-подтверждение с названием листа и
-// возможностью его сменить, не открывая пикер заново с нуля. ----------------
+// (Шаг выполнен / Не выполнен / Требуется доработка) без промежуточных критериев. ----------------
 function StepAssessmentPicker({ templateId, setTemplateId }) {
-  const [pickerOpen, setPickerOpen] = React.useState(false);
   const templates = D.assessmentTemplates || [];
-  const selected = templateId ? templates.find(t => t.id === templateId) : null;
+  const checked = !!templateId;
 
   return (
     <div className="sk-col sk-gap-2">
-      {selected ? (
-        <div className="sk-row sk-gap-3" style={{
-          alignItems: "center", justifyContent: "space-between", padding: "12px 14px",
-          border: "1px solid var(--sk-stroke-accent)", borderRadius: "var(--sk-radius-3)",
-        }}>
-          <div className="sk-row sk-gap-2" style={{ alignItems: "center" }}>
-            <div style={{
-              width: 22, height: 22, borderRadius: "50%", flexShrink: 0,
-              background: "var(--sk-positive-secondary)", display: "flex", alignItems: "center", justifyContent: "center",
-            }}><IconCheck size={13} color="var(--sk-text-positive)" /></div>
-            <div className="sk-col" style={{ gap: 0 }}>
-              <span className="sk-label-4">{selected.title}</span>
-              <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{(selected.criteria || []).length} критериев</span>
-            </div>
-          </div>
-          <button className="sk-link-btn sk-label-4" onClick={() => setPickerOpen(true)}
-            style={{ color: "var(--sk-text-accent)", flexShrink: 0 }}>Изменить</button>
+      <div className="sk-row sk-gap-3 sk-clickable" style={{ alignItems: "flex-start" }}
+        onClick={() => setTemplateId(checked ? null : (templates[0] && templates[0].id))}>
+        <div style={{ paddingTop: 1 }}><Checkbox checked={checked} onChange={() => setTemplateId(checked ? null : (templates[0] && templates[0].id))} /></div>
+        <div className="sk-col sk-gap-1">
+          <span className="sk-label-4">Добавить оценочный лист</span>
+          <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Готовые критерии помогут оценить выполнение шага</span>
         </div>
-      ) : (
-        <div className="sk-row sk-gap-3" style={{
-          alignItems: "center", justifyContent: "space-between", padding: "12px 14px",
-          border: "1px dashed var(--sk-stroke)", borderRadius: "var(--sk-radius-3)", background: "var(--sk-surface-secondary)",
-        }}>
-          <div className="sk-col sk-gap-1">
-            <span className="sk-label-4">Оценочный лист не добавлен</span>
-            <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>
-              Готовые критерии помогут оценить выполнение шага. Без них итог выставляется на усмотрение проверяющего: «Шаг выполнен», «Не выполнен» или «Требуется доработка».
-            </span>
-          </div>
-          <Button size="s" onClick={() => setPickerOpen(true)} style={{ flexShrink: 0 }}>+ Добавить лист</Button>
-        </div>
-      )}
+      </div>
 
-      {pickerOpen && (
-        <Modal open title="Оценочный лист" onClose={() => setPickerOpen(false)} size="s">
-          <div className="sk-col sk-gap-1">
-            {templates.map(t => (
-              <div key={t.id} className="sk-row sk-gap-3 sk-clickable" style={{ padding: "10px 4px", alignItems: "center", justifyContent: "space-between" }}
-                onClick={() => { setTemplateId(t.id); setPickerOpen(false); }}>
-                <div className="sk-col sk-gap-1">
-                  <div className="sk-label-3-regular">{t.title}</div>
-                  <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{(t.criteria || []).length} критериев</div>
-                </div>
-                {templateId === t.id && <IconCheck size={16} color="var(--sk-text-accent)" />}
-              </div>
-            ))}
-            {selected && (
-              <React.Fragment>
-                <Divider />
-                <button className="sk-link-btn sk-label-3-regular" onClick={() => { setTemplateId(null); setPickerOpen(false); }}
-                  style={{ alignSelf: "flex-start", color: "var(--sk-text-negative)", padding: "10px 4px" }}>Убрать оценочный лист</button>
-              </React.Fragment>
-            )}
-          </div>
-        </Modal>
+      {checked ? (
+        <Select value={templateId} options={templates.map(t => ({ value: t.id, label: t.title }))}
+          onChange={setTemplateId} style={{ marginLeft: 30 }} />
+      ) : (
+        <div className="sk-row sk-gap-2" style={{ marginLeft: 30, padding: "10px 12px", background: "var(--sk-accent-secondary)", borderRadius: "var(--sk-radius-2)" }}>
+          <IconInfo size={16} color="var(--sk-text-accent)" style={{ flexShrink: 0, marginTop: 1 }} />
+          <span style={{ font: "var(--sk-label-4-regular)", color: "var(--sk-text-accent)" }}>
+            Без оценочного листа итог выставляется на усмотрение проверяющего: «Шаг выполнен», «Не выполнен» или «Требуется доработка».
+          </span>
+        </div>
       )}
     </div>
   );
@@ -863,7 +823,7 @@ function SubgoalCreateModal({ plan, onClose, onCreate }) {
         <StepMaterialsPicker plan={plan} selected={checklistRefs} onToggle={toggleMaterial} />
         <Divider />
         <div className="sk-col sk-gap-2">
-          <span className="sk-label-4" style={{ color: "var(--sk-text-secondary)" }}>Проверка выполнения шага</span>
+          <span className="sk-label-3" style={{ color: "var(--sk-text-primary)" }}>Проверка выполнения шага</span>
           <StepAssessmentPicker templateId={templateId} setTemplateId={setTemplateId} />
         </div>
       </div>
@@ -916,7 +876,6 @@ function AssessmentModal({ subgoal, onClose, onChange, onConfirm, onReturn, onNo
   const checklist = subgoal.assessmentChecklist;
   const criteria = checklist.criteria || [];
   const answeredCount = criteria.filter(c => c.checked !== null).length;
-  const allAnswered = answeredCount === criteria.length && criteria.length > 0;
   const [pendingAction, setPendingAction] = React.useState(null); // "done" | "not_done"
 
   if (pendingAction) {
@@ -930,16 +889,16 @@ function AssessmentModal({ subgoal, onClose, onChange, onConfirm, onReturn, onNo
     <Modal open title={checklist.title || "Оценочный лист"} onClose={onClose} size="m">
       <div className="sk-col sk-gap-4">
         <AssessmentChecklistCard checklist={checklist} readOnly={false} onChange={onChange} />
-        {!allAnswered && (
+        {answeredCount < criteria.length && (
           <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>
-            Отмечено {answeredCount} из {criteria.length} — заполните все пункты, чтобы принять решение.
+            Отмечено {answeredCount} из {criteria.length} — критерии необязательны, но помогают принять решение осознаннее.
           </div>
         )}
         <Divider />
         <div className="sk-row sk-gap-2" style={{ flexWrap: "wrap" }}>
-          <Button variant="positive" disabled={!allAnswered} onClick={() => setPendingAction("done")}>Шаг выполнен</Button>
-          <Button mode="secondary" variant="gray" disabled={!allAnswered} onClick={onReturn}>На доработку</Button>
-          <Button variant="negative" mode="secondary" disabled={!allAnswered} onClick={() => setPendingAction("not_done")}>Не выполнен</Button>
+          <Button variant="positive" onClick={() => setPendingAction("done")}>Шаг выполнен</Button>
+          <Button variant="negative" mode="secondary" onClick={() => setPendingAction("not_done")}>Не выполнен</Button>
+          <Button mode="secondary" variant="gray" onClick={onReturn}>Требуется доработка</Button>
         </div>
       </div>
     </Modal>
@@ -1061,13 +1020,13 @@ function SubgoalDrawer({ plan, goal, subgoal, onClose, onChange, onOpenChecklist
             {needsAssessment && isReview && (
               <div className="sk-row sk-gap-3" style={{
                 alignItems: "center", justifyContent: "space-between", padding: "12px 14px",
-                background: "var(--sk-special-secondary)", borderRadius: "var(--sk-radius-3)",
+                background: "var(--sk-warning-secondary)", borderRadius: "var(--sk-radius-3)",
               }}>
                 <div className="sk-col sk-gap-1">
-                  <div className="sk-label-3" style={{ color: "var(--text-text-special)" }}>Подтвердите выполнение</div>
+                  <div className="sk-label-3" style={{ color: "var(--sk-text-warning-dark)" }}>Подтвердите выполнение</div>
                   <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Оценить уровень выполнения поможет оценочный лист</div>
                 </div>
-                <Button onClick={() => setAssessmentOpen(true)} style={{ background: "var(--sk-special)", color: "#fff", flexShrink: 0 }}>Оценить</Button>
+                <Button onClick={() => setAssessmentOpen(true)} style={{ background: "var(--sk-warning)", color: "var(--sk-text-contrast)", flexShrink: 0 }}>Оценить</Button>
               </div>
             )}
 
@@ -1120,8 +1079,8 @@ function SubgoalDrawer({ plan, goal, subgoal, onClose, onChange, onOpenChecklist
             <Divider />
             <div className="sk-row sk-gap-2" style={{ flexWrap: "wrap" }}>
               <Button variant="positive" onClick={() => setPendingAction("done")}>Шаг выполнен</Button>
-              <Button mode="secondary" variant="gray" onClick={onReturn}>На доработку</Button>
               <Button variant="negative" mode="secondary" onClick={() => setPendingAction("not_done")}>Не выполнен</Button>
+              <Button mode="secondary" variant="gray" onClick={onReturn}>Требуется доработка</Button>
             </div>
           </div>
         )}
