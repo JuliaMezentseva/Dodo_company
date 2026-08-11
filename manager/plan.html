@@ -16,7 +16,7 @@
 <div id="root"></div>
 <script type="text/babel">
 const {
-  Card, ProgressCircle, ProgressBar, Tag, Avatar, Divider, Tabs, SegmentedControl, Modal, Drawer, Checkbox,
+  Card, ProgressCircle, ProgressBar, Tag, Avatar, Divider, Tabs, SegmentedControl, Modal, Drawer, Checkbox, Radio,
   Textarea, Input, Select, DatePicker, Button, Snackbar, Alert,
 } = window.SkillazCoreDesignSystem_bf9566;
 const { AppShell, StatusTag, Icons, personPhoto } = window.Site;
@@ -748,30 +748,41 @@ function StepMaterialsPicker({ plan, selected, onToggle }) {
 // (Шаг выполнен / Не выполнен / Требует доработки) без промежуточных критериев. ----------------
 function StepAssessmentPicker({ templateId, setTemplateId }) {
   const templates = D.assessmentTemplates || [];
-  const checked = !!templateId;
+  const [mode, setMode] = React.useState(null); // null (ничего не выбрано) | "checklist" | "manual"
+
+  function selectChecklist() {
+    setMode("checklist");
+    if (!templateId) setTemplateId(templates[0] && templates[0].id);
+  }
+  function selectManual() {
+    setMode("manual");
+    setTemplateId(null);
+  }
 
   return (
-    <div className="sk-col sk-gap-2">
-      <div className="sk-row sk-gap-3 sk-clickable" style={{ alignItems: "flex-start" }}
-        onClick={() => setTemplateId(checked ? null : (templates[0] && templates[0].id))}>
-        <div style={{ paddingTop: 1 }}><Checkbox checked={checked} onChange={() => setTemplateId(checked ? null : (templates[0] && templates[0].id))} /></div>
-        <div className="sk-col sk-gap-1">
-          <span className="sk-label-4">Добавить оценочный лист</span>
+    <div className="sk-col sk-gap-3">
+      <div className="sk-col sk-gap-2">
+        <div className="sk-row sk-gap-3 sk-clickable" style={{ alignItems: "flex-start" }} onClick={selectChecklist}>
+          <div style={{ paddingTop: 1 }}><Radio checked={mode === "checklist"} onChange={selectChecklist} name="step-assessment-mode" /></div>
+          <span className="sk-label-4">Через оценочный лист</span>
+        </div>
+        <div className="sk-col sk-gap-2" style={{ marginLeft: 32 }}>
           <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Готовые критерии помогут оценить выполнение шага</span>
+          {mode === "checklist" && (
+            <Select value={templateId} options={templates.map(t => ({ value: t.id, label: t.title }))} onChange={setTemplateId} />
+          )}
         </div>
       </div>
 
-      {checked ? (
-        <Select value={templateId} options={templates.map(t => ({ value: t.id, label: t.title }))}
-          onChange={setTemplateId} style={{ marginLeft: 30 }} />
-      ) : (
-        <div className="sk-row sk-gap-2" style={{ marginLeft: 20, padding: "10px 12px", background: "var(--sk-accent-secondary)", borderRadius: "var(--sk-radius-2)" }}>
-          <IconInfo size={16} color="var(--sk-text-accent)" style={{ flexShrink: 0, marginTop: 1 }} />
-          <span style={{ font: "var(--sk-label-4)", color: "var(--sk-text-accent)" }}>
-            <strong>Без оценочного листа</strong> итог выставляется на усмотрение проверяющего: «Шаг выполнен», «Не выполнен» или «Требует доработки».
-          </span>
+      <div className="sk-col sk-gap-2">
+        <div className="sk-row sk-gap-3 sk-clickable" style={{ alignItems: "flex-start" }} onClick={selectManual}>
+          <div style={{ paddingTop: 1 }}><Radio checked={mode === "manual"} onChange={selectManual} name="step-assessment-mode" /></div>
+          <span className="sk-label-4">На усмотрение проверяющего</span>
         </div>
-      )}
+        <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)", marginLeft: 32 }}>
+          Итог проставляется без оценочного листа: «Шаг выполнен», «Не выполнен» или «Требует доработки».
+        </span>
+      </div>
     </div>
   );
 }
@@ -1012,13 +1023,13 @@ function SubgoalDrawer({ plan, goal, subgoal, onClose, onChange, onOpenChecklist
             {needsAssessment && isReview && (
               <div className="sk-row sk-gap-3" style={{
                 alignItems: "center", justifyContent: "space-between", padding: "12px 14px",
-                background: "var(--sk-warning-secondary)", borderRadius: "var(--sk-radius-3)",
+                background: "var(--sk-special-secondary)", borderRadius: "var(--sk-radius-3)",
               }}>
                 <div className="sk-col sk-gap-1">
-                  <div className="sk-label-3" style={{ color: "var(--sk-text-warning-dark)" }}>Оцените результаты</div>
+                  <div className="sk-label-3" style={{ color: "var(--sk-special)" }}>Оцените результаты</div>
                   <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Оценить уровень выполнения поможет оценочный лист</div>
                 </div>
-                <Button onClick={() => setAssessmentOpen(true)} style={{ background: "var(--sk-warning)", color: "var(--sk-text-contrast)", flexShrink: 0 }}>Оценить</Button>
+                <Button onClick={() => setAssessmentOpen(true)} style={{ background: "var(--sk-special)", color: "var(--sk-text-contrast)", flexShrink: 0 }}>Оценить</Button>
               </div>
             )}
 
