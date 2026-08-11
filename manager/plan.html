@@ -761,12 +761,12 @@ function StepAssessmentPicker({ templateId, setTemplateId }) {
 
   return (
     <div className="sk-col sk-gap-3">
-      <div className="sk-col sk-gap-1">
+      <div className="sk-col" style={{ gap: 0 }}>
         <div className="sk-row sk-gap-3 sk-clickable" style={{ alignItems: "flex-start" }} onClick={selectChecklist}>
           <div style={{ paddingTop: 1 }}><Radio checked={mode === "checklist"} onChange={selectChecklist} name="step-assessment-mode" /></div>
           <span className="sk-label-4">Через оценочный лист</span>
         </div>
-        <div className="sk-col sk-gap-2" style={{ marginLeft: 32 }}>
+        <div className="sk-col sk-gap-2" style={{ marginLeft: 32, marginTop: 2 }}>
           <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Готовые критерии помогут оценить выполнение шага</span>
           {mode === "checklist" && (
             <Select value={templateId} options={templates.map(t => ({ value: t.id, label: t.title }))} onChange={setTemplateId} />
@@ -774,12 +774,12 @@ function StepAssessmentPicker({ templateId, setTemplateId }) {
         </div>
       </div>
 
-      <div className="sk-col sk-gap-1">
+      <div className="sk-col" style={{ gap: 0 }}>
         <div className="sk-row sk-gap-3 sk-clickable" style={{ alignItems: "flex-start" }} onClick={selectManual}>
           <div style={{ paddingTop: 1 }}><Radio checked={mode === "manual"} onChange={selectManual} name="step-assessment-mode" /></div>
           <span className="sk-label-4">На усмотрение проверяющего</span>
         </div>
-        <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)", marginLeft: 32 }}>
+        <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)", marginLeft: 32, marginTop: 2 }}>
           Итог проставляется без оценочного листа: «Шаг выполнен», «Не выполнен» или «Требует доработки».
         </span>
       </div>
