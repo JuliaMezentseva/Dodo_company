@@ -61,7 +61,7 @@ function VacancyCard({ vacancy, hasResponse }) {
               <Tag size="s" hue={directionHue(vacancy.direction)}>{vacancy.direction}</Tag>
             </span>
             {hasResponse
-              ? <Tag size="s" hue="positive" icon={<IconCheck size={12} />}>Есть отклик</Tag>
+              ? <Tag size="s" hue="gray" icon={<IconCheck size={12} />}>Есть отклик</Tag>
               : (closed && <Tag size="s" hue="neutral">Закрыта</Tag>)}
           </div>
 
@@ -170,7 +170,7 @@ function Page() {
         <Input size="s" icon={<IconSearch size={20} />} placeholder="По названию, должности или подразделению"
           value={q} onChange={(e) => setQ(e.target.value || "")} style={{ width: 460, flexShrink: 0 }} />
         <a href="my-responses.html" style={{ textDecoration: "none", flexShrink: 0 }}>
-          <Button style={{ background: "var(--sk-special)", color: "var(--sk-text-contrast)" }} icon={<Icons.IconClipboard size={16} />}>Мои отклики{responses.length ? " · " + responses.length : ""}</Button>
+          <Button style={{ background: "var(--sk-special-secondary)", color: "var(--text-text-special)" }} icon={<Icons.IconSend size={16} />}>Мои отклики{responses.length ? " · " + responses.length : ""}</Button>
         </a>
       </div>
 
@@ -195,7 +195,7 @@ function Page() {
           )}
         </div>
 
-        <div style={{ width: 260, flexShrink: 0 }}>
+        <div style={{ width: 260, flexShrink: 0, marginTop: 32 }}>
           <FiltersPanel filters={filters} onChange={setFilters} positionOptions={positionOptions} departmentOptions={departmentOptions}
             hasActive={hasActiveFilters} onReset={() => setFilters(emptyFilters)} />
         </div>
