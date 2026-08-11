@@ -116,7 +116,7 @@ function check(label, ok) {
     click(stepRow, w2);
     await tick(150);
 
-    check("[2] заголовок «Подтвердите выполнение» отображается", w2.document.body.textContent.includes("Подтвердите выполнение"));
+    check("[2] заголовок «Оцените результаты» отображается", w2.document.body.textContent.includes("Оцените результаты"));
     check("[2] старый текст «Цель на проверке» отсутствует", !w2.document.body.textContent.includes("Цель на проверке"));
     check("[2] файл-вложение сотрудника в комментарии виден", w2.document.body.textContent.includes("Отчёт по консультации.pdf"));
 

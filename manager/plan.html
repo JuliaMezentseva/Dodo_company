@@ -745,7 +745,7 @@ function StepMaterialsPicker({ plan, selected, onToggle }) {
 // ---------------- Выбор способа проверки шага — обязательное решение при создании:
 // либо привязать готовый оценочный лист (критерии, по которым будет приниматься
 // решение), либо оставить без него — тогда проверяющий просто выставит итог
-// (Шаг выполнен / Не выполнен / Требуется доработка) без промежуточных критериев. ----------------
+// (Шаг выполнен / Не выполнен / Требует доработки) без промежуточных критериев. ----------------
 function StepAssessmentPicker({ templateId, setTemplateId }) {
   const templates = D.assessmentTemplates || [];
   const checked = !!templateId;
@@ -768,7 +768,7 @@ function StepAssessmentPicker({ templateId, setTemplateId }) {
         <div className="sk-row sk-gap-2" style={{ marginLeft: 20, padding: "10px 12px", background: "var(--sk-accent-secondary)", borderRadius: "var(--sk-radius-2)" }}>
           <IconInfo size={16} color="var(--sk-text-accent)" style={{ flexShrink: 0, marginTop: 1 }} />
           <span style={{ font: "var(--sk-label-4)", color: "var(--sk-text-accent)" }}>
-            Без оценочного листа <strong>итог выставляется на усмотрение проверяющего</strong>: «Шаг выполнен», «Не выполнен» или «Требуется доработка».
+            <strong>Без оценочного листа</strong> итог выставляется на усмотрение проверяющего: «Шаг выполнен», «Не выполнен» или «Требует доработки».
           </span>
         </div>
       )}
@@ -1012,13 +1012,13 @@ function SubgoalDrawer({ plan, goal, subgoal, onClose, onChange, onOpenChecklist
             {needsAssessment && isReview && (
               <div className="sk-row sk-gap-3" style={{
                 alignItems: "center", justifyContent: "space-between", padding: "12px 14px",
-                background: "var(--sk-accent-secondary)", borderRadius: "var(--sk-radius-3)",
+                background: "var(--sk-warning-secondary)", borderRadius: "var(--sk-radius-3)",
               }}>
                 <div className="sk-col sk-gap-1">
-                  <div className="sk-label-3" style={{ color: "var(--sk-text-accent)" }}>Подтвердите выполнение</div>
+                  <div className="sk-label-3" style={{ color: "var(--sk-text-warning-dark)" }}>Оцените результаты</div>
                   <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Оценить уровень выполнения поможет оценочный лист</div>
                 </div>
-                <Button onClick={() => setAssessmentOpen(true)} style={{ background: "var(--sk-accent)", color: "var(--sk-text-contrast)", flexShrink: 0 }}>Оценить</Button>
+                <Button onClick={() => setAssessmentOpen(true)} style={{ background: "var(--sk-warning)", color: "var(--sk-text-contrast)", flexShrink: 0 }}>Оценить</Button>
               </div>
             )}
 
