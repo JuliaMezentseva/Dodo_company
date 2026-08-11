@@ -765,9 +765,9 @@ function StepAssessmentPicker({ templateId, setTemplateId }) {
         <Select value={templateId} options={templates.map(t => ({ value: t.id, label: t.title }))}
           onChange={setTemplateId} style={{ marginLeft: 30 }} />
       ) : (
-        <div className="sk-row sk-gap-2" style={{ marginLeft: 20, padding: "10px 12px", background: "var(--sk-warning-secondary)", borderRadius: "var(--sk-radius-2)" }}>
-          <IconInfo size={16} color="var(--sk-text-warning-dark)" style={{ flexShrink: 0, marginTop: 1 }} />
-          <span style={{ font: "var(--sk-label-4)", color: "var(--sk-text-warning-dark)" }}>
+        <div className="sk-row sk-gap-2" style={{ marginLeft: 20, padding: "10px 12px", background: "var(--sk-accent-secondary)", borderRadius: "var(--sk-radius-2)" }}>
+          <IconInfo size={16} color="var(--sk-text-accent)" style={{ flexShrink: 0, marginTop: 1 }} />
+          <span style={{ font: "var(--sk-label-4)", color: "var(--sk-text-accent)" }}>
             Без оценочного листа <strong>итог выставляется на усмотрение проверяющего</strong>: «Шаг выполнен», «Не выполнен» или «Требуется доработка».
           </span>
         </div>
