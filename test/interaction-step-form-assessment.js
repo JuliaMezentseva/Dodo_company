@@ -98,20 +98,16 @@ function check(label, ok) {
     }
     check("[1b] выбранный материал отображается в форме шага", /Этап «/.test(w1.document.body.textContent));
 
-    // 1c. Оценочный лист — карточка-кнопка «Добавить лист» (вариант C); заголовок секции и заметная подсказка
+    // 1c. Оценочный лист — чекбокс «Добавить оценочный лист» (вариант B); заголовок секции чёрным, голубая подсказка
     check("[1c] заголовок секции «Проверка выполнения шага» присутствует", w1.document.body.textContent.includes("Проверка выполнения шага"));
-    check("[1c] текст «Оценочный лист не добавлен» присутствует", w1.document.body.textContent.includes("Оценочный лист не добавлен"));
+    check("[1c] текст «Добавить оценочный лист» присутствует", w1.document.body.textContent.includes("Добавить оценочный лист"));
     check("[1c] подсказка про итог без листа видна изначально (без привязки к роли)",
-      w1.document.body.textContent.includes("итог выставляется сразу") && !/руководител/i.test(w1.document.body.textContent.split("итог выставляется сразу")[0].slice(-80)));
-    const addAssessBtn = findButtonByText(w1, "+ Добавить лист");
-    check("[1c] кнопка «+ Добавить лист» найдена", !!addAssessBtn);
-    click(addAssessBtn, w1);
+      w1.document.body.textContent.includes("итог выставляется на усмотрение проверяющего") && !/руководител/i.test(w1.document.body.textContent.split("итог выставляется на усмотрение проверяющего")[0].slice(-80)));
+    const assessRow = [...w1.document.querySelectorAll(".sk-clickable")].find(el => el.textContent.includes("Добавить оценочный лист"));
+    check("[1c] строка чекбокса оценочного листа найдена", !!assessRow);
+    click(assessRow, w1);
     await tick(120);
-    check("[1c] пикер оценочных листов открылся (список шаблонов виден)", w1.document.body.textContent.includes("Первая консультация покупателя"));
-    const templateRow = [...w1.document.querySelectorAll(".sk-clickable")].find(el => el.textContent.includes("Первая консультация покупателя"));
-    click(templateRow, w1);
-    await tick(120);
-    check("[1c] после выбора карточка показывает название листа и «Изменить»", w1.document.body.textContent.includes("Изменить") && w1.document.body.textContent.includes("критериев"));
+    check("[1c] после клика появился select с готовыми листами", w1.document.body.textContent.includes("Первая консультация покупателя"));
 
     // ================= Сценарий 2: дровер шага С оценочным листом (Алексей, alg1s2 — pending_review) =================
     const w2 = loadPage(target, "employee=alexey&tab=max");
@@ -133,24 +129,14 @@ function check(label, ok) {
     await tick(150);
 
     const doneBtn = findButtonByText(w2, "Шаг выполнен");
-    const workBtn = findButtonByText(w2, "На доработку");
+    const workBtn = findButtonByText(w2, "Требуется доработка");
     const notDoneBtn = findButtonByText(w2, "Не выполнен");
     check("[2] кнопка «Шаг выполнен» найдена (переименовано с «Подтвердить»)", !!doneBtn);
-    check("[2] кнопка «На доработку» найдена", !!workBtn);
+    check("[2] кнопка «Требуется доработка» найдена (переименовано с «На доработку»)", !!workBtn);
     check("[2] кнопка «Не выполнен» найдена", !!notDoneBtn);
-    check("[2] кнопки решения задизейблены, пока не все критерии отмечены", doneBtn.disabled && notDoneBtn.disabled);
+    check("[2] кнопки решения доступны сразу, БЕЗ блокировки по критериям (пункт 4)", !doneBtn.disabled && !notDoneBtn.disabled);
 
-    const yesBtns = [...w2.document.querySelectorAll("button")].filter(b => b.textContent.trim() === "Да");
-    for (let i = 0; i < yesBtns.length; i++) {
-      const btn = [...w2.document.querySelectorAll("button")].filter(b => b.textContent.trim() === "Да")[i];
-      click(btn, w2);
-      await tick(60);
-    }
-    await tick(120);
-
-    const doneBtn2 = findButtonByText(w2, "Шаг выполнен");
-    check("[2] после заполнения критериев кнопка «Шаг выполнен» активна", !doneBtn2.disabled);
-    click(doneBtn2, w2);
+    click(doneBtn, w2);
     await tick(150);
 
     check("[2] появился экран защиты от дурака (текст «нельзя»)", w2.document.body.textContent.includes("нельзя"));
