@@ -761,7 +761,7 @@ function StepAssessmentPicker({ templateId, setTemplateId }) {
 
   return (
     <div className="sk-col sk-gap-3">
-      <div className="sk-col sk-gap-2">
+      <div className="sk-col sk-gap-1">
         <div className="sk-row sk-gap-3 sk-clickable" style={{ alignItems: "flex-start" }} onClick={selectChecklist}>
           <div style={{ paddingTop: 1 }}><Radio checked={mode === "checklist"} onChange={selectChecklist} name="step-assessment-mode" /></div>
           <span className="sk-label-4">Через оценочный лист</span>
@@ -774,7 +774,7 @@ function StepAssessmentPicker({ templateId, setTemplateId }) {
         </div>
       </div>
 
-      <div className="sk-col sk-gap-2">
+      <div className="sk-col sk-gap-1">
         <div className="sk-row sk-gap-3 sk-clickable" style={{ alignItems: "flex-start" }} onClick={selectManual}>
           <div style={{ paddingTop: 1 }}><Radio checked={mode === "manual"} onChange={selectManual} name="step-assessment-mode" /></div>
           <span className="sk-label-4">На усмотрение проверяющего</span>
