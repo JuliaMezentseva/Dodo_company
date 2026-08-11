@@ -36,9 +36,9 @@ const target = path.resolve(__dirname, "..", "manager", "plan.html");
 
 (async () => {
   try {
-    // ---- Сценарий A (survey not ready): план Алексея, КТ 60 дней — сотрудник ещё не ответил
-    // на опрос (surveySubmitted: false), поэтому форма для проверяющего недоступна для
-    // заполнения даже у назначенного на неё руководителя. ----
+    // ---- Сценарий A (survey ready, форма ещё не заполнена): план Алексея, КТ 60 дней — сотрудник
+    // уже ответил на опрос (surveySubmitted: true), форма для проверяющего доступна для заполнения,
+    // баннер должен показывать "Ожидает проверяющего". ----
     const w1 = loadPage(target, "employee=alexey&tab=max");
     await tick(150);
     const cp2Row = [...w1.document.querySelectorAll(".sk-label-4")].find(el => el.textContent.includes("2 марта"));
@@ -46,12 +46,13 @@ const target = path.resolve(__dirname, "..", "manager", "plan.html");
     cp2Row.closest(".sk-clickable").dispatchEvent(new w1.MouseEvent("click", { bubbles: true }));
     await tick(80);
     let body = w1.document.body.textContent;
-    console.log("[A] Finish button present but disabled while survey not submitted:",
+    console.log("[A] Finish button present but disabled before filling fields:",
       [...w1.document.querySelectorAll("button")].some(b => b.textContent.includes("Завершить контрольную точку") && b.disabled) ? "PASS" : "FAIL");
     console.log("[A] Comments section still visible:", body.includes("Комментарии") ? "PASS" : "FAIL");
+    console.log("[A] Status banner shows 'Ожидает проверяющего':", body.includes("Ожидает проверяющего") ? "PASS" : "FAIL");
     // Проверяем только textarea формы итогов (не комментарий — тот всегда доступен для ввода)
     const formTextareas = [...w1.document.querySelectorAll("textarea")].filter(t => t.placeholder !== "Написать комментарий");
-    console.log("[A] Textareas disabled (survey not ready):", formTextareas.length > 0 && formTextareas.every(t => t.disabled) ? "PASS" : "FAIL");
+    console.log("[A] Textareas editable (survey ready):", formTextareas.length > 0 && formTextareas.every(t => !t.disabled) ? "PASS" : "FAIL");
 
     // ---- Сценарий B (editable): план "yulia2" (второй, более поздний план Юлии), КТ "90 дней"
     // назначена на саму Анну Козлову — опрос сотрудника уже готов, форма редактируема, можно завершить. ----

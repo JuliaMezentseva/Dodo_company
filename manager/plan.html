@@ -1237,7 +1237,7 @@ function CheckpointStatusBanner({ done, surveyReady, reportReady }) {
   if (done) return null;
   let title, note;
   if (!surveyReady) { title = "Ожидает сотрудника"; note = "Форма станет доступна для заполнения, как только сотрудник ответит на опрос."; }
-  else if (!reportReady) { title = "Готово к завершению"; note = "Заполните обязательные поля выше, чтобы завершить контрольную точку."; }
+  else if (!reportReady) { title = "Ожидает проверяющего"; note = "Заполните обязательные поля выше, чтобы завершить контрольную точку."; }
   else { title = "Всё заполнено"; note = "Можно завершить контрольную точку."; }
   return (
     <div className="sk-row sk-gap-3" style={{ padding: 14, background: "var(--sk-surface-secondary)", borderRadius: "var(--sk-radius-3)", alignItems: "flex-start" }}>
