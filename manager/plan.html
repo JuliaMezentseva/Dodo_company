@@ -745,7 +745,7 @@ function StepMaterialsPicker({ plan, selected, onToggle }) {
 // ---------------- Выбор способа проверки шага — обязательное решение при создании:
 // либо привязать готовый оценочный лист (критерии, по которым будет приниматься
 // решение), либо оставить без него — тогда проверяющий просто выставит итог
-// (Шаг выполнен / На доработку / Шаг не выполнен) без промежуточных критериев.
+// (Шаг выполнен / Не выполнен / Требуется доработка) без промежуточных критериев.
 // Карточка-кнопка вместо чекбокса: пустое состояние — пунктирная карточка с CTA
 // "Добавить лист"; после выбора — карточка-подтверждение с названием листа и
 // возможностью его сменить, не открывая пикер заново с нуля. ----------------
@@ -782,7 +782,7 @@ function StepAssessmentPicker({ templateId, setTemplateId }) {
           <div className="sk-col sk-gap-1">
             <span className="sk-label-4">Оценочный лист не добавлен</span>
             <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>
-              Критерии, которые помогут оценить выполнение шага. Без них итог выставляется просто: «Шаг выполнен», «На доработку» или «Шаг не выполнен».
+              Готовые критерии помогут оценить выполнение шага. Без них итог выставляется сразу: «Шаг выполнен», «Не выполнен» или «Требуется доработка».
             </span>
           </div>
           <Button size="s" onClick={() => setPickerOpen(true)} style={{ flexShrink: 0 }}>+ Добавить лист</Button>
@@ -862,7 +862,10 @@ function SubgoalCreateModal({ plan, onClose, onCreate }) {
         </div>
         <StepMaterialsPicker plan={plan} selected={checklistRefs} onToggle={toggleMaterial} />
         <Divider />
-        <StepAssessmentPicker templateId={templateId} setTemplateId={setTemplateId} />
+        <div className="sk-col sk-gap-2">
+          <span className="sk-label-4" style={{ color: "var(--sk-text-secondary)" }}>Проверка выполнения шага</span>
+          <StepAssessmentPicker templateId={templateId} setTemplateId={setTemplateId} />
+        </div>
       </div>
     </Modal>
   );
