@@ -20,6 +20,17 @@ const { AppShell, Icons, directionHue } = window.Site;
 const { IconSearch, IconMapPin, IconBriefcase, IconCheck, IconFilter } = Icons;
 const D = window.SITE_DATA;
 
+// Иллюстрация в шапке — портфель с синим замочком-акцентом, серый + синий,
+// в духе пустых состояний дизайн-системы (см. иконку "самооценка").
+const VACANCIES_HERO_SVG = `
+<svg viewBox="0 0 96 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect x="26" y="24" width="44" height="30" rx="3" stroke="#B4B2A9" stroke-width="2"/>
+  <path d="M40 24 V18 C40 15 42 13 45 13 H51 C54 13 56 15 56 18 V24" stroke="#B4B2A9" stroke-width="2"/>
+  <line x1="26" y1="36" x2="70" y2="36" stroke="#B4B2A9" stroke-width="2"/>
+  <rect x="44" y="32" width="8" height="8" rx="1.5" fill="#0070FF"/>
+</svg>`;
+
+
 function fmtMoney(n) { return n.toLocaleString("ru-RU"); }
 function toOptions(list) { return list.map((v) => ({ value: v, label: v })); }
 
@@ -32,9 +43,9 @@ function DirectionPill({ direction, active, count, onClick, isAll }) {
   return (
     <button type="button" onClick={onClick} className="sk-clickable" style={{
       display: "inline-flex", alignItems: "center", gap: 6, height: 32, padding: "0 14px",
-      borderRadius: "var(--sk-radius-full)", border: active ? "none" : "1px solid var(--sk-stroke)",
-      background: active ? "var(--sk-accent-secondary)" : "var(--sk-surface-page)",
-      color: active ? "var(--sk-text-accent)" : "var(--sk-text-primary)",
+      borderRadius: "var(--sk-radius-full)", border: "none",
+      background: active ? "var(--sk-surface-dark)" : "var(--sk-surface-secondary)",
+      color: active ? "var(--sk-text-contrast)" : "var(--sk-text-primary)",
       font: "var(--sk-label-3-regular)", cursor: "pointer", whiteSpace: "nowrap",
     }}>
       {direction}
@@ -163,13 +174,16 @@ function Page() {
 
   return (
     <AppShell role="employee" active="vacancies" base="..">
-      <div className="sk-title-4" style={{ marginBottom: 8 }}>Вакансии</div>
+      <div className="sk-row" style={{ alignItems: "center", justifyContent: "space-between", marginBottom: 24 }}>
+        <div className="sk-title-4">Откройте новые карьерные возможности</div>
+        <div style={{ width: 96, height: 64, flexShrink: 0 }} dangerouslySetInnerHTML={{ __html: VACANCIES_HERO_SVG }} />
+      </div>
 
       <div className="sk-row sk-gap-2" style={{ alignItems: "center" }}>
         <Input icon={<IconSearch size={20} />} placeholder="По названию, должности или подразделению"
           value={q} onChange={(e) => setQ(e.target.value || "")} style={{ width: 460, flexShrink: 0 }} />
         <a href="my-responses.html" style={{ textDecoration: "none", flexShrink: 0 }}>
-          <Button variant="accent" icon={<Icons.IconClipboard size={16} />}>Мои отклики{responses.length ? " · " + responses.length : ""}</Button>
+          <Button style={{ background: "var(--sk-surface-dark)", color: "var(--sk-text-contrast)" }} icon={<Icons.IconClipboard size={16} />}>Мои отклики{responses.length ? " · " + responses.length : ""}</Button>
         </a>
       </div>
 
