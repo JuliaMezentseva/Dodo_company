@@ -699,22 +699,25 @@ function StepMaterialsPicker({ plan, selected, onToggle }) {
   return (
     <div className="sk-col sk-gap-2">
       <span className="sk-label-4" style={{ color: "var(--sk-text-secondary)" }}>Полезные материалы</span>
-      <div className="sk-col sk-gap-2" style={{ padding: 12, background: "var(--sk-accent-secondary)", borderRadius: "var(--sk-radius-3)" }}>
-        {!selectedItems.length && <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Материалы помогут сотруднику разобраться, что нужно сделать</div>}
-        {selectedItems.map(({ item, stage }) => (
-          <div key={item.id} className="sk-row" style={{ justifyContent: "space-between", padding: 10, background: "var(--sk-surface-page)", border: "1px solid var(--sk-stroke)", borderRadius: "var(--sk-radius-2)" }}>
-            <div className="sk-col sk-gap-1">
-              <div className="sk-label-4">{item.title}</div>
-              <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{ELEMENT_LABEL[item.kind]} · Этап «{stage.title}»</div>
+      {selectedItems.length ? (
+        <div className="sk-col sk-gap-2">
+          {selectedItems.map(({ item, stage }) => (
+            <div key={item.id} className="sk-row" style={{ justifyContent: "space-between", padding: 10, background: "var(--sk-surface-secondary)", borderRadius: "var(--sk-radius-2)" }}>
+              <div className="sk-col sk-gap-1">
+                <div className="sk-label-4">{item.title}</div>
+                <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{ELEMENT_LABEL[item.kind]} · Этап «{stage.title}»</div>
+              </div>
+              <button className="sk-link-btn" onClick={() => onToggle(item.id)}><IconX size={15} color="var(--sk-icon-secondary)" /></button>
             </div>
-            <button className="sk-link-btn" onClick={() => onToggle(item.id)}><IconX size={15} color="var(--sk-icon-secondary)" /></button>
-          </div>
-        ))}
-        <button className="sk-link-btn sk-label-3-regular" onClick={() => setOpen(true)}
-          style={{ alignSelf: "flex-start", color: "var(--sk-text-accent)" }}>
-          <span className="sk-row sk-gap-1"><IconPlusSm size={16} />Добавить</span>
-        </button>
-      </div>
+          ))}
+        </div>
+      ) : (
+        <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Материалы помогут сотруднику разобраться, что нужно сделать</span>
+      )}
+      <button className="sk-link-btn sk-label-3-regular" onClick={() => setOpen(true)}
+        style={{ alignSelf: "flex-start", color: "var(--sk-text-accent)" }}>
+        <span className="sk-row sk-gap-1"><IconPlusSm size={16} />Добавить</span>
+      </button>
 
       {open && (
         <Modal open title="Полезные материалы" onClose={() => setOpen(false)} size="m"
@@ -742,32 +745,72 @@ function StepMaterialsPicker({ plan, selected, onToggle }) {
 // ---------------- Выбор способа проверки шага — обязательное решение при создании:
 // либо привязать готовый оценочный лист (критерии, по которым будет приниматься
 // решение), либо оставить без него — тогда проверяющий просто выставит итог
-// (Шаг выполнен / На доработку / Шаг не выполнен) без промежуточных критериев. ----------------
+// (Шаг выполнен / На доработку / Шаг не выполнен) без промежуточных критериев.
+// Карточка-кнопка вместо чекбокса: пустое состояние — пунктирная карточка с CTA
+// "Добавить лист"; после выбора — карточка-подтверждение с названием листа и
+// возможностью его сменить, не открывая пикер заново с нуля. ----------------
 function StepAssessmentPicker({ templateId, setTemplateId }) {
+  const [pickerOpen, setPickerOpen] = React.useState(false);
   const templates = D.assessmentTemplates || [];
-  const checked = !!templateId;
+  const selected = templateId ? templates.find(t => t.id === templateId) : null;
 
   return (
     <div className="sk-col sk-gap-2">
-      <div className="sk-row sk-gap-3 sk-clickable" style={{ alignItems: "flex-start" }}
-        onClick={() => setTemplateId(checked ? null : (templates[0] && templates[0].id))}>
-        <div style={{ paddingTop: 1 }}><Checkbox checked={checked} onChange={() => setTemplateId(checked ? null : (templates[0] && templates[0].id))} /></div>
-        <div className="sk-col sk-gap-1">
-          <span className="sk-label-4">Добавить оценочный лист</span>
-          <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Критерии, по которым проверяющий примет решение по шагу</span>
+      {selected ? (
+        <div className="sk-row sk-gap-3" style={{
+          alignItems: "center", justifyContent: "space-between", padding: "12px 14px",
+          border: "1px solid var(--sk-stroke-accent)", borderRadius: "var(--sk-radius-3)",
+        }}>
+          <div className="sk-row sk-gap-2" style={{ alignItems: "center" }}>
+            <div style={{
+              width: 22, height: 22, borderRadius: "50%", flexShrink: 0,
+              background: "var(--sk-positive-secondary)", display: "flex", alignItems: "center", justifyContent: "center",
+            }}><IconCheck size={13} color="var(--sk-text-positive)" /></div>
+            <div className="sk-col" style={{ gap: 0 }}>
+              <span className="sk-label-4">{selected.title}</span>
+              <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{(selected.criteria || []).length} критериев</span>
+            </div>
+          </div>
+          <button className="sk-link-btn sk-label-4" onClick={() => setPickerOpen(true)}
+            style={{ color: "var(--sk-text-accent)", flexShrink: 0 }}>Изменить</button>
         </div>
-      </div>
-
-      {checked ? (
-        <Select value={templateId} options={templates.map(t => ({ value: t.id, label: t.title }))}
-          onChange={setTemplateId} style={{ marginLeft: 30 }} />
       ) : (
-        <div className="sk-row sk-gap-2" style={{ marginLeft: 30, padding: "10px 12px", background: "var(--sk-surface-secondary)", borderRadius: "var(--sk-radius-2)" }}>
-          <IconInfo size={16} color="var(--sk-icon-secondary)" style={{ flexShrink: 0, marginTop: 1 }} />
-          <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>
-            Без оценочного листа по шагу просто выставляется итог: «Шаг выполнен», «На доработку» или «Шаг не выполнен».
-          </span>
+        <div className="sk-row sk-gap-3" style={{
+          alignItems: "center", justifyContent: "space-between", padding: "12px 14px",
+          border: "1px dashed var(--sk-stroke)", borderRadius: "var(--sk-radius-3)", background: "var(--sk-surface-secondary)",
+        }}>
+          <div className="sk-col sk-gap-1">
+            <span className="sk-label-4">Оценочный лист не добавлен</span>
+            <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>
+              Критерии, которые помогут оценить выполнение шага. Без них итог выставляется просто: «Шаг выполнен», «На доработку» или «Шаг не выполнен».
+            </span>
+          </div>
+          <Button size="s" onClick={() => setPickerOpen(true)} style={{ flexShrink: 0 }}>+ Добавить лист</Button>
         </div>
+      )}
+
+      {pickerOpen && (
+        <Modal open title="Оценочный лист" onClose={() => setPickerOpen(false)} size="s">
+          <div className="sk-col sk-gap-1">
+            {templates.map(t => (
+              <div key={t.id} className="sk-row sk-gap-3 sk-clickable" style={{ padding: "10px 4px", alignItems: "center", justifyContent: "space-between" }}
+                onClick={() => { setTemplateId(t.id); setPickerOpen(false); }}>
+                <div className="sk-col sk-gap-1">
+                  <div className="sk-label-3-regular">{t.title}</div>
+                  <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{(t.criteria || []).length} критериев</div>
+                </div>
+                {templateId === t.id && <IconCheck size={16} color="var(--sk-text-accent)" />}
+              </div>
+            ))}
+            {selected && (
+              <React.Fragment>
+                <Divider />
+                <button className="sk-link-btn sk-label-3-regular" onClick={() => { setTemplateId(null); setPickerOpen(false); }}
+                  style={{ alignSelf: "flex-start", color: "var(--sk-text-negative)", padding: "10px 4px" }}>Убрать оценочный лист</button>
+              </React.Fragment>
+            )}
+          </div>
+        </Modal>
       )}
     </div>
   );
@@ -798,7 +841,7 @@ function SubgoalCreateModal({ plan, onClose, onCreate }) {
   }
 
   return (
-    <Modal open title="Шаг для выполнения цели" onClose={onClose} size="m"
+    <Modal open title="Шаг для выполнения цели" onClose={onClose} size="m" maxHeight="calc(100vh - 64px)"
       secondary={<Button mode="secondary" onClick={onClose}>Отменить</Button>}
       primary={<Button disabled={!canCreate} onClick={handleCreate}>Добавить</Button>}>
       <div className="sk-col sk-gap-4">
