@@ -20,6 +20,29 @@ const { AppShell, Icons, directionHue } = window.Site;
 const { IconSearch, IconMapPin, IconBriefcase, IconCheck, IconFilter } = Icons;
 const D = window.SITE_DATA;
 
+// Локальные иконки в стилистике общего набора (mkIcon: viewBox 24, strokeWidth 1.5, currentColor).
+function IconFolderHeart({ size = 24, color = "currentColor", style }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" style={{ color, flexShrink: 0, ...style }}>
+      <path d="M4 8.5C4 7.11929 5.11929 6 6.5 6H9.5L11 8H17.5C18.8807 8 20 9.11929 20 10.5V11"
+        stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M4 8.5V16.5C4 17.8807 5.11929 19 6.5 19H11"
+        stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M17 12.7C15.9 11.7 14 12.4 14 14C14 15.3 15.4 16.4 17 17.7C18.6 16.4 20 15.3 20 14C20 12.4 18.1 11.7 17 12.7Z"
+        stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+function IconThumbUp({ size = 24, color = "currentColor", style }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" style={{ color, flexShrink: 0, ...style }}>
+      <path d="M8 11v7a1 1 0 0 0 1 1h6.2a2 2 0 0 0 1.96-1.6l1-5a2 2 0 0 0-1.96-2.4H13l.5-3.2a1.6 1.6 0 0 0-3.1-.6L9 11H8Z"
+        stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M8 11H6a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2"
+        stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
 
 function fmtMoney(n) { return n.toLocaleString("ru-RU"); }
 function toOptions(list) { return list.map((v) => ({ value: v, label: v })); }
@@ -53,7 +76,9 @@ function VacancyCard({ vacancy, hasResponse }) {
       <Card bordered
         style={{
           cursor: "pointer", height: "100%",
-          boxShadow: hovered ? "inset 0 0 0 1.5px var(--sk-stroke-accent)" : "inset 0 0 0 1px var(--sk-stroke)",
+          boxShadow: hasResponse
+            ? "inset 0 0 0 1.5px var(--sk-positive)"
+            : (hovered ? "inset 0 0 0 1.5px var(--sk-stroke-accent)" : "inset 0 0 0 1px var(--sk-stroke)"),
         }}>
         <div className="sk-col sk-gap-3" style={{ height: "100%" }}>
           <div className="sk-row" style={{ justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
@@ -61,7 +86,7 @@ function VacancyCard({ vacancy, hasResponse }) {
               <Tag size="s" hue={directionHue(vacancy.direction)}>{vacancy.direction}</Tag>
             </span>
             {hasResponse
-              ? <Tag size="s" hue="gray" icon={<IconCheck size={12} />}>Есть отклик</Tag>
+              ? <Tag size="s" hue="positive" icon={<IconThumbUp size={13} />}>Уже откликнулись</Tag>
               : (closed && <Tag size="s" hue="neutral">Закрыта</Tag>)}
           </div>
 
@@ -170,7 +195,7 @@ function Page() {
         <Input size="s" icon={<IconSearch size={20} />} placeholder="По названию, должности или подразделению"
           value={q} onChange={(e) => setQ(e.target.value || "")} style={{ width: 460, flexShrink: 0 }} />
         <a href="my-responses.html" style={{ textDecoration: "none", flexShrink: 0 }}>
-          <Button style={{ background: "var(--sk-special-secondary)", color: "var(--text-text-special)" }} icon={<Icons.IconSend size={16} />}>Мои отклики{responses.length ? " · " + responses.length : ""}</Button>
+          <Button style={{ background: "var(--sk-special-secondary)", color: "var(--text-text-special)" }} icon={<IconFolderHeart size={16} />}>Мои отклики{responses.length ? " · " + responses.length : ""}</Button>
         </a>
       </div>
 
