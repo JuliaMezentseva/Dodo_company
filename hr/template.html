@@ -15,12 +15,12 @@
 <body>
 <div id="root"></div>
 <script type="text/babel">
-const { Card, Tag, Switch, Input, Textarea, Select, Checkbox, Radio, SegmentedControl, Tooltip, Divider, Button, IconButton, Modal, Drawer, Snackbar } = window.SkillazCoreDesignSystem_bf9566;
+const { Card, Tag, Switch, Input, Textarea, Select, Checkbox, SegmentedControl, Tooltip, Divider, Button, IconButton, Modal, Drawer, Snackbar } = window.SkillazCoreDesignSystem_bf9566;
 const { AppShell, Icons } = window.Site;
 const {
   IconInfo, IconTarget, IconCheck, IconClipboard, IconSettings,
   IconHelpCircle, IconTrash, IconArrowLeft, IconClock, IconFileText, IconLink2, IconGraduationCap, IconMessageCircle,
-  IconPlusSm, IconEdit, IconLayers, IconBookOpen,
+  IconPlusSm, IconEdit, IconLayers, IconBookOpen, IconChevronUp, IconChevronDown,
 } = Icons;
 
 const TEMPLATE_SECTIONS = [
@@ -60,19 +60,89 @@ function SectionNavItem({ item, active, disabled, onClick }) {
   );
 }
 
-function PlanSectionsNav({ section, onChange }) {
+function CollapsibleNavSection({ title, defaultOpen = true, children }) {
+  const [open, setOpen] = React.useState(defaultOpen);
   return (
-    <div style={{ width: 224, flexShrink: 0 }}>
+    <div className="sk-col sk-gap-1">
+      <div className="sk-row sk-clickable" style={{ justifyContent: "space-between", alignItems: "center", padding: "0 12px" }}
+        onClick={() => setOpen((o) => !o)}>
+        <span className="sk-label-3">{title}</span>
+        {open ? <IconChevronUp size={15} color="var(--sk-icon-secondary)" /> : <IconChevronDown size={15} color="var(--sk-icon-secondary)" />}
+      </div>
+      {open && <div className="sk-col sk-gap-2" style={{ padding: "4px 12px 8px" }}>{children}</div>}
+    </div>
+  );
+}
+
+// ---------------- Левая колонка целиком: разделы плана + информация + статистика + действия
+// с шаблоном — объединены в одну колонку (было три отдельных блока: навигация слева, инфо-панель
+// справа), чтобы освободить правую зону под настройки, как в референсе Юли. ----------------
+function PlanSectionsNav({ section, onChange, template, onDeleteTemplate }) {
+  const st = TEMPLATE_STATUS[template.status];
+  return (
+    <div style={{ width: 260, flexShrink: 0 }}>
       <Card bordered>
-        <div className="sk-col sk-gap-1">
-          <div className="sk-label-4" style={{ color: "var(--sk-text-tertiary)", textTransform: "uppercase", padding: "0 12px 4px" }}>Разделы плана</div>
-          {TEMPLATE_SECTIONS.map((s) => {
-            const disabled = !BUILT_SECTIONS.includes(s.id);
-            return (
-              <SectionNavItem key={s.id} item={s} active={section === s.id} disabled={disabled}
-                onClick={() => onChange(s.id)} />
-            );
-          })}
+        <div className="sk-col sk-gap-4">
+          <div className="sk-col sk-gap-1">
+            <div className="sk-label-4" style={{ color: "var(--sk-text-tertiary)", textTransform: "uppercase", padding: "0 12px 4px" }}>Разделы плана</div>
+            {TEMPLATE_SECTIONS.map((s) => {
+              const disabled = !BUILT_SECTIONS.includes(s.id);
+              return (
+                <SectionNavItem key={s.id} item={s} active={section === s.id} disabled={disabled}
+                  onClick={() => onChange(s.id)} />
+              );
+            })}
+          </div>
+
+          <Divider />
+
+          <CollapsibleNavSection title="Информация">
+            <div className="sk-row sk-gap-2 sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>
+              <IconClock size={15} />{template.savedAtLabel}
+            </div>
+            <Divider />
+            <div className="sk-row" style={{ justifyContent: "space-between" }}>
+              <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Статус</span>
+              <Tag size="s" hue={st.hue}>{st.label}</Tag>
+            </div>
+            <div className="sk-row" style={{ justifyContent: "space-between" }}>
+              <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Дата создания</span>
+              <span className="sk-label-4">{template.createdAt}</span>
+            </div>
+            <div className="sk-row" style={{ justifyContent: "space-between" }}>
+              <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Срок плана</span>
+              <span className="sk-label-4">{template.durationDays} дней</span>
+            </div>
+            <div className="sk-row" style={{ justifyContent: "space-between" }}>
+              <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Использован</span>
+              <span className="sk-label-4">{template.usageCount} {template.usageCount === 1 ? "раз" : "раза"}</span>
+            </div>
+          </CollapsibleNavSection>
+
+          <Divider />
+
+          <CollapsibleNavSection title="Статистика">
+            {[
+              ["Задач", template.stats.tasks, IconCheck],
+              ["Файлов", template.stats.files, IconFileText],
+              ["Ссылок", template.stats.links, IconLink2],
+              ["Обучение", template.stats.courses, IconGraduationCap],
+              ["Опросов", template.stats.surveys, IconMessageCircle],
+            ].map(([label, val, Ic]) => (
+              <div key={label} className="sk-row" style={{ justifyContent: "space-between" }}>
+                <div className="sk-row sk-gap-2 sk-muted" style={{ font: "var(--sk-label-4-regular)" }}><Ic size={15} />{label}</div>
+                <span className="sk-label-4">{val}</span>
+              </div>
+            ))}
+          </CollapsibleNavSection>
+
+          <Divider />
+
+          <div className="sk-row sk-gap-3">
+            <IconButton variant="negative" mode="secondary"
+              style={{ boxShadow: "inset 0 0 0 1px var(--sk-stroke-negative)" }} onClick={onDeleteTemplate}><IconTrash size={16} /></IconButton>
+            <Button mode="secondary" style={{ flex: 1 }} onClick={() => { window.location.href = "templates.html"; }}>Вернуться</Button>
+          </div>
         </div>
       </Card>
     </div>
@@ -176,83 +246,21 @@ function TemplateCheckpointsSection({ checkpoints, onAdd, onEdit, onDelete }) {
   );
 }
 
-// ---------------- Дев-переключатель вариантов виджета "Кто настраивает цели" ----------------
-// Временный элемент этой итерации — показывает все три варианта переключателя из макетов,
-// чтобы Юля прокликала логику вживую и выбрала один перед тем, как мы зафиксируем финальный
-// вариант в коде. Не часть целевого UI, будет удалён после решения.
-const OWNER_WIDGET_VARIANTS = [
-  { id: "segmented", label: "Вариант A · переключатель" },
-  { id: "radioCards", label: "Вариант B · радио-карточки" },
-  { id: "radioInline", label: "Вариант C · радио в строку" },
-];
-
-function OwnerVariantSwitcher({ variant, onChange }) {
-  return (
-    <div className="sk-row sk-gap-2" style={{
-      alignItems: "center", padding: "8px 12px", borderRadius: "var(--sk-radius-3)",
-      background: "var(--sk-special-secondary)", border: "1px dashed var(--sk-stroke)",
-    }}>
-      <span className="sk-label-4" style={{ color: "var(--sk-text-secondary)", flexShrink: 0 }}>Черновик — выберите вариант переключателя:</span>
-      <SegmentedControl size="s" items={OWNER_WIDGET_VARIANTS} active={variant} onChange={onChange} />
-    </div>
-  );
-}
-
-// ---------------- Виджет выбора "Кто настраивает цели" — 3 варианта макета ----------------
+// ---------------- Виджет выбора "Кто настраивает цели" — фиксированный вариант (SegmentedControl) ----------------
 const GOALS_OWNER_OPTIONS = [
   { id: "manager", label: "Создает руководитель", description: "Руководитель сформулирует цели сотруднику после назначения плана" },
   { id: "hr", label: "Создать сразу в шаблоне", description: "Заполните цели заранее — подходит для типовых ролей" },
 ];
 
-function GoalsOwnerSegmented({ owner, onChange }) {
+function GoalsOwnerPicker({ owner, onChange }) {
   return (
     <div className="sk-col sk-gap-2">
-      <span className="sk-label-3" style={{ color: "var(--sk-text-primary)" }}>Кто настраивает цели</span>
+      <span className="sk-label-3-regular" style={{ color: "var(--sk-text-primary)" }}>Кто настраивает цели</span>
       <SegmentedControl size="m"
         items={GOALS_OWNER_OPTIONS.map((o) => ({ id: o.id, label: o.label }))}
         active={owner} onChange={onChange} style={{ alignSelf: "flex-start" }} />
     </div>
   );
-}
-
-function GoalsOwnerRadioCards({ owner, onChange }) {
-  return (
-    <div className="sk-col sk-gap-2">
-      {GOALS_OWNER_OPTIONS.map((o) => {
-        const sel = owner === o.id;
-        return (
-          <div key={o.id} className="sk-clickable" onClick={() => onChange(o.id)} style={{
-            padding: "12px 14px", borderRadius: "var(--sk-radius-3)",
-            border: sel ? "1.5px solid var(--sk-stroke-accent)" : "1.5px solid var(--sk-stroke)",
-            background: sel ? "var(--sk-accent-secondary)" : "var(--sk-surface-page)",
-          }}>
-            <Radio checked={sel} onChange={() => onChange(o.id)} label={o.label} description={o.description} />
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
-function GoalsOwnerRadioInline({ owner, onChange }) {
-  const active = GOALS_OWNER_OPTIONS.find((o) => o.id === owner);
-  return (
-    <div className="sk-col sk-gap-2">
-      <span className="sk-label-3" style={{ color: "var(--sk-text-primary)" }}>Кто настраивает цели</span>
-      <div className="sk-row sk-gap-5">
-        {GOALS_OWNER_OPTIONS.map((o) => (
-          <Radio key={o.id} name="goalsOwner" checked={owner === o.id} onChange={() => onChange(o.id)} label={o.label} />
-        ))}
-      </div>
-      {active && <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{active.description}</span>}
-    </div>
-  );
-}
-
-function GoalsOwnerPicker({ variant, owner, onChange }) {
-  if (variant === "radioCards") return <GoalsOwnerRadioCards owner={owner} onChange={onChange} />;
-  if (variant === "radioInline") return <GoalsOwnerRadioInline owner={owner} onChange={onChange} />;
-  return <GoalsOwnerSegmented owner={owner} onChange={onChange} />;
 }
 
 // ---------------- Блок "Цели" — способ создания цели: плитка выбора (та же логика,
@@ -541,7 +549,7 @@ function TemplateGoalRow({ goal, onOpen, onDelete, onOpenSubgoal }) {
 // ---------------- Секция "Цели" внутри единого контейнера плана: выбор владельца + условная
 // логика сценария. Плашка "Ожидают настройки" рядом с заголовком, пока Админ не создал ни
 // одной цели в сценарии "Создать сразу в шаблоне" — вместо отдельного предупреждения ниже. ----------------
-function GoalsSection({ owner, ownerVariant, deadlineDays, goals, onOwnerChange, onDeadlineChange, onAddGoal, onUpdateGoal, onDeleteGoal }) {
+function GoalsSection({ owner, deadlineDays, goals, onOwnerChange, onDeadlineChange, onAddGoal, onUpdateGoal, onDeleteGoal }) {
   const [methodModal, setMethodModal] = React.useState(false);
   const [goalDraft, setGoalDraft] = React.useState(null);
   const [createSubgoalModal, setCreateSubgoalModal] = React.useState(false);
@@ -591,13 +599,13 @@ function GoalsSection({ owner, ownerVariant, deadlineDays, goals, onOwnerChange,
         </Tooltip>
       </div>
 
-      <GoalsOwnerPicker variant={ownerVariant} owner={owner} onChange={onOwnerChange} />
+      <GoalsOwnerPicker owner={owner} onChange={onOwnerChange} />
 
       {owner === "manager" ? (
         <div className="sk-col sk-gap-3">
           <div className="sk-row" style={{ justifyContent: "space-between", alignItems: "center" }}>
             <div className="sk-row sk-gap-1" style={{ color: "var(--sk-text-primary)" }}>
-              <span className="sk-label-3">Срок постановки целей руководителем после назначения плана (дней)</span>
+              <span className="sk-label-3-regular">Срок постановки целей руководителем после назначения плана (дней)</span>
               <Tooltip content="После назначения плана руководитель получит уведомление о необходимости поставить цели. Цели создаются уже в индивидуальном плане сотрудника.">
                 <IconHelpCircle size={16} color="var(--sk-icon-secondary)" />
               </Tooltip>
@@ -677,30 +685,31 @@ function CheckpointsSection({ checkpoints, onAddCheckpoint, onEditCheckpoint, on
 
 // ---------------- Единый контейнер "Настройка плана адаптации" — тумблер + (когда включён)
 // секции "Цели" и "Контрольные точки" внутри одной карточки, разделённые тонким Divider,
-// вместо трёх отдельных обведённых карточек. Шапка на сером фоне — как в референсе Юли. ----------------
-function GoalsSettingsCard({ template, enabled, ownerVariant, owner, deadlineDays, goals, checkpoints,
+// вместо трёх отдельных обведённых карточек. Заголовок на сером фоне (тонкая полоска сверху,
+// как в референсе Юли), а сам тумблер уже на белом — не весь блок целиком серый. ----------------
+function GoalsSettingsCard({ template, enabled, owner, deadlineDays, goals, checkpoints,
   onToggle, onOwnerChange, onDeadlineChange, onAddGoal, onUpdateGoal, onDeleteGoal,
   onAddCheckpoint, onEditCheckpoint, onDeleteCheckpoint }) {
   return (
     <Card bordered style={{ padding: 0, overflow: "hidden" }}>
       <div className="sk-col">
-        <div className="sk-col sk-gap-3" style={{ padding: "16px 24px", background: "var(--sk-surface-secondary)" }}>
+        <div style={{ padding: "14px 24px", background: "var(--sk-surface-secondary)" }}>
           <div className="sk-title-5">Настройка плана адаптации</div>
-          <div className="sk-row" style={{ justifyContent: "space-between" }}>
-            <div className="sk-row sk-gap-1">
-              <span className="sk-label-3">Включить план адаптации с целями</span>
-              <Tooltip content="В этом плане сотруднику можно поставить цели, шаги к ним и полезные материалы. С этим планом сотрудник не просто проходит чек-лист, а приближается к тому, чтобы перформить в своей роли.">
-                <IconHelpCircle size={16} color="var(--sk-icon-secondary)" />
-              </Tooltip>
-            </div>
-            <Switch checked={enabled} onChange={onToggle} />
+        </div>
+        <div className="sk-row" style={{ justifyContent: "space-between", padding: "16px 24px" }}>
+          <div className="sk-row sk-gap-1">
+            <span className="sk-label-3">Включить план адаптации с целями</span>
+            <Tooltip content="В этом плане сотруднику можно поставить цели, шаги к ним и полезные материалы. С этим планом сотрудник не просто проходит чек-лист, а приближается к тому, чтобы перформить в своей роли.">
+              <IconHelpCircle size={16} color="var(--sk-icon-secondary)" />
+            </Tooltip>
           </div>
+          <Switch checked={enabled} onChange={onToggle} />
         </div>
 
         {enabled && (
           <React.Fragment>
             <Divider />
-            <GoalsSection owner={owner} ownerVariant={ownerVariant} deadlineDays={deadlineDays} goals={goals}
+            <GoalsSection owner={owner} deadlineDays={deadlineDays} goals={goals}
               onOwnerChange={onOwnerChange} onDeadlineChange={onDeadlineChange}
               onAddGoal={onAddGoal} onUpdateGoal={onUpdateGoal} onDeleteGoal={onDeleteGoal} />
             <Divider />
@@ -710,65 +719,6 @@ function GoalsSettingsCard({ template, enabled, ownerVariant, owner, deadlineDay
         )}
       </div>
     </Card>
-  );
-}
-
-function InfoPanel({ template, onDelete }) {
-  const st = TEMPLATE_STATUS[template.status];
-  return (
-    <div style={{ width: 280, flexShrink: 0 }}>
-      <div className="sk-col sk-gap-4">
-        <Card bordered>
-          <div className="sk-col sk-gap-3">
-            <div className="sk-label-3" style={{ color: "var(--sk-text-tertiary)", textTransform: "uppercase" }}>Информация</div>
-            <div className="sk-row sk-gap-2 sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>
-              <IconClock size={15} />{template.savedAtLabel}
-            </div>
-            <Divider />
-            <div className="sk-row" style={{ justifyContent: "space-between" }}>
-              <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Статус</span>
-              <Tag size="s" hue={st.hue}>{st.label}</Tag>
-            </div>
-            <div className="sk-row" style={{ justifyContent: "space-between" }}>
-              <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Дата создания</span>
-              <span className="sk-label-4">{template.createdAt}</span>
-            </div>
-            <div className="sk-row" style={{ justifyContent: "space-between" }}>
-              <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Срок плана</span>
-              <span className="sk-label-4">{template.durationDays} дней</span>
-            </div>
-            <div className="sk-row" style={{ justifyContent: "space-between" }}>
-              <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Использован</span>
-              <span className="sk-label-4">{template.usageCount} {template.usageCount === 1 ? "раз" : "раза"}</span>
-            </div>
-          </div>
-        </Card>
-
-        <Card bordered>
-          <div className="sk-col sk-gap-3">
-            <div className="sk-label-3" style={{ color: "var(--sk-text-tertiary)", textTransform: "uppercase" }}>Статистика</div>
-            {[
-              ["Задач", template.stats.tasks, IconCheck],
-              ["Файлов", template.stats.files, IconFileText],
-              ["Ссылок", template.stats.links, IconLink2],
-              ["Обучение", template.stats.courses, IconGraduationCap],
-              ["Опросов", template.stats.surveys, IconMessageCircle],
-            ].map(([label, val, Ic]) => (
-              <div key={label} className="sk-row" style={{ justifyContent: "space-between" }}>
-                <div className="sk-row sk-gap-2 sk-muted" style={{ font: "var(--sk-label-4-regular)" }}><Ic size={15} />{label}</div>
-                <span className="sk-label-4">{val}</span>
-              </div>
-            ))}
-          </div>
-        </Card>
-
-        <div className="sk-row sk-gap-3">
-          <IconButton variant="negative" mode="secondary"
-            style={{ boxShadow: "inset 0 0 0 1px var(--sk-stroke-negative)" }} onClick={onDelete}><IconTrash size={16} /></IconButton>
-          <Button mode="secondary" style={{ flex: 1 }} onClick={() => { window.location.href = "templates.html"; }}>Вернуться</Button>
-        </div>
-      </div>
-    </div>
   );
 }
 
@@ -796,7 +746,6 @@ function Page() {
   const baseTemplate = D.templates.find((t) => t.id === tplId) || D.templates[0];
   const [section, setSection] = React.useState("goals");
   const [enabled, setEnabled] = React.useState(baseTemplate.goalsEnabled);
-  const [ownerVariant, setOwnerVariant] = React.useState("segmented");
   const [owner, setOwner] = React.useState(baseTemplate.goalsOwner || "manager");
   const [deadlineDays, setDeadlineDays] = React.useState(baseTemplate.goalsDeadlineDays);
   const [goals, setGoals] = React.useState(baseTemplate.goals || []);
@@ -839,20 +788,17 @@ function Page() {
   return (
     <AppShell role="hr" active="hr-templates" base=".."
       breadcrumb={<a href="templates.html" className="sk-row sk-gap-1" style={{ color: "var(--sk-text-secondary)" }}><IconArrowLeft size={14} /> Шаблоны планов</a>}>
-      <div className="sk-row" style={{ justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 12 }}>
-        <div className="sk-col sk-gap-1">
-          <div className="sk-title-4">{template.name}</div>
-          <div className="sk-muted">{template.planType} · {template.durationDays} дней · {template.department}</div>
-        </div>
-        {enabled && <OwnerVariantSwitcher variant={ownerVariant} onChange={setOwnerVariant} />}
+      <div className="sk-col sk-gap-1">
+        <div className="sk-title-4">{template.name}</div>
+        <div className="sk-muted">{template.planType} · {template.durationDays} дней · {template.department}</div>
       </div>
 
       <div className="sk-row" style={{ alignItems: "flex-start", gap: 24 }}>
-        <PlanSectionsNav section={section} onChange={setSection} />
+        <PlanSectionsNav section={section} onChange={setSection} template={template} onDeleteTemplate={() => setDeleteConfirm(true)} />
 
         <div style={{ flex: 1, minWidth: 0 }}>
           {section === "goals" ? (
-            <GoalsSettingsCard template={template} enabled={enabled} ownerVariant={ownerVariant} owner={owner}
+            <GoalsSettingsCard template={template} enabled={enabled} owner={owner}
               deadlineDays={deadlineDays} goals={goals} checkpoints={checkpoints}
               onToggle={(v) => { setEnabled(v); showToast(v ? "План адаптации включён" : "План адаптации выключен"); }}
               onOwnerChange={(v) => { setOwner(v); showToast(v === "manager" ? "Цели настраивает руководитель" : "Цели добавляются сразу в шаблон"); }}
@@ -865,8 +811,6 @@ function Page() {
             <NotBuiltSection label={TEMPLATE_SECTIONS.find((s) => s.id === section).label} />
           )}
         </div>
-
-        <InfoPanel template={template} onDelete={() => setDeleteConfirm(true)} />
       </div>
 
       {deleteConfirm && (
