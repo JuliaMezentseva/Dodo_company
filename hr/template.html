@@ -15,7 +15,7 @@
 <body>
 <div id="root"></div>
 <script type="text/babel">
-const { Card, Tag, Switch, Input, Textarea, Select, Checkbox, SegmentedControl, Tooltip, Divider, Button, IconButton, Modal, Drawer, Snackbar } = window.SkillazCoreDesignSystem_bf9566;
+const { Card, Tag, Switch, Input, Textarea, Select, Checkbox, SegmentedControl, Tabs, Tooltip, Divider, Button, IconButton, Modal, Drawer, Snackbar } = window.SkillazCoreDesignSystem_bf9566;
 const { AppShell, Icons } = window.Site;
 const {
   IconInfo, IconTarget, IconCheck, IconClipboard, IconSettings,
@@ -622,12 +622,16 @@ function CheckpointsSection({ checkpoints, onAddCheckpoint, onEditCheckpoint, on
 }
 
 // ---------------- Единый контейнер "Настройка плана адаптации" — тумблер + (когда включён)
-// секции "Цели" и "Контрольные точки" внутри одной карточки, разделённые тонким Divider,
-// вместо трёх отдельных обведённых карточек. Заголовок на сером фоне (тонкая полоска сверху,
-// как в референсе Юли), а сам тумблер уже на белом — не весь блок целиком серый. ----------------
+// табы "Цели" / "Контрольные точки" переключают видимую секцию, вместо вертикального стека
+// с Divider — так Админ сразу видит обе настройки и переключается без скролла. ----------------
 function GoalsSettingsCard({ template, enabled, owner, deadlineDays, goals, checkpoints,
   onToggle, onOwnerChange, onDeadlineChange, onAddGoal, onUpdateGoal, onDeleteGoal,
   onAddCheckpoint, onEditCheckpoint, onDeleteCheckpoint }) {
+  const [tab, setTab] = React.useState("goals");
+  const tabs = [
+    { id: "goals", label: "Цели", count: goals.length || undefined },
+    { id: "checkpoints", label: "Контрольные точки", count: checkpoints.length || undefined },
+  ];
   return (
     <Card bordered style={{ padding: 0, overflow: "hidden" }}>
       <div className="sk-col">
@@ -647,12 +651,17 @@ function GoalsSettingsCard({ template, enabled, owner, deadlineDays, goals, chec
         {enabled && (
           <React.Fragment>
             <Divider />
-            <GoalsSection owner={owner} deadlineDays={deadlineDays} goals={goals}
-              onOwnerChange={onOwnerChange} onDeadlineChange={onDeadlineChange}
-              onAddGoal={onAddGoal} onUpdateGoal={onUpdateGoal} onDeleteGoal={onDeleteGoal} />
-            <Divider />
-            <CheckpointsSection checkpoints={checkpoints}
-              onAddCheckpoint={onAddCheckpoint} onEditCheckpoint={onEditCheckpoint} onDeleteCheckpoint={onDeleteCheckpoint} />
+            <div style={{ padding: "0 24px" }}>
+              <Tabs items={tabs} active={tab} onChange={setTab} />
+            </div>
+            {tab === "goals" ? (
+              <GoalsSection owner={owner} deadlineDays={deadlineDays} goals={goals}
+                onOwnerChange={onOwnerChange} onDeadlineChange={onDeadlineChange}
+                onAddGoal={onAddGoal} onUpdateGoal={onUpdateGoal} onDeleteGoal={onDeleteGoal} />
+            ) : (
+              <CheckpointsSection checkpoints={checkpoints}
+                onAddCheckpoint={onAddCheckpoint} onEditCheckpoint={onEditCheckpoint} onDeleteCheckpoint={onDeleteCheckpoint} />
+            )}
           </React.Fragment>
         )}
       </div>
