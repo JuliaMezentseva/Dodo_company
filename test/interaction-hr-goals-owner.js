@@ -53,8 +53,10 @@ const target = path.resolve(__dirname, "..", "hr", "template.html");
     await tick(80);
     let body = w.document.body.textContent;
     console.log("Header 'Настройка плана адаптации' present:", body.includes("Настройка плана адаптации") ? "PASS" : "FAIL");
+    console.log("Tabs live in their own bordered card, separate from the toggle card:",
+      [...w.document.querySelectorAll("div")].filter(el => el.style && el.style.boxShadow && el.style.boxShadow.includes("inset 0 0 0 1px")).length >= 2 ? "PASS" : "FAIL");
     console.log("Tabs 'Цели' and 'Контрольные точки' both present:", body.includes("Цели") && body.includes("Контрольные точки") ? "PASS" : "FAIL");
-    console.log("'Goals' tab is active by default (owner picker visible):", body.includes("Кто настраивает цели") ? "PASS" : "FAIL");
+    console.log("'Goals' tab is active by default (owner picker visible):", body.includes("Способ настройки целей") ? "PASS" : "FAIL");
     console.log("Checkpoints content hidden until its tab is clicked:", !body.includes("Добавить контрольную точку") ? "PASS" : "FAIL");
 
     // Кликаем по табу "Контрольные точки" и проверяем переключение содержимого
@@ -63,7 +65,7 @@ const target = path.resolve(__dirname, "..", "hr", "template.html");
     await tick(80);
     body = w.document.body.textContent;
     console.log("After clicking checkpoints tab — checkpoints content visible:", body.includes("Добавить контрольную точку") ? "PASS" : "FAIL");
-    console.log("After clicking checkpoints tab — goals content hidden:", !body.includes("Кто настраивает цели") ? "PASS" : "FAIL");
+    console.log("After clicking checkpoints tab — goals content hidden:", !body.includes("Способ настройки целей") ? "PASS" : "FAIL");
 
     // Возвращаемся на таб "Цели" для продолжения сценария
     const goalsTab = [...w.document.querySelectorAll("span")].find(el => el.textContent.trim().startsWith("Цели"));
@@ -82,11 +84,12 @@ const target = path.resolve(__dirname, "..", "hr", "template.html");
     click(w, hrRadio);
     await tick(80);
     body = w.document.body.textContent;
-    console.log("'Ожидают настройки' badge shown with 0 goals:", body.includes("Ожидают настройки") ? "PASS" : "FAIL");
+    console.log("Empty state shown with 0 goals ('Сформируйте цели и шаги...'):", body.includes("Сформируйте цели и шаги для их достижения") ? "PASS" : "FAIL");
     console.log("No old warning text about missing goals:", !body.includes("Добавьте хотя бы одну цель") ? "PASS" : "FAIL");
+    console.log("No 'Ожидают настройки' badge (replaced by empty state):", !body.includes("Ожидают настройки") ? "PASS" : "FAIL");
 
-    const createBtn = findByText(w, "button", "Создать цель");
-    console.log("'Создать цель' button is accent/primary styled:", createBtn && createBtn.style.background && createBtn.style.background !== "" ? "PASS" : "FAIL (empty inline bg — check manually)");
+    const createBtn = findByText(w, "button", "+ Создать");
+    console.log("'+ Создать' empty-state button found:", !!createBtn ? "PASS" : "FAIL");
     click(w, createBtn);
     await tick(80);
     console.log("Method modal opened:", w.document.body.textContent.includes("Как добавить цель?") ? "PASS" : "FAIL");
@@ -105,6 +108,9 @@ const target = path.resolve(__dirname, "..", "hr", "template.html");
     body = w.document.body.textContent;
     console.log("Goal added, no goals warning anymore:", !body.includes("Добавьте хотя бы одну цель") ? "PASS" : "FAIL");
     console.log("Goal row shows 'Шаги ещё не добавлены':", body.includes("Шаги ещё не добавлены") ? "PASS" : "FAIL");
+    console.log("Goal row shows condensed due date (icon + 'до <день> <месяц>'):", /до \d+ (января|февраля|марта|апреля|мая|июня|июля|августа|сентября|октября|ноября|декабря)/.test(body) ? "PASS" : "FAIL");
+    console.log("No duplicated 'Цели' section heading (tab label is the only heading now):",
+      [...w.document.querySelectorAll("span.sk-title-5")].filter(el => el.textContent.trim() === "Цели").length === 0 ? "PASS" : "FAIL");
 
     // Открываем цель, добавляем шаг
     const goalRow = findByText(w, "div", "Изучить продукт компании");
@@ -121,8 +127,8 @@ const target = path.resolve(__dirname, "..", "hr", "template.html");
     console.log("Assessment section present ('Проверка выполнения шага'):", dlg.textContent.includes("Проверка выполнения шага") ? "PASS" : "FAIL");
     console.log("Materials picker is not disabled (real UI, not stub):", !dlg.textContent.includes("Скоро будет доступно") ? "PASS" : "FAIL");
 
-    // Заполняем шаг и добавляем полезный материал (скоупим поиск полей внутри верхнего диалога,
-    // т.к. дровер цели остаётся в DOM позади модалки шага)
+    // Заполняем шаг и добавляем полезный материал через модалку выбора (та же форма, что у
+    // руководителя: поиск + список с чекбоксами, а не свободный ввод)
     const stepTitleInput = dlg.querySelector('input[type="text"], input:not([type])');
     setVal(w, stepTitleInput, "Настроить доступы к CRM");
     await tick(50);
@@ -130,15 +136,18 @@ const target = path.resolve(__dirname, "..", "hr", "template.html");
     click(w, addMaterialBtn);
     await tick(80);
     dlg = topDialog(w);
-    console.log("Material form modal opened:", dlg.textContent.includes("Полезный материал") ? "PASS" : "FAIL");
-    const materialTitleInput = dlg.querySelector('input[type="text"], input:not([type])');
-    setVal(w, materialTitleInput, "Регламент работы с CRM");
+    console.log("Material picker modal opened (title 'Полезные материалы'):", dlg.textContent.includes("Полезные материалы") ? "PASS" : "FAIL");
+    console.log("Search input present in material picker:", !!dlg.querySelector('input[placeholder="Поиск по названию"]') ? "PASS" : "FAIL");
+    console.log("Catalog items with checkboxes rendered:", dlg.querySelectorAll('[role="checkbox"], input[type="checkbox"]').length > 0 || dlg.textContent.includes("Регламент оформления сделки") ? "PASS" : "FAIL");
+
+    const firstCatalogRow = [...dlg.querySelectorAll(".sk-clickable")].find(el => el.textContent.includes("Регламент оформления сделки в CRM"));
+    click(w, firstCatalogRow);
     await tick(50);
-    const addMaterialConfirmBtn = [...dlg.querySelectorAll("button")].find(b => b.textContent.trim() === "Добавить" && !b.disabled);
-    click(w, addMaterialConfirmBtn);
+    const doneBtn = [...dlg.querySelectorAll("button")].find(b => b.textContent.trim() === "Готово");
+    click(w, doneBtn);
     await tick(80);
     dlg = topDialog(w);
-    console.log("Material appears in step form list:", dlg.textContent.includes("Регламент работы с CRM") ? "PASS" : "FAIL");
+    console.log("Material appears in step form list:", dlg.textContent.includes("Регламент оформления сделки в CRM") ? "PASS" : "FAIL");
 
     const saveStepBtn = [...dlg.querySelectorAll("button")].filter(b => b.textContent.trim() === "Добавить" && !b.disabled).pop();
     click(w, saveStepBtn);
@@ -163,10 +172,10 @@ const target = path.resolve(__dirname, "..", "hr", "template.html");
     console.log("'Статистика' block removed entirely:", !body.includes("Статистика") ? "PASS" : "FAIL");
     console.log("'Вернуться' button present in left column:", body.includes("Вернуться") ? "PASS" : "FAIL");
 
-    // Только вариант A (SegmentedControl) для "Кто настраивает цели" — без bold
-    const ownerLabel = [...w.document.querySelectorAll("span")].find(el => el.textContent.trim() === "Кто настраивает цели");
-    console.log("'Кто настраивает цели' label present:", !!ownerLabel ? "PASS" : "FAIL");
-    console.log("'Кто настраивает цели' label is not bold (sk-label-3-regular):", ownerLabel && ownerLabel.className.includes("sk-label-3-regular") ? "PASS" : "FAIL");
+    // Только вариант A (SegmentedControl) для "Способ настройки целей" — без bold
+    const ownerLabel = [...w.document.querySelectorAll("span")].find(el => el.textContent.trim() === "Способ настройки целей");
+    console.log("'Способ настройки целей' label present:", !!ownerLabel ? "PASS" : "FAIL");
+    console.log("'Способ настройки целей' label is not bold (sk-label-3-regular):", ownerLabel && ownerLabel.className.includes("sk-label-3-regular") ? "PASS" : "FAIL");
 
     console.log("\nOK: сценарий HR-цели прошёл без падений");
   } catch (e) {
@@ -175,18 +184,26 @@ const target = path.resolve(__dirname, "..", "hr", "template.html");
     process.exit(1);
   }
 
-  // Отдельная свежая загрузка со сценарием по умолчанию ("Создает руководитель"),
-  // чтобы проверить лейбл срока постановки целей (виден только при owner === "manager").
+  // Отдельная свежая загрузка — включаем тумблер (по умолчанию открывается "Создать сразу
+  // в шаблоне"), затем явно переключаемся на "Создает руководитель", чтобы проверить лейбл
+  // срока постановки целей (виден только при owner === "manager").
   try {
     const w2 = loadPage(target, "tpl=tpl_sales");
     await tick(150);
     const switchEl2 = w2.document.querySelector('[role="switch"]');
     click(w2, switchEl2);
     await tick(80);
+    let body2 = w2.document.body.textContent;
+    console.log("Owner defaults to 'Создать сразу в шаблоне' right after enabling the toggle:",
+      body2.includes("Сформируйте цели и шаги для их достижения") ? "PASS" : "FAIL");
+
+    const managerOption = [...w2.document.querySelectorAll("span")].find(el => el.textContent.trim() === "Создает руководитель");
+    click(w2, managerOption);
+    await tick(80);
     const deadlineLabel = [...w2.document.querySelectorAll("span")].find(el => el.textContent.trim() === "Срок постановки целей руководителем после назначения плана (дней)");
     console.log("Deadline label present (manager scenario):", !!deadlineLabel ? "PASS" : "FAIL");
     console.log("Deadline label is not bold (sk-label-3-regular):", deadlineLabel && deadlineLabel.className.includes("sk-label-3-regular") ? "PASS" : "FAIL");
-    const body2 = w2.document.body.textContent;
+    body2 = w2.document.body.textContent;
     console.log("'В первой версии цели не создаются...' hint removed:", !body2.includes("В первой версии цели не создаются") ? "PASS" : "FAIL");
   } catch (e) {
     console.error("THREW:", e.message);

@@ -20,7 +20,7 @@ const { AppShell, Icons } = window.Site;
 const {
   IconInfo, IconTarget, IconCheck, IconClipboard, IconSettings,
   IconHelpCircle, IconTrash, IconArrowLeft, IconClock, IconFileText, IconLink2, IconGraduationCap, IconMessageCircle,
-  IconPlusSm, IconEdit, IconLayers, IconBookOpen, IconCalendar,
+  IconPlusSm, IconEdit, IconLayers, IconBookOpen, IconCalendar, IconSearch, IconX,
 } = Icons;
 
 const TEMPLATE_SECTIONS = [
@@ -284,63 +284,70 @@ function StepAssessmentPicker({ templateId, setTemplateId }) {
   );
 }
 
-// ---------------- Полезные материалы шага — свободный ввод (тип + название/ссылка), в
-// отличие от руководителя, который выбирает существующие элементы из чек-листа НАЗНАЧЕННОГО
-// плана сотрудника (у шаблона такого чек-листа с конкретными задачами ещё нет — он появляется
-// только после назначения плана). Логика та же: список выбранного + кнопка добавления. ----------------
-const MATERIAL_TYPES = [
-  { value: "task", label: "Задача", icon: IconClipboard },
-  { value: "course", label: "Курс", icon: IconGraduationCap },
-  { value: "article", label: "Статья", icon: IconFileText },
-  { value: "file", label: "Файл", icon: IconFileText },
-  { value: "link", label: "Ссылка", icon: IconLink2 },
-];
-const emptyMaterialForm = { type: "task", title: "" };
-
-function MaterialFormModal({ onClose, onAdd }) {
-  const [form, setForm] = React.useState(emptyMaterialForm);
-  const set = (k) => (v) => setForm((f) => ({ ...f, [k]: v }));
-  const canAdd = form.title.trim().length > 0;
-  return (
-    <Modal open title="Полезный материал" onClose={onClose} size="s"
-      secondary={<Button mode="secondary" onClick={onClose}>Отменить</Button>}
-      primary={<Button disabled={!canAdd} onClick={() => onAdd(form)}>Добавить</Button>}>
-      <div className="sk-col sk-gap-3">
-        <Select label="Тип" value={form.type} options={MATERIAL_TYPES.map((t) => ({ value: t.value, label: t.label }))} onChange={set("type")} />
-        <Input label={form.type === "link" ? "Ссылка" : "Название"} required value={form.title}
-          placeholder={form.type === "link" ? "https://..." : "Например, Регламент оформления сделки"}
-          onChange={(e) => set("title")(e.target.value || "")} />
-      </div>
-    </Modal>
-  );
-}
+// ---------------- Полезные материалы шага — тот же UI, что и у руководителя в
+// manager/plan.html (StepMaterialsPicker): пилюли выбранных материалов + модалка с поиском
+// и чекбоксами. Источник списка — общий каталог материалов шаблона (у шаблона нет чек-листа
+// назначенного плана с конкретными задачами, поэтому список берётся из отдельного каталога,
+// а не из plan.stages, как у руководителя). ----------------
+const ELEMENT_LABEL = { article: "Статья", task: "Задача", course: "Курс", file: "Файл", link: "Ссылка" };
+const ELEMENT_ICON = { article: IconFileText, task: IconClipboard, course: IconGraduationCap, file: IconFileText, link: IconLink2 };
 
 function TemplateMaterialsPicker({ materials, onAdd, onRemove }) {
+  const D = window.SITE_DATA;
   const [open, setOpen] = React.useState(false);
+  const [q, setQ] = React.useState("");
+  const allItems = D.templateMaterialsCatalog || [];
+  const list = q.trim() ? allItems.filter((item) => item.title.toLowerCase().includes(q.trim().toLowerCase())) : allItems;
+  const selectedIds = materials.map((m) => m.id);
+  const selectedItems = materials.map((m) => allItems.find((item) => item.id === m.id)).filter(Boolean);
+
+  function toggle(item) {
+    if (selectedIds.includes(item.id)) onRemove(item.id);
+    else onAdd({ id: item.id, title: item.title, kind: item.kind });
+  }
+
   return (
     <div className="sk-col sk-gap-2">
       <span className="sk-label-3" style={{ color: "var(--sk-text-primary)" }}>Полезные материалы</span>
-      {materials.length ? (
+      {selectedItems.length ? (
         <div className="sk-col sk-gap-2">
-          {materials.map((m, i) => {
-            const cfg = MATERIAL_TYPES.find((t) => t.value === m.type) || MATERIAL_TYPES[0];
-            const Ic = cfg.icon;
-            return (
-              <div key={i} className="sk-row sk-gap-2" style={{ justifyContent: "space-between", alignItems: "center", padding: 10, background: "var(--sk-surface-secondary)", borderRadius: "var(--sk-radius-2)" }}>
-                <div className="sk-row sk-gap-2" style={{ alignItems: "center", minWidth: 0 }}>
-                  <Ic size={15} color="var(--sk-icon-secondary)" />
-                  <span className="sk-label-4" style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{m.title}</span>
-                </div>
-                <button className="sk-link-btn" onClick={() => onRemove(i)}><IconTrash size={15} color="var(--sk-icon-secondary)" /></button>
+          {selectedItems.map((item) => (
+            <div key={item.id} className="sk-row" style={{ justifyContent: "space-between", padding: 10, background: "var(--sk-surface-secondary)", borderRadius: "var(--sk-radius-2)" }}>
+              <div className="sk-col sk-gap-1">
+                <div className="sk-label-4">{item.title}</div>
+                <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{ELEMENT_LABEL[item.kind]}</div>
               </div>
-            );
-          })}
+              <button className="sk-link-btn" onClick={() => onRemove(item.id)}><IconX size={15} color="var(--sk-icon-secondary)" /></button>
+            </div>
+          ))}
         </div>
       ) : (
-        <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Выберите задачи, курсы, статьи, файлы или ссылки, которые помогут выполнить шаг.</span>
+        <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Материалы помогут сотруднику разобраться, что нужно сделать</span>
       )}
-      <Button mode="secondary" size="s" icon={<IconPlusSm size={16} />} style={{ alignSelf: "flex-start" }} onClick={() => setOpen(true)}>Добавить</Button>
-      {open && <MaterialFormModal onClose={() => setOpen(false)} onAdd={(m) => { onAdd(m); setOpen(false); }} />}
+      <button className="sk-link-btn sk-label-3-regular" onClick={() => setOpen(true)}
+        style={{ alignSelf: "flex-start", color: "var(--sk-text-accent)" }}>
+        <span className="sk-row sk-gap-1"><IconPlusSm size={16} />Добавить</span>
+      </button>
+
+      {open && (
+        <Modal open title="Полезные материалы" onClose={() => setOpen(false)} size="m"
+          secondary={<Button mode="secondary" onClick={() => setOpen(false)}>Отменить</Button>}
+          primary={<Button onClick={() => setOpen(false)}>Готово</Button>}
+          options={<Input icon={<IconSearch size={18} />} placeholder="Поиск по названию" value={q} onChange={(e) => setQ(e.target.value || "")} />}>
+          <div className="sk-col sk-gap-1 sk-modal-scroll">
+            {list.map((item) => (
+              <div key={item.id} className="sk-row sk-gap-3 sk-clickable" style={{ padding: "10px 4px" }} onClick={() => toggle(item)}>
+                <Checkbox checked={selectedIds.includes(item.id)} onChange={() => toggle(item)} />
+                <div className="sk-col sk-gap-1" style={{ flex: 1 }}>
+                  <div className="sk-label-3-regular">{item.title}</div>
+                  <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{ELEMENT_LABEL[item.kind]}</div>
+                </div>
+              </div>
+            ))}
+            {!list.length && <div className="sk-muted" style={{ padding: "16px 0", textAlign: "center" }}>Ничего не нашлось</div>}
+          </div>
+        </Modal>
+      )}
     </div>
   );
 }
@@ -368,8 +375,8 @@ function SubgoalFormModal({ initial, onClose, onCreate }) {
             onChange={set("reviewer")} style={{ flex: 1 }} />
         </div>
         <TemplateMaterialsPicker materials={form.materials}
-          onAdd={(m) => set("materials")([...form.materials, m])}
-          onRemove={(i) => set("materials")(form.materials.filter((_, ix) => ix !== i))} />
+          onAdd={(item) => set("materials")([...form.materials, item])}
+          onRemove={(id) => set("materials")(form.materials.filter((m) => m.id !== id))} />
         <Divider />
         <div className="sk-col sk-gap-3">
           <span className="sk-label-3" style={{ color: "var(--sk-text-primary)" }}>Проверка выполнения шага</span>
@@ -755,7 +762,11 @@ function Page() {
           {section === "goals" ? (
             <GoalsSettingsCard template={template} enabled={enabled} owner={owner}
               deadlineDays={deadlineDays} goals={goals} checkpoints={checkpoints}
-              onToggle={(v) => { setEnabled(v); showToast(v ? "План адаптации включён" : "План адаптации выключен"); }}
+              onToggle={(v) => {
+                setEnabled(v);
+                if (v) setOwner("hr");
+                showToast(v ? "План адаптации включён" : "План адаптации выключен");
+              }}
               onOwnerChange={(v) => { setOwner(v); showToast(v === "manager" ? "Цели настраивает руководитель" : "Цели добавляются сразу в шаблон"); }}
               onDeadlineChange={setDeadlineDays}
               onAddGoal={addGoal} onUpdateGoal={updateGoal} onDeleteGoal={deleteGoal}

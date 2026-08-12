@@ -127,7 +127,7 @@ const target = path.resolve(__dirname, "..", "hr", "template.html");
     switchEl2.dispatchEvent(new w2.MouseEvent("click", { bubbles: true }));
     await tick(80);
     let body2 = w2.document.body.textContent;
-    console.log("[empty tpl] Deadline field appears after enabling:", body2.includes("Срок постановки целей") ? "PASS" : "FAIL");
+    console.log("[empty tpl] Owner defaults to 'Создать сразу в шаблоне' after enabling (empty-state visible):", body2.includes("Сформируйте цели и шаги для их достижения") ? "PASS" : "FAIL");
     const checkpointsTab2 = [...w2.document.querySelectorAll("span")].find(el => el.textContent.trim().startsWith("Контрольные точки"));
     checkpointsTab2.dispatchEvent(new w2.MouseEvent("click", { bubbles: true }));
     await tick(80);
