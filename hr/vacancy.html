@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Вакансия — Skillaz Start</title>
+<link rel="stylesheet" href="../assets/styles.css" />
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" crossorigin="anonymous"></script>
+<script src="../assets/ds_bundle.js"></script>
+<script src="../assets/data.js"></script>
+<script type="text/babel" src="../assets/shell.js"></script>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { Card, Tag, TextList, Divider, Avatar } = window.SkillazCoreDesignSystem_bf9566;
+const { AppShell, Icons, directionHue } = window.Site;
+const { IconArrowLeft, IconMapPin, IconMail, IconPhone, IconTarget, IconCheck, IconGift, IconLayers, IconClock, IconBriefcase } = Icons;
+const D = window.SITE_DATA;
+
+function fmtMoney(n) { return n.toLocaleString("ru-RU"); }
+function vacancyIdFromUrl() {
+  const id = new URLSearchParams(window.location.search).get("id");
+  return D.vacancies.find(v => v.id === id) ? id : D.vacancies[0].id;
+}
+
+function DetailRow({ label, value }) {
+  return (
+    <div className="sk-row" style={{ justifyContent: "space-between", padding: "6px 0" }}>
+      <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{label}</span>
+      <span className="sk-label-4">{value}</span>
+    </div>
+  );
+}
+
+function Page() {
+  const vacancy = D.vacancies.find(v => v.id === vacancyIdFromUrl());
+  const closed = vacancy.status === "closed";
+
+  return (
+    <AppShell role="hr" active="vacancies" base=".."
+      breadcrumb={<a href="vacancies.html" className="sk-row sk-gap-1" style={{ color: "var(--sk-text-secondary)" }}><IconArrowLeft size={14} /> Вакансии</a>}>
+      <div className="sk-row" style={{ justifyContent: "space-between", alignItems: "flex-start" }}>
+        <div className="sk-col sk-gap-3" style={{ flex: 1 }}>
+          <div className="sk-row sk-gap-2" style={{ flexWrap: "wrap", alignItems: "center" }}>
+            <Tag size="s" hue={directionHue(vacancy.direction)}>{vacancy.direction}</Tag>
+            {closed
+              ? <Tag size="s" hue="neutral">Закрыта</Tag>
+              : <Tag size="s" hue="positive" icon={<IconCheck size={12} />}>Идёт поиск</Tag>}
+          </div>
+          <div className="sk-title-4">{vacancy.title}</div>
+          <div className="sk-row sk-gap-4 sk-muted" style={{ flexWrap: "wrap" }}>
+            <span className="sk-row sk-gap-1"><IconMapPin size={15} />{vacancy.city} · {vacancy.format}</span>
+            <span className="sk-row sk-gap-1"><IconBriefcase size={15} />{vacancy.department}</span>
+            {!closed && <span className="sk-row sk-gap-1"><IconClock size={15} />{vacancy.postedDate}</span>}
+          </div>
+        </div>
+      </div>
+
+      <div className="sk-row" style={{ alignItems: "flex-start", gap: 24 }}>
+        <div className="sk-col sk-gap-5" style={{ flex: 1, minWidth: 0 }}>
+          <Card bordered>
+            <div className="sk-col sk-gap-3">
+              <div className="sk-row sk-gap-2 sk-label-2"><IconTarget size={18} color="var(--sk-icon-accent)" />Чем предстоит заниматься</div>
+              <TextList items={vacancy.responsibilities} />
+            </div>
+          </Card>
+          <Card bordered>
+            <div className="sk-col sk-gap-3">
+              <div className="sk-row sk-gap-2 sk-label-2"><IconCheck size={18} color="var(--sk-icon-accent)" />Требования</div>
+              <TextList items={vacancy.requirements} />
+            </div>
+          </Card>
+          <Card bordered>
+            <div className="sk-col sk-gap-3">
+              <div className="sk-row sk-gap-2 sk-label-2"><IconGift size={18} color="var(--sk-icon-accent)" />Условия</div>
+              <TextList items={vacancy.conditions} />
+            </div>
+          </Card>
+          <Card bordered>
+            <div className="sk-col sk-gap-3">
+              <div className="sk-row sk-gap-2 sk-label-2"><IconLayers size={18} color="var(--sk-icon-accent)" />Ключевые навыки</div>
+              <div className="sk-row sk-gap-2" style={{ flexWrap: "wrap" }}>
+                {vacancy.requiredSkills.map((s, i) => <Tag key={i} size="s" hue="gray" pill>{s}</Tag>)}
+              </div>
+            </div>
+          </Card>
+        </div>
+
+        <div style={{ width: 300, flexShrink: 0 }}>
+          <Card bordered>
+            <div className="sk-col sk-gap-4">
+              <div style={{ background: "var(--sk-accent-secondary)", borderRadius: "var(--sk-radius-3)", padding: "14px 16px" }}>
+                {vacancy.salaryFrom && vacancy.salaryTo ? (
+                  <div className="sk-title-5" style={{ color: "var(--sk-text-accent)" }}>{fmtMoney(vacancy.salaryFrom)} – {fmtMoney(vacancy.salaryTo)} ₽</div>
+                ) : (
+                  <div className="sk-title-5" style={{ color: "var(--sk-text-accent)" }}>По договорённости</div>
+                )}
+              </div>
+
+              <div className="sk-col">
+                <DetailRow label="Регион" value={vacancy.city} />
+                <Divider />
+                <DetailRow label="Опыт работы" value={vacancy.experience} />
+                <Divider />
+                <DetailRow label="Тип занятости" value={vacancy.employment} />
+                <Divider />
+                <DetailRow label="Формат" value={vacancy.format} />
+                <Divider />
+                <DetailRow label="Подразделение" value={vacancy.department} />
+                <Divider />
+                <DetailRow label="Грейд" value={vacancy.grade} />
+              </div>
+
+              <Divider />
+
+              <div className="sk-col sk-gap-2">
+                <div className="sk-label-4" style={{ color: "var(--sk-text-tertiary)", textTransform: "uppercase" }}>Рекрутёр вакансии</div>
+                <div className="sk-row sk-gap-3">
+                  <Avatar name={vacancy.recruiter.name} size={36} />
+                  <div className="sk-col" style={{ gap: 0 }}>
+                    <div className="sk-label-3">{vacancy.recruiter.name}</div>
+                    <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{vacancy.recruiter.role}</div>
+                  </div>
+                </div>
+                <div className="sk-col sk-gap-1" style={{ paddingLeft: 48 }}>
+                  <div className="sk-row sk-gap-2 sk-muted" style={{ font: "var(--sk-label-4-regular)" }}><IconPhone size={13} />{vacancy.recruiter.phone}</div>
+                  <div className="sk-row sk-gap-2 sk-muted" style={{ font: "var(--sk-label-4-regular)" }}><IconMail size={13} />{vacancy.recruiter.email}</div>
+                </div>
+              </div>
+            </div>
+          </Card>
+        </div>
+      </div>
+    </AppShell>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<Page />);
+</script>
+</body>
+</html>

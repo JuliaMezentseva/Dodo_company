@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Вакансии — Skillaz Start</title>
+<link rel="stylesheet" href="../assets/styles.css" />
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" crossorigin="anonymous"></script>
+<script src="../assets/ds_bundle.js"></script>
+<script src="../assets/data.js"></script>
+<script type="text/babel" src="../assets/shell.js"></script>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { Card, Tag, Input, Button, Select, Checkbox } = window.SkillazCoreDesignSystem_bf9566;
+const { AppShell, Icons, directionHue } = window.Site;
+const { IconSearch, IconMapPin, IconBriefcase, IconCheck, IconFilter } = Icons;
+const D = window.SITE_DATA;
+
+// Переключатель между двумя режимами HR-раздела "Вакансии": витрина (как видят
+// сотрудники) и управление (таблица с редактированием, публикацией, статистикой).
+// Обычные Tabs из ДС управляются через onChange внутри одной страницы; здесь речь
+// о переходе между двумя разными HTML — поэтому свои "табы-ссылки" на <a href>.
+function VacanciesModeTabs({ active }) {
+  const items = [
+    { id: "showcase", label: "Вакансии", href: "vacancies-showcase.html" },
+    { id: "manage", label: "Управление вакансиями", href: "vacancies.html" },
+  ];
+  return (
+    <div className="sk-row sk-gap-5" style={{ borderBottom: "1px solid var(--sk-stroke)" }}>
+      {items.map((it) => (
+        <a key={it.id} href={it.href} style={{
+          textDecoration: "none", padding: "0 0 12px 0", marginBottom: -1,
+          font: it.id === active ? "var(--sk-label-3)" : "var(--sk-label-3-regular)",
+          color: it.id === active ? "var(--sk-text-primary)" : "var(--sk-text-secondary)",
+          borderBottom: it.id === active ? "2px solid var(--sk-text-primary)" : "2px solid transparent",
+        }}>
+          {it.label}
+        </a>
+      ))}
+    </div>
+  );
+}
+
+// Локальные иконки в стилистике общего набора (mkIcon: viewBox 24, strokeWidth 1.5, currentColor).
+function IconFolderHeart({ size = 24, color = "currentColor", style }) {
+  return (
+    <svg width={size} height={size * (17 / 19)} viewBox="0 0 19 17" fill="none" style={{ color, flexShrink: 0, ...style }}>
+      <path d="M9.08715 2.32429L8.32688 2.70442V2.70442L9.08715 2.32429ZM10.0168 4.18352L9.2565 4.56365C9.40048 4.85162 9.69481 5.03352 10.0168 5.03352V4.18352ZM7.86349 0.941281L8.14065 0.137737L8.14065 0.137737L7.86349 0.941281ZM8.48624 1.32616L9.081 0.718903L9.081 0.718903L8.48624 1.32616ZM1.76011 1.03185L1.37422 0.274489H1.37422L1.76011 1.03185ZM1.03175 1.7602L0.274398 1.37431L0.274398 1.37431L1.03175 1.7602ZM7.1001 16.7002C7.56954 16.7002 7.9501 16.3196 7.9501 15.8502C7.9501 15.3807 7.56954 15.0002 7.1001 15.0002V15.8502V16.7002ZM2.21512 15.5777L1.82923 16.3351H1.82923L2.21512 15.5777ZM1.12258 14.4852L0.365226 14.8711H0.365226L1.12258 14.4852ZM16.1517 4.45601L16.5376 3.69865V3.69865L16.1517 4.45601ZM16.6668 7.51686C16.6668 7.9863 17.0473 8.36686 17.5168 8.36686C17.9862 8.36686 18.3668 7.9863 18.3668 7.51686H17.5168H16.6668ZM17.2443 5.54855L18.0016 5.16265H18.0016L17.2443 5.54855ZM15.2718 9.7729L14.6649 10.3681L14.6652 10.3684L15.2718 9.7729ZM12.4803 9.7729L13.087 10.3682L13.0872 10.3681L12.4803 9.7729ZM12.1 10.1605L11.4933 10.7558C11.6531 10.9187 11.8718 11.0105 12.1 11.0105C12.3282 11.0105 12.5469 10.9187 12.7067 10.7558L12.1 10.1605ZM11.7197 9.7729L11.113 10.3682L11.113 10.3682L11.7197 9.7729ZM8.92823 12.6177L9.53493 12.0224L8.92823 12.6177ZM12.1 15.8502L11.4933 16.4455C11.6531 16.6084 11.8718 16.7002 12.1 16.7002C12.3282 16.7002 12.5469 16.6084 12.7067 16.4455L12.1 15.8502ZM15.2718 12.6177L14.6652 12.0223L14.6651 12.0224L15.2718 12.6177ZM10.4334 5.03352C10.9029 5.03352 11.2834 4.65296 11.2834 4.18352C11.2834 3.71408 10.9029 3.33352 10.4334 3.33352V4.18352V5.03352ZM3.51676 0.850189V1.70019H6.70201V0.850189V0.000189185H3.51676V0.850189ZM9.08715 2.32429L8.32688 2.70442L9.2565 4.56365L10.0168 4.18352L10.777 3.80339L9.84741 1.94415L9.08715 2.32429ZM0.850098 4.18352H1.7001V3.51686H0.850098H9.76324e-05V4.18352H0.850098ZM6.70201 0.850189V1.70019C7.36189 1.70019 7.48908 1.71128 7.58633 1.74482L7.86349 0.941281L8.14065 0.137737C7.70972 -0.0109012 7.23865 0.000189185 6.70201 0.000189185V0.850189ZM9.08715 2.32429L9.84741 1.94416C9.60742 1.46417 9.40666 1.03787 9.081 0.718903L8.48624 1.32616L7.89148 1.93341C7.96497 2.0054 8.03178 2.11421 8.32688 2.70442L9.08715 2.32429ZM7.86349 0.941281L7.58633 1.74482C7.70077 1.7843 7.805 1.84871 7.89148 1.93341L8.48624 1.32616L9.081 0.718903C8.8145 0.457884 8.4933 0.259373 8.14065 0.137737L7.86349 0.941281ZM3.51676 0.850189V0.000189185C3.06408 0.000189185 2.67345 -0.00047189 2.35288 0.0257191C2.0224 0.0527208 1.69228 0.112431 1.37422 0.274489L1.76011 1.03185L2.14601 1.7892C2.18447 1.7696 2.26596 1.73849 2.49132 1.72007C2.7266 1.70085 3.03603 1.70019 3.51676 1.70019V0.850189ZM0.850098 3.51686H1.7001C1.7001 3.03612 1.70076 2.72669 1.71998 2.49141C1.73839 2.26605 1.76951 2.18456 1.78911 2.1461L1.03175 1.7602L0.274398 1.37431C0.112339 1.69237 0.0526292 2.02249 0.0256276 2.35298C-0.000563443 2.67354 9.76324e-05 3.06417 9.76324e-05 3.51686H0.850098ZM1.76011 1.03185L1.37422 0.274489C0.90068 0.515771 0.515679 0.900772 0.274398 1.37431L1.03175 1.7602L1.78911 2.1461C1.86741 1.99243 1.99234 1.8675 2.14601 1.7892L1.76011 1.03185ZM7.1001 15.8502V15.0002H4.8501V15.8502V16.7002H7.1001V15.8502ZM0.850098 11.8502H1.7001V4.18352H0.850098H9.76324e-05V11.8502H0.850098ZM4.8501 15.8502V15.0002C4.13601 15.0002 3.65156 14.9995 3.27732 14.969C2.913 14.9392 2.72861 14.8854 2.60101 14.8203L2.21512 15.5777L1.82923 16.3351C2.23642 16.5425 2.66944 16.625 3.13889 16.6633C3.59841 16.7008 4.16406 16.7002 4.8501 16.7002V15.8502ZM0.850098 11.8502H9.76324e-05C9.76324e-05 12.5362 -0.000563443 13.1019 0.036981 13.5614C0.0753362 14.0308 0.157753 14.4639 0.365226 14.8711L1.12258 14.4852L1.87994 14.0993C1.81493 13.9717 1.7611 13.7873 1.73134 13.423C1.70076 13.0487 1.7001 12.5643 1.7001 11.8502H0.850098ZM2.21512 15.5777L2.60101 14.8203C2.29055 14.6622 2.03813 14.4097 1.87994 14.0993L1.12258 14.4852L0.365226 14.8711C0.686402 15.5014 1.19889 16.0139 1.82923 16.3351L2.21512 15.5777ZM13.5168 4.18352V5.03352C14.2309 5.03352 14.7153 5.03418 15.0895 5.06476C15.4539 5.09453 15.6383 5.14835 15.7658 5.21336L16.1517 4.45601L16.5376 3.69865C16.1304 3.49118 15.6974 3.40876 15.228 3.37041C14.7685 3.33286 14.2028 3.33352 13.5168 3.33352V4.18352ZM17.5168 7.51686H18.3668C18.3668 6.85075 18.3689 6.41637 18.3249 6.09354C18.2702 5.69116 18.143 5.44006 18.0016 5.16265L17.2443 5.54855L16.4869 5.93444C16.6181 6.19182 16.6271 6.2248 16.6405 6.32284C16.6646 6.50045 16.6668 6.78283 16.6668 7.51686H17.5168ZM16.1517 4.45601L15.7658 5.21336C16.0763 5.37155 16.3287 5.62397 16.4869 5.93444L17.2443 5.54855L18.0016 5.16265C17.6805 4.53231 17.168 4.01983 16.5376 3.69865L16.1517 4.45601ZM10.0168 4.18352V5.03352H13.5168V4.18352V3.33352H10.0168V4.18352ZM15.2718 9.7729L15.8786 9.17773C15.6172 8.91116 15.3059 8.69883 14.9621 8.55365L14.6314 9.3367L14.3008 10.1197C14.436 10.1768 14.5599 10.2609 14.6649 10.3681L15.2718 9.7729ZM14.6314 9.3367L14.9621 8.55365C14.6183 8.40847 14.2492 8.33352 13.8761 8.33352V9.18352V10.0335C14.0214 10.0335 14.1656 10.0627 14.3008 10.1197L14.6314 9.3367ZM13.8761 9.18352V8.33352C13.5029 8.33352 13.1338 8.40847 12.79 8.55365L13.1207 9.3367L13.4513 10.1197C13.5865 10.0627 13.7307 10.0335 13.8761 10.0335V9.18352ZM13.1207 9.3367L12.79 8.55365C12.4462 8.69883 12.1349 8.91116 11.8735 9.17773L12.4803 9.7729L13.0872 10.3681C13.1923 10.2609 13.3161 10.1768 13.4513 10.1197L13.1207 9.3367ZM12.4803 9.7729L11.8736 9.17758L11.4933 9.56518L12.1 10.1605L12.7067 10.7558L13.087 10.3682L12.4803 9.7729ZM12.1 10.1605L12.7067 9.56518L12.3264 9.17758L11.7197 9.7729L11.113 10.3682L11.4933 10.7558L12.1 10.1605ZM11.7197 9.7729L12.3264 9.17758C11.7981 8.6392 11.0781 8.33372 10.324 8.33372V9.18372V10.0337C10.6168 10.0337 10.9009 10.1521 11.113 10.3682L11.7197 9.7729ZM10.324 9.18372V8.33372C9.56977 8.33372 8.8498 8.6392 8.32152 9.17758L8.92823 9.7729L9.53493 10.3682C9.74699 10.1521 10.0311 10.0337 10.324 10.0337V9.18372ZM8.92823 9.7729L8.32152 9.17758C7.79377 9.71542 7.5001 10.4415 7.5001 11.1953H8.3501H9.2001C9.2001 10.8821 9.32234 10.5849 9.53493 10.3682L8.92823 9.7729ZM8.3501 11.1953H7.5001C7.5001 11.9491 7.79377 12.6752 8.32152 13.2131L8.92823 12.6177L9.53493 12.0224C9.32234 11.8058 9.2001 11.5085 9.2001 11.1953H8.3501ZM15.2718 12.6177L15.8783 13.2132C16.1399 12.9468 16.3465 12.6314 16.4872 12.2853L15.6998 11.9652L14.9124 11.645C14.8546 11.7871 14.7704 11.9152 14.6652 12.0223L15.2718 12.6177ZM15.6998 11.9652L16.4872 12.2853C16.6279 11.9393 16.7001 11.569 16.7001 11.1953H15.8501H15.0001C15.0001 11.3501 14.9702 11.5029 14.9124 11.645L15.6998 11.9652ZM15.8501 11.1953H16.7001C16.7001 10.8217 16.6279 10.4514 16.4872 10.1053L15.6998 10.4255L14.9124 10.7456C14.9702 10.8877 15.0001 11.0406 15.0001 11.1953H15.8501ZM15.6998 10.4255L16.4872 10.1053C16.3465 9.75929 16.1399 9.44385 15.8783 9.17744L15.2718 9.7729L14.6652 10.3684C14.7704 10.4755 14.8546 10.6035 14.9124 10.7456L15.6998 10.4255ZM8.92823 12.6177L8.32152 13.2131L11.4933 16.4455L12.1 15.8502L12.7067 15.2549L9.53493 12.0224L8.92823 12.6177ZM12.1 15.8502L12.7067 16.4455L15.8785 13.2131L15.2718 12.6177L14.6651 12.0224L11.4933 15.2549L12.1 15.8502ZM10.4334 4.18352V3.33352H0.850098V4.18352V5.03352H10.4334V4.18352Z"
+        fill="currentColor" />
+    </svg>
+  );
+}
+function IconThumbUp({ size = 24, color = "currentColor", style }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" style={{ color, flexShrink: 0, ...style }}>
+      <path d="M8 11v7a1 1 0 0 0 1 1h6.2a2 2 0 0 0 1.96-1.6l1-5a2 2 0 0 0-1.96-2.4H13l.5-3.2a1.6 1.6 0 0 0-3.1-.6L9 11H8Z"
+        stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M8 11H6a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2"
+        stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function fmtMoney(n) { return n.toLocaleString("ru-RU"); }
+function toOptions(list) { return list.map((v) => ({ value: v, label: v })); }
+
+const emptyFilters = { positions: [], departments: [], experience: [], cities: [], formats: [], employments: [], showClosed: false };
+
+// Пилюля направления — некликабельный тег сверху карточки использует те же hue, что и
+// на детальном экране вакансии (directionHue), чтобы направления визуально совпадали
+// между витриной и карточкой.
+function DirectionPill({ direction, active, count, onClick, isAll }) {
+  return (
+    <button type="button" onClick={onClick} className="sk-clickable" style={{
+      display: "inline-flex", alignItems: "center", gap: 6, height: 32, padding: "0 14px",
+      borderRadius: "var(--sk-radius-full)", border: "none",
+      background: active ? "var(--sk-surface-dark)" : "var(--sk-surface-secondary)",
+      color: active ? "var(--sk-text-contrast)" : "var(--sk-text-primary)",
+      font: "var(--sk-label-3-regular)", cursor: "pointer", whiteSpace: "nowrap",
+    }}>
+      {direction}
+      <span style={{ opacity: active ? 0.85 : 0.6 }}>{count}</span>
+    </button>
+  );
+}
+
+function VacancyCard({ vacancy, hasResponse }) {
+  const closed = vacancy.status === "closed";
+  const [hovered, setHovered] = React.useState(false);
+  return (
+    <a href={"../employee/vacancy.html?id=" + vacancy.id} style={{ textDecoration: "none" }}
+      onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}>
+      <Card bordered
+        style={{
+          cursor: "pointer", height: "100%",
+          boxShadow: hovered ? "inset 0 0 0 1.5px var(--sk-stroke-accent)" : "inset 0 0 0 1px var(--sk-stroke)",
+        }}>
+        <div className="sk-col sk-gap-3" style={{ height: "100%" }}>
+          <div className="sk-row" style={{ justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
+            <span style={{ opacity: hasResponse ? 0.55 : 1 }}>
+              <Tag size="s" hue={directionHue(vacancy.direction)}>{vacancy.direction}</Tag>
+            </span>
+            {hasResponse
+              ? <Tag size="s" hue="positive" icon={<IconThumbUp size={13} />}>Уже откликнулись</Tag>
+              : (closed && <Tag size="s" hue="neutral">Закрыта</Tag>)}
+          </div>
+
+          <div className="sk-col sk-gap-1" style={{ flex: 1, opacity: hasResponse ? 0.55 : 1 }}>
+            <div className="sk-label-2">{vacancy.title}</div>
+            <div className="sk-row sk-gap-2 sk-muted" style={{ font: "var(--sk-label-4-regular)", flexWrap: "wrap" }}>
+              <span className="sk-row sk-gap-1"><IconMapPin size={13} />{vacancy.city}</span>
+              <span className="sk-row sk-gap-1"><IconBriefcase size={13} />{vacancy.department}</span>
+            </div>
+          </div>
+
+          <div className="sk-row" style={{ justifyContent: "space-between", alignItems: "center", opacity: hasResponse ? 0.55 : 1 }}>
+            {vacancy.salaryFrom && vacancy.salaryTo ? (
+              <div className="sk-label-3-regular">{fmtMoney(vacancy.salaryFrom)} – {fmtMoney(vacancy.salaryTo)} ₽</div>
+            ) : (
+              <div className="sk-muted" style={{ font: "var(--sk-label-3-regular)" }}>По договорённости</div>
+            )}
+            <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{vacancy.postedDate}</span>
+          </div>
+        </div>
+      </Card>
+    </a>
+  );
+}
+
+// Боковая панель фильтров — серый фон, справа от списка вакансий (как в исходном
+// референсе витрины). Подразделения собираем из фактических вакансий, а не из
+// отдельного справочника — такого справочника в данных нет.
+function FiltersPanel({ filters, onChange, positionOptions, departmentOptions, hasActive, onReset }) {
+  const set = (key) => (v) => onChange((f) => ({ ...f, [key]: v }));
+  return (
+    <Card style={{ background: "var(--sk-surface-secondary)" }}>
+      <div className="sk-col sk-gap-4">
+        <div className="sk-row" style={{ justifyContent: "space-between" }}>
+          <div className="sk-row sk-gap-2 sk-label-3"><IconFilter size={16} />Фильтры</div>
+          {hasActive && <button className="sk-link-btn sk-label-4-regular" onClick={onReset}>Сбросить</button>}
+        </div>
+        <Select label="Должность" multiple placeholder="Любая должность"
+          options={positionOptions} value={filters.positions} onChange={set("positions")} />
+        <Select label="Подразделение" multiple placeholder="Все подразделения"
+          options={departmentOptions} value={filters.departments} onChange={set("departments")} />
+        <Select label="Опыт" multiple placeholder="Любой опыт"
+          options={toOptions(D.experienceOptions)} value={filters.experience} onChange={set("experience")} />
+        <Select label="Регион" multiple placeholder="Любой регион"
+          options={toOptions(D.cities)} value={filters.cities} onChange={set("cities")} />
+        <Select label="Формат работы" multiple placeholder="Любой формат"
+          options={toOptions(D.workFormats)} value={filters.formats} onChange={set("formats")} />
+        <Select label="Тип занятости" multiple placeholder="Любой тип"
+          options={toOptions(D.employmentTypes)} value={filters.employments} onChange={set("employments")} />
+        <Checkbox label="Показать закрытые вакансии" checked={filters.showClosed}
+          onChange={() => onChange((f) => ({ ...f, showClosed: !f.showClosed }))} style={{ alignSelf: "flex-start" }} />
+      </div>
+    </Card>
+  );
+}
+
+function Page() {
+  // Сотрудник видит только опубликованные HR-ом вакансии (visibleToEmployees) — вручную
+  // созданные и ещё не опубликованные HR-ом вакансии на витрине не показываются, ровно
+  // как задумано в разделе HR "Вакансии" (переключатель "Опубликована / Скрыта").
+  const visibleVacancies = React.useMemo(() => D.vacancies.filter((v) => v.visibleToEmployees !== false), []);
+  const responses = D.myResponses;
+  const respondedIds = React.useMemo(() => new Set(responses.map((r) => r.vacancyId)), [responses]);
+
+  const [q, setQ] = React.useState("");
+  const [direction, setDirection] = React.useState(null); // null = все направления
+  const [filters, setFilters] = React.useState(emptyFilters);
+
+  const departmentOptions = React.useMemo(
+    () => toOptions([...new Set(visibleVacancies.map((v) => v.department))].sort()),
+    [visibleVacancies]
+  );
+  const positionOptions = React.useMemo(
+    () => toOptions([...new Set(visibleVacancies.map((v) => v.title))].sort()),
+    [visibleVacancies]
+  );
+
+  const directionCounts = React.useMemo(() => {
+    const map = {};
+    visibleVacancies.forEach((v) => { map[v.direction] = (map[v.direction] || 0) + 1; });
+    return map;
+  }, [visibleVacancies]);
+
+  const needle = q.trim().toLowerCase();
+  const filtered = visibleVacancies.filter((v) => {
+    if (!filters.showClosed && v.status === "closed") return false;
+    if (direction && v.direction !== direction) return false;
+    if (filters.positions.length && !filters.positions.includes(v.title)) return false;
+    if (filters.departments.length && !filters.departments.includes(v.department)) return false;
+    if (filters.experience.length && !filters.experience.includes(v.experience)) return false;
+    if (filters.cities.length && !filters.cities.includes(v.city)) return false;
+    if (filters.formats.length && !filters.formats.includes(v.format)) return false;
+    if (filters.employments.length && !filters.employments.includes(v.employment)) return false;
+    if (needle && !v.title.toLowerCase().includes(needle) && !v.department.toLowerCase().includes(needle)) return false;
+    return true;
+  });
+
+  const hasActiveFilters = filters.positions.length || filters.departments.length || filters.experience.length || filters.cities.length
+    || filters.formats.length || filters.employments.length || filters.showClosed;
+
+  return (
+    <AppShell role="hr" active="vacancies" base="..">
+      <VacanciesModeTabs active="showcase" />
+      <div className="sk-title-4" style={{ marginBottom: 12 }}>Откройте новые карьерные возможности</div>
+
+      <div className="sk-row sk-gap-2" style={{ alignItems: "center" }}>
+        <Input size="s" icon={<IconSearch size={20} />} placeholder="По названию, должности или подразделению"
+          value={q} onChange={(e) => setQ(e.target.value || "")} style={{ width: 460, flexShrink: 0 }} />
+        <a href="../employee/my-responses.html" style={{ textDecoration: "none", flexShrink: 0 }}>
+          <Button style={{ background: "var(--sk-special-secondary)", color: "var(--text-text-special)" }} icon={<IconFolderHeart size={16} />}>Мои отклики{responses.length ? " · " + responses.length : ""}</Button>
+        </a>
+      </div>
+
+      <div className="sk-row sk-gap-2" style={{ flexWrap: "wrap" }}>
+        <DirectionPill direction="Все направления" active={!direction} isAll count={visibleVacancies.length} onClick={() => setDirection(null)} />
+        {D.directions.filter((d) => directionCounts[d]).map((d) => (
+          <DirectionPill key={d} direction={d} active={direction === d}
+            count={directionCounts[d]}
+            onClick={() => setDirection(direction === d ? null : d)} />
+        ))}
+      </div>
+
+      <div className="sk-row" style={{ alignItems: "flex-start", gap: 24 }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)", marginBottom: 12 }}>Найдено вакансий: {filtered.length}</div>
+          {filtered.length === 0 ? (
+            <Card><div className="sk-muted" style={{ textAlign: "center", padding: "24px 0" }}>Ничего не нашлось по заданным условиям.</div></Card>
+          ) : (
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 16 }}>
+              {filtered.map((v) => <VacancyCard key={v.id} vacancy={v} hasResponse={respondedIds.has(v.id)} />)}
+            </div>
+          )}
+        </div>
+
+        <div style={{ width: 260, flexShrink: 0, marginTop: 32 }}>
+          <FiltersPanel filters={filters} onChange={setFilters} positionOptions={positionOptions} departmentOptions={departmentOptions}
+            hasActive={hasActiveFilters} onReset={() => setFilters(emptyFilters)} />
+        </div>
+      </div>
+    </AppShell>
+  );
+}
+ReactDOM.createRoot(document.getElementById("root")).render(<Page />);
+</script>
+</body>
+</html>
