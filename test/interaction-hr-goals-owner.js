@@ -53,7 +53,24 @@ const target = path.resolve(__dirname, "..", "hr", "template.html");
     await tick(80);
     let body = w.document.body.textContent;
     console.log("Header 'Настройка плана адаптации' present:", body.includes("Настройка плана адаптации") ? "PASS" : "FAIL");
-    console.log("Two separate cards 'Цели' and 'Контрольные точки':", body.includes("Цели") && body.includes("Контрольные точки") ? "PASS" : "FAIL");
+    console.log("Tabs 'Цели' and 'Контрольные точки' both present:", body.includes("Цели") && body.includes("Контрольные точки") ? "PASS" : "FAIL");
+    console.log("'Goals' tab is active by default (owner picker visible):", body.includes("Кто настраивает цели") ? "PASS" : "FAIL");
+    console.log("Checkpoints content hidden until its tab is clicked:", !body.includes("Добавить контрольную точку") ? "PASS" : "FAIL");
+
+    // Кликаем по табу "Контрольные точки" и проверяем переключение содержимого
+    const checkpointsTab = [...w.document.querySelectorAll("span")].find(el => el.textContent.trim().startsWith("Контрольные точки"));
+    click(w, checkpointsTab);
+    await tick(80);
+    body = w.document.body.textContent;
+    console.log("After clicking checkpoints tab — checkpoints content visible:", body.includes("Добавить контрольную точку") ? "PASS" : "FAIL");
+    console.log("After clicking checkpoints tab — goals content hidden:", !body.includes("Кто настраивает цели") ? "PASS" : "FAIL");
+
+    // Возвращаемся на таб "Цели" для продолжения сценария
+    const goalsTab = [...w.document.querySelectorAll("span")].find(el => el.textContent.trim().startsWith("Цели"));
+    click(w, goalsTab);
+    await tick(80);
+    body = w.document.body.textContent;
+
     console.log("No dev variant switcher (removed, only Variant A kept):", !body.includes("выберите вариант переключателя") ? "PASS" : "FAIL");
     console.log("No stray hint text about typical roles:", !body.includes("используется типовой процесс") ? "PASS" : "FAIL");
     console.log("No separate catalog button next to 'Создать цель':", !body.includes("Добавить из каталога") ? "PASS" : "FAIL");

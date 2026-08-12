@@ -65,13 +65,16 @@ const target = path.resolve(__dirname, "..", "hr", "template.html");
     console.log("Checklist stub shown:", body.includes("Базового минимума") ? "PASS" : "FAIL");
     console.log("Checklist stub has no CRUD controls:", !w.document.body.innerHTML.includes("Добавить контрольную точку") ? "PASS" : "FAIL");
 
-    // Возвращаемся в "План адаптации" и включаем тумблер — предзаполненные
-    // КТ и кнопка добавления должны появиться.
+    // Возвращаемся в "План адаптации" и включаем тумблер — по умолчанию открыт таб "Цели",
+    // переключаемся на таб "Контрольные точки", чтобы увидеть предзаполненные КТ и кнопку добавления.
     const goalsNav = findNavItem(w, "План адаптации");
     goalsNav.dispatchEvent(new w.MouseEvent("click", { bubbles: true }));
     await tick(50);
     const switchEl = w.document.querySelector('[role="switch"]');
     switchEl.dispatchEvent(new w.MouseEvent("click", { bubbles: true }));
+    await tick(80);
+    const checkpointsTab = [...w.document.querySelectorAll("span")].find(el => el.textContent.trim().startsWith("Контрольные точки"));
+    checkpointsTab.dispatchEvent(new w.MouseEvent("click", { bubbles: true }));
     await tick(80);
     body = w.document.body.textContent;
     console.log("After enabling — 2 prefilled checkpoints shown:",
@@ -125,6 +128,10 @@ const target = path.resolve(__dirname, "..", "hr", "template.html");
     await tick(80);
     let body2 = w2.document.body.textContent;
     console.log("[empty tpl] Deadline field appears after enabling:", body2.includes("Срок постановки целей") ? "PASS" : "FAIL");
+    const checkpointsTab2 = [...w2.document.querySelectorAll("span")].find(el => el.textContent.trim().startsWith("Контрольные точки"));
+    checkpointsTab2.dispatchEvent(new w2.MouseEvent("click", { bubbles: true }));
+    await tick(80);
+    body2 = w2.document.body.textContent;
     console.log("[empty tpl] 'Добавить контрольную точку' available even with empty list:", body2.includes("Добавить контрольную точку") ? "PASS" : "FAIL");
 
     console.log("\nOK: сценарий CRUD контрольных точек шаблона прошёл без падений");
