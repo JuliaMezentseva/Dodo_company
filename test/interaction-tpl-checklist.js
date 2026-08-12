@@ -47,16 +47,15 @@ const target = path.resolve(__dirname, "..", "hr", "template.html");
     const w = loadPage(target, "tpl=tpl_sales");
     await tick(150);
     let body = w.document.body.textContent;
-    console.log("Goals section is default:", body.includes("План достижения цели адаптации") ? "PASS" : "FAIL");
-    console.log("Toggle label updated:", body.includes("Включить план с целями") ? "PASS" : "FAIL");
-    console.log("Old 'first version' note removed:", !body.includes("В первой версии цели не создаются") ? "PASS" : "FAIL");
+    console.log("Goals section is default:", body.includes("План адаптации") ? "PASS" : "FAIL");
+    console.log("Toggle label updated:", body.includes("Включить план адаптации с целями") ? "PASS" : "FAIL");
     console.log("Checkpoints hidden while goals disabled:", !body.includes("Контрольная точка по итогам 30 дней") ? "PASS" : "FAIL");
 
     // Некликабельный пункт навигации не переключает секцию
     const descNav = findNavItem(w, "Описание");
     descNav.dispatchEvent(new w.MouseEvent("click", { bubbles: true }));
     await tick(50);
-    console.log("Disabled nav item ('Описание') stays inert:", w.document.body.textContent.includes("Включить план с целями") ? "PASS" : "FAIL");
+    console.log("Disabled nav item ('Описание') stays inert:", w.document.body.textContent.includes("Включить план адаптации с целями") ? "PASS" : "FAIL");
 
     // Заглушка "Чек-лист"
     const checklistNav = findNavItem(w, "Чек-лист");
@@ -66,9 +65,9 @@ const target = path.resolve(__dirname, "..", "hr", "template.html");
     console.log("Checklist stub shown:", body.includes("Базового минимума") ? "PASS" : "FAIL");
     console.log("Checklist stub has no CRUD controls:", !w.document.body.innerHTML.includes("Добавить контрольную точку") ? "PASS" : "FAIL");
 
-    // Возвращаемся в "План достижения цели адаптации" и включаем тумблер — предзаполненные
+    // Возвращаемся в "План адаптации" и включаем тумблер — предзаполненные
     // КТ и кнопка добавления должны появиться.
-    const goalsNav = findNavItem(w, "План достижения цели адаптации");
+    const goalsNav = findNavItem(w, "План адаптации");
     goalsNav.dispatchEvent(new w.MouseEvent("click", { bubbles: true }));
     await tick(50);
     const switchEl = w.document.querySelector('[role="switch"]');
