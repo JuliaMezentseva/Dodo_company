@@ -20,7 +20,7 @@ const { AppShell, Icons } = window.Site;
 const {
   IconInfo, IconTarget, IconCheck, IconClipboard, IconSettings,
   IconHelpCircle, IconTrash, IconArrowLeft, IconClock, IconFileText, IconLink2, IconGraduationCap, IconMessageCircle,
-  IconPlusSm, IconEdit, IconLayers, IconBookOpen,
+  IconPlusSm, IconEdit, IconLayers, IconBookOpen, IconCalendar,
 } = Icons;
 
 const TEMPLATE_SECTIONS = [
@@ -41,6 +41,16 @@ const TEMPLATE_STATUS = {
   draft: { label: "Черновик", hue: "neutral" },
   archived: { label: "Архивный", hue: "gray" },
 };
+
+// ---------------- Условная дата "до N числа месяца" для срока цели/шага в шаблоне —
+// в шаблоне нет реальной даты начала плана (она появится только при назначении сотруднику),
+// поэтому считаем демо-условно от сегодняшнего дня: сегодня + N дней. ----------------
+const RU_MONTHS_GENITIVE = ["января", "февраля", "марта", "апреля", "мая", "июня", "июля", "августа", "сентября", "октября", "ноября", "декабря"];
+function dueDateLabel(days) {
+  const d = new Date();
+  d.setDate(d.getDate() + (Number(days) || 0));
+  return "до " + d.getDate() + " " + RU_MONTHS_GENITIVE[d.getMonth()];
+}
 
 function SectionNavItem({ item, active, disabled, onClick }) {
   const [hover, setHover] = React.useState(false);
@@ -190,8 +200,8 @@ function TemplateCheckpointsSection({ checkpoints, onAdd, onEdit, onDelete }) {
 
 // ---------------- Виджет выбора "Кто настраивает цели" — фиксированный вариант (SegmentedControl) ----------------
 const GOALS_OWNER_OPTIONS = [
-  { id: "manager", label: "Создает руководитель", description: "Руководитель сформулирует цели сотруднику после назначения плана" },
   { id: "hr", label: "Создать сразу в шаблоне", description: "Заполните цели заранее — подходит для типовых ролей" },
+  { id: "manager", label: "Создает руководитель", description: "Руководитель сформулирует цели сотруднику после назначения плана" },
 ];
 
 function GoalsOwnerPicker({ owner, onChange }) {
@@ -394,7 +404,6 @@ function TemplateGoalCreateDrawer({ draft, setDraft, onClose, onCreate, onAddSub
             <div key={i} className="sk-row sk-gap-3" style={{ justifyContent: "space-between", padding: 10, border: "1px solid var(--sk-stroke)", borderRadius: "var(--sk-radius-2)" }}>
               <div className="sk-col sk-gap-1">
                 <div className="sk-label-4">{sg.title}</div>
-                <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>День {sg.dueDays} от начала плана</div>
               </div>
               <button className="sk-link-btn" onClick={() => setDraft((d) => ({ ...d, subgoals: d.subgoals.filter((_, ix) => ix !== i) }))}>
                 <IconTrash size={15} color="var(--sk-icon-secondary)" />
@@ -416,7 +425,9 @@ function TemplateSubgoalRow({ subgoal, onOpen }) {
     <div className="sk-row sk-gap-2 sk-clickable" onClick={onOpen} style={{ alignItems: "center", padding: 10, border: "1px solid var(--sk-stroke)", borderRadius: "var(--sk-radius-3)", background: "var(--sk-surface-secondary)" }}>
       <div className="sk-col sk-gap-1" style={{ flex: 1, minWidth: 0 }}>
         <span className="sk-label-3-regular">{subgoal.title || "Без названия"}</span>
-        <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>День {subgoal.dueDays} от начала плана</span>
+        <span className="sk-row sk-gap-1 sk-muted" style={{ font: "var(--sk-label-4-regular)", alignItems: "center" }}>
+          <IconCalendar size={13} color="var(--sk-icon-secondary)" />{dueDateLabel(subgoal.dueDays)}
+        </span>
       </div>
       {hasMaterials ? (
         <span className="sk-row sk-gap-1" style={{
@@ -471,6 +482,9 @@ function TemplateGoalRow({ goal, onOpen, onDelete, onOpenSubgoal }) {
       <div className="sk-row sk-gap-3 sk-clickable" onClick={onOpen} style={{ justifyContent: "space-between", alignItems: "flex-start" }}>
         <div className="sk-col sk-gap-1" style={{ flex: 1, minWidth: 0 }}>
           <div className="sk-title-5">{goal.title || "Без названия"}</div>
+          <span className="sk-row sk-gap-1 sk-muted" style={{ font: "var(--sk-label-4-regular)", alignItems: "center" }}>
+            <IconCalendar size={13} color="var(--sk-icon-secondary)" />{dueDateLabel(goal.dueDays)}
+          </span>
         </div>
         <div className="sk-row sk-gap-1" style={{ flexShrink: 0 }} onClick={(e) => e.stopPropagation()}>
           <Button size="s" mode="tertiary" onClick={onDelete}><IconTrash size={15} /></Button>
@@ -503,7 +517,6 @@ function GoalsSection({ owner, deadlineDays, goals, onOwnerChange, onDeadlineCha
   const openSubgoal = openGoal ? (openGoal.subgoals.find((sg) => sg.id === openSubgoalId) || null) : null;
   const openRowGoal = openRowSubgoalId ? goals.find((g) => g.subgoals.some((sg) => sg.id === openRowSubgoalId)) : null;
   const openRowSubgoal = openRowGoal ? openRowGoal.subgoals.find((sg) => sg.id === openRowSubgoalId) : null;
-  const pendingSetup = owner === "hr" && goals.length === 0;
 
   function startManualGoal() {
     setMethodModal(false);
@@ -533,14 +546,6 @@ function GoalsSection({ owner, deadlineDays, goals, onOwnerChange, onDeadlineCha
 
   return (
     <div className="sk-col sk-gap-4" style={{ padding: "20px 24px" }}>
-      <div className="sk-row sk-gap-2" style={{ alignItems: "center" }}>
-        <span className="sk-title-5">Цели</span>
-        {pendingSetup && <Tag size="s" hue="warning">Ожидают настройки</Tag>}
-        <Tooltip content="Выберите, кто будет наполнять цели в плане: руководитель после назначения или Админ заранее в шаблоне.">
-          <IconHelpCircle size={16} color="var(--sk-icon-secondary)" />
-        </Tooltip>
-      </div>
-
       <GoalsOwnerPicker owner={owner} onChange={onOwnerChange} />
 
       {owner === "manager" ? (
@@ -557,20 +562,26 @@ function GoalsSection({ owner, deadlineDays, goals, onOwnerChange, onDeadlineCha
               style={{ width: 88 }} />
           </div>
         </div>
+      ) : goals.length === 0 ? (
+        <Card>
+          <div className="sk-col sk-gap-3" style={{ alignItems: "center", textAlign: "center", padding: "24px 16px" }}>
+            <div className="sk-title-5">Сформируйте цели и шаги для их достижения</div>
+            <div className="sk-muted" style={{ maxWidth: 440 }}>Цель — это ожидаемый измеримый результат, с которым сотрудник должен окончить план адаптации</div>
+            <Button variant="accent" onClick={() => setMethodModal(true)}>+ Создать</Button>
+          </div>
+        </Card>
       ) : (
         <div className="sk-col sk-gap-3">
           <div className="sk-row sk-gap-2">
             <Button variant="accent" size="s" icon={<IconPlusSm size={16} />} onClick={() => setMethodModal(true)}>Создать цель</Button>
           </div>
 
-          {!!goals.length && (
-            <div className="sk-col sk-gap-2">
-              {goals.map((g) => (
-                <TemplateGoalRow key={g.id} goal={g} onOpen={() => setOpenGoalId(g.id)} onDelete={() => onDeleteGoal(g.id)}
-                  onOpenSubgoal={(id) => setOpenRowSubgoalId(id)} />
-              ))}
-            </div>
-          )}
+          <div className="sk-col sk-gap-2">
+            {goals.map((g) => (
+              <TemplateGoalRow key={g.id} goal={g} onOpen={() => setOpenGoalId(g.id)} onDelete={() => onDeleteGoal(g.id)}
+                onOpenSubgoal={(id) => setOpenRowSubgoalId(id)} />
+            ))}
+          </div>
         </div>
       )}
 
@@ -609,12 +620,6 @@ function GoalsSection({ owner, deadlineDays, goals, onOwnerChange, onDeadlineCha
 function CheckpointsSection({ checkpoints, onAddCheckpoint, onEditCheckpoint, onDeleteCheckpoint }) {
   return (
     <div className="sk-col sk-gap-3" style={{ padding: "20px 24px" }}>
-      <div className="sk-row sk-gap-1">
-        <span className="sk-title-5">Контрольные точки</span>
-        <Tooltip content="Контрольные точки — точки сверки прогресса с руководителем по датам от начала плана. Настройте состав здесь, в шаблоне, — они автоматически появятся во всех планах, назначенных по нему.">
-          <IconHelpCircle size={16} color="var(--sk-icon-secondary)" />
-        </Tooltip>
-      </div>
       <TemplateCheckpointsSection checkpoints={checkpoints}
         onAdd={onAddCheckpoint} onEdit={onEditCheckpoint} onDelete={onDeleteCheckpoint} />
     </div>
@@ -693,7 +698,7 @@ function Page() {
   const baseTemplate = D.templates.find((t) => t.id === tplId) || D.templates[0];
   const [section, setSection] = React.useState("goals");
   const [enabled, setEnabled] = React.useState(baseTemplate.goalsEnabled);
-  const [owner, setOwner] = React.useState(baseTemplate.goalsOwner || "manager");
+  const [owner, setOwner] = React.useState(baseTemplate.goalsOwner || "hr");
   const [deadlineDays, setDeadlineDays] = React.useState(baseTemplate.goalsDeadlineDays);
   const [goals, setGoals] = React.useState(baseTemplate.goals || []);
   const [checkpoints, setCheckpoints] = React.useState(baseTemplate.checkpoints || []);
