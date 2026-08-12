@@ -813,7 +813,9 @@ window.SITE_DATA = {
       savedAtLabel: "Сохранено в 12:44",
       usageCount: 24,
       goalsEnabled: false,
+      goalsOwner: "manager",
       goalsDeadlineDays: 7,
+      goals: [],
       stats: { tasks: 12, files: 3, links: 4, courses: 2, surveys: 1 },
       checkpoints: [
         { id: "tcp1", title: "Контрольная точка по итогам 30 дней", agenda: "Обсудить прогресс, сложности и необходимую поддержку.\nСверить понимание целей и ожиданий.", required: true, dueDays: 30, surveyId: "survey_30" },
@@ -837,7 +839,9 @@ window.SITE_DATA = {
       savedAtLabel: "Сохранено в 17:05",
       usageCount: 9,
       goalsEnabled: true,
+      goalsOwner: "manager",
       goalsDeadlineDays: 5,
+      goals: [],
       stats: { tasks: 15, files: 6, links: 8, courses: 3, surveys: 1 },
     },
     {
@@ -857,7 +861,9 @@ window.SITE_DATA = {
       savedAtLabel: "Сохранено в 10:00",
       usageCount: 41,
       goalsEnabled: false,
+      goalsOwner: "manager",
       goalsDeadlineDays: 7,
+      goals: [],
       stats: { tasks: 6, files: 2, links: 3, courses: 1, surveys: 1 },
     },
     {
@@ -877,7 +883,29 @@ window.SITE_DATA = {
       savedAtLabel: "Сохранено в 09:15",
       usageCount: 0,
       goalsEnabled: true,
+      goalsOwner: "hr",
       goalsDeadlineDays: 10,
+      goals: [
+        {
+          id: "tgoal1",
+          title: "Освоить основной стек аналитики",
+          description: "Разобраться в инструментах и данных, с которыми предстоит работать ежедневно.",
+          dueDays: 30,
+          subgoals: [
+            { id: "tsg1", title: "Настроить доступы к BI-системе и хранилищу", description: "Получить доступы и пройти вводный бриф от дата-инженера.", dueDays: 7, reviewer: "Руководитель", materials: [] },
+            { id: "tsg2", title: "Пройти вводный курс по SQL-стандартам компании", description: "", dueDays: 14, reviewer: "Руководитель", materials: [] },
+          ],
+        },
+        {
+          id: "tgoal2",
+          title: "Подготовить финальный проект стажировки",
+          description: "Самостоятельный аналитический проект — от постановки задачи до презентации результатов.",
+          dueDays: 85,
+          subgoals: [
+            { id: "tsg3", title: "Защитить план проекта перед руководителем", description: "", dueDays: 45, reviewer: "Руководитель", materials: [] },
+          ],
+        },
+      ],
       stats: { tasks: 4, files: 1, links: 2, courses: 0, surveys: 0 },
     },
     {
@@ -897,7 +925,9 @@ window.SITE_DATA = {
       savedAtLabel: "Сохранено в 15:44",
       usageCount: 57,
       goalsEnabled: false,
+      goalsOwner: "manager",
       goalsDeadlineDays: 7,
+      goals: [],
       stats: { tasks: 10, files: 2, links: 2, courses: 1, surveys: 1 },
     },
     {
@@ -917,7 +947,9 @@ window.SITE_DATA = {
       savedAtLabel: "Сохранено в 16:40",
       usageCount: 6,
       goalsEnabled: true,
+      goalsOwner: "manager",
       goalsDeadlineDays: 14,
+      goals: [],
       stats: { tasks: 8, files: 4, links: 5, courses: 2, surveys: 2 },
     },
   ];
@@ -928,7 +960,11 @@ window.SITE_DATA = {
     { id: "survey_manager", name: "Опросник для руководителей" },
     { id: "survey_linear", name: "Опросник для линейных сотрудников" },
   ];
-  window.SITE_DATA.templates.forEach((t) => { if (!t.checkpoints) t.checkpoints = []; });
+  window.SITE_DATA.templates.forEach((t) => {
+    if (!t.checkpoints) t.checkpoints = [];
+    if (!t.goalsOwner) t.goalsOwner = "manager";
+    if (!t.goals) t.goals = [];
+  });
 
   // ---- Планы сотрудников (HR): назначенные индивидуальные планы ----
   // Денормализованный список для экрана "Планы сотрудников" — имя/должность/подразделение
