@@ -15,17 +15,17 @@
 <body>
 <div id="root"></div>
 <script type="text/babel">
-const { Card, Tag, Switch, Input, Textarea, Select, Checkbox, Tooltip, Divider, Button, IconButton, Modal, Snackbar } = window.SkillazCoreDesignSystem_bf9566;
+const { Card, Tag, Switch, Input, Textarea, Select, Checkbox, Radio, SegmentedControl, Tooltip, Divider, Button, IconButton, Modal, Drawer, Snackbar } = window.SkillazCoreDesignSystem_bf9566;
 const { AppShell, Icons } = window.Site;
 const {
   IconInfo, IconTarget, IconCheck, IconClipboard, IconSettings,
   IconHelpCircle, IconTrash, IconArrowLeft, IconClock, IconFileText, IconLink2, IconGraduationCap, IconMessageCircle,
-  IconPlusSm, IconEdit,
+  IconPlusSm, IconEdit, IconLayers, IconSparkles, IconBookOpen, IconX, IconAlertCircle, IconUser,
 } = Icons;
 
 const TEMPLATE_SECTIONS = [
   { id: "description", label: "Описание", icon: IconInfo },
-  { id: "goals", label: "План достижения цели адаптации", icon: IconTarget },
+  { id: "goals", label: "План адаптации", icon: IconTarget },
   { id: "checklist", label: "Чек-лист", icon: IconCheck },
   { id: "tasks", label: "Задачи", icon: IconClipboard },
   { id: "faq", label: "FAQ", icon: IconMessageCircle },
@@ -180,53 +180,351 @@ function TemplateCheckpointsSection({ checkpoints, onAdd, onEdit, onDelete }) {
   );
 }
 
-function GoalsSettingsCard({ template, enabled, deadlineDays, checkpoints, onToggle, onDeadlineChange, onAddCheckpoint, onEditCheckpoint, onDeleteCheckpoint }) {
+// ---------------- Дев-переключатель вариантов виджета "Кто настраивает цели" ----------------
+// Временный элемент этой итерации — показывает все три варианта переключателя из макетов,
+// чтобы Юля прокликала логику вживую и выбрала один перед тем, как мы зафиксируем финальный
+// вариант в коде. Не часть целевого UI, будет удалён после решения.
+const OWNER_WIDGET_VARIANTS = [
+  { id: "segmented", label: "Вариант A · переключатель" },
+  { id: "radioCards", label: "Вариант B · радио-карточки" },
+  { id: "radioInline", label: "Вариант C · радио в строку" },
+];
+
+function OwnerVariantSwitcher({ variant, onChange }) {
+  return (
+    <div className="sk-row sk-gap-2" style={{
+      alignItems: "center", padding: "8px 12px", borderRadius: "var(--sk-radius-3)",
+      background: "var(--sk-special-secondary)", border: "1px dashed var(--sk-stroke)",
+    }}>
+      <span className="sk-label-4" style={{ color: "var(--sk-text-secondary)", flexShrink: 0 }}>Черновик — выберите вариант переключателя:</span>
+      <SegmentedControl size="s" items={OWNER_WIDGET_VARIANTS} active={variant} onChange={onChange} />
+    </div>
+  );
+}
+
+// ---------------- Виджет выбора "Кто настраивает цели" — 3 варианта макета ----------------
+const GOALS_OWNER_OPTIONS = [
+  { id: "manager", label: "Руководитель", description: "Получит уведомление и создаст цели после назначения плана" },
+  { id: "hr", label: "Добавить сразу в шаблон", description: "Заполните цели заранее — подходит для типовых ролей" },
+];
+
+function GoalsOwnerSegmented({ owner, onChange }) {
+  return (
+    <div className="sk-col sk-gap-1">
+      <span className="sk-label-4" style={{ color: "var(--sk-text-tertiary)", textTransform: "uppercase" }}>Кто настраивает цели</span>
+      <SegmentedControl size="m"
+        items={GOALS_OWNER_OPTIONS.map((o) => ({ id: o.id, label: o.label }))}
+        active={owner} onChange={onChange} style={{ alignSelf: "flex-start" }} />
+    </div>
+  );
+}
+
+function GoalsOwnerRadioCards({ owner, onChange }) {
+  return (
+    <div className="sk-col sk-gap-2">
+      <span className="sk-label-4" style={{ color: "var(--sk-text-tertiary)", textTransform: "uppercase" }}>Кто настраивает цели</span>
+      {GOALS_OWNER_OPTIONS.map((o) => {
+        const sel = owner === o.id;
+        return (
+          <div key={o.id} className="sk-clickable" onClick={() => onChange(o.id)} style={{
+            padding: "12px 14px", borderRadius: "var(--sk-radius-3)",
+            border: sel ? "1.5px solid var(--sk-stroke-accent)" : "1.5px solid var(--sk-stroke)",
+            background: sel ? "var(--sk-accent-secondary)" : "var(--sk-surface-page)",
+          }}>
+            <Radio checked={sel} onChange={() => onChange(o.id)} label={o.label} description={o.description} />
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function GoalsOwnerRadioInline({ owner, onChange }) {
+  const active = GOALS_OWNER_OPTIONS.find((o) => o.id === owner);
+  return (
+    <div className="sk-col sk-gap-2">
+      <span className="sk-label-4" style={{ color: "var(--sk-text-tertiary)", textTransform: "uppercase" }}>Кто настраивает цели</span>
+      <div className="sk-row sk-gap-5">
+        {GOALS_OWNER_OPTIONS.map((o) => (
+          <Radio key={o.id} name="goalsOwner" checked={owner === o.id} onChange={() => onChange(o.id)} label={o.label} />
+        ))}
+      </div>
+      {active && <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{active.description}</span>}
+    </div>
+  );
+}
+
+function GoalsOwnerPicker({ variant, owner, onChange }) {
+  if (variant === "radioCards") return <GoalsOwnerRadioCards owner={owner} onChange={onChange} />;
+  if (variant === "radioInline") return <GoalsOwnerRadioInline owner={owner} onChange={onChange} />;
+  return <GoalsOwnerSegmented owner={owner} onChange={onChange} />;
+}
+
+// ---------------- Блок "Цели" — способ создания цели: плитка выбора (та же логика,
+// что и у руководителя в manager/plan.html — "Из каталога" и "С AI" пока не реализованы) ----------------
+function GoalMethodTile({ icon: Icon, title, variant, disabled, onClick }) {
+  const special = variant === "special";
+  return (
+    <div className={disabled ? "" : "sk-clickable"} onClick={disabled ? undefined : onClick} style={{
+      position: "relative", flex: 1, display: "flex", flexDirection: "column", alignItems: "flex-start", justifyContent: "center",
+      gap: 10, padding: "20px 14px", borderRadius: "var(--sk-radius-3)",
+      border: "1px solid " + (special ? "transparent" : "var(--sk-stroke)"),
+      background: special ? "var(--sk-special-secondary)" : "var(--sk-surface-page)",
+      cursor: disabled ? "default" : "pointer",
+    }}>
+      <span style={{
+        width: 40, height: 40, borderRadius: "var(--sk-radius-2)", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center",
+        background: special ? "var(--sk-surface-page)" : "var(--sk-surface-secondary)",
+        color: special ? "var(--violet-violet-35)" : "var(--sk-icon-secondary)",
+      }}><Icon size={20} /></span>
+      <div className="sk-label-3" style={{ textAlign: "left", color: "var(--sk-text-primary)" }}>{title}</div>
+      {disabled && <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Скоро будет доступно</div>}
+    </div>
+  );
+}
+
+function GoalMethodModal({ onClose, onManual }) {
+  return (
+    <Modal open title="Как добавить цель?" onClose={onClose} size="l"
+      secondary={<Button mode="secondary" onClick={onClose}>Отменить</Button>}>
+      <div className="sk-row sk-gap-3" style={{ alignItems: "stretch" }}>
+        <GoalMethodTile icon={IconEdit} title="Вручную" onClick={onManual} />
+        <GoalMethodTile icon={IconLayers} title="Из каталога целей" disabled />
+      </div>
+    </Modal>
+  );
+}
+
+const emptySubgoalForm = { title: "", description: "", dueDays: 14, reviewer: "Руководитель", materials: [] };
+
+function SubgoalFormModal({ onClose, onCreate }) {
+  const [form, setForm] = React.useState(emptySubgoalForm);
+  const set = (k) => (v) => setForm((f) => ({ ...f, [k]: v }));
+  const canCreate = form.title.trim().length > 0;
+  return (
+    <Modal open title="Шаг для выполнения цели" onClose={onClose} size="m"
+      secondary={<Button mode="secondary" onClick={onClose}>Отменить</Button>}
+      primary={<Button disabled={!canCreate} onClick={() => onCreate(form)}>Добавить</Button>}>
+      <div className="sk-col sk-gap-4">
+        <Input label="Название" required value={form.title} onChange={(e) => set("title")(e.target.value || "")} />
+        <Textarea label="Описание" rows={2} maxLength={1000} value={form.description} onChange={(e) => set("description")(e.target.value || "")} />
+        <div className="sk-row sk-gap-3">
+          <Input label="Срок (дней от начала плана)" required type="number" min={1} value={form.dueDays}
+            onChange={(e) => set("dueDays")(Math.max(1, Number(e.target.value) || 1))} style={{ flex: 1 }} />
+          <Select label="Проверяющий" value={form.reviewer}
+            options={[{ value: "Руководитель", label: "Руководитель" }, { value: "Наставник", label: "Наставник" }]}
+            onChange={set("reviewer")} style={{ flex: 1 }} />
+        </div>
+        <div className="sk-col sk-gap-2">
+          <span className="sk-label-3">Материалы и действия</span>
+          <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Выберите задачи, курсы, статьи, файлы или ссылки, которые помогут выполнить шаг.</span>
+          <Button mode="secondary" size="s" icon={<IconPlusSm size={16} />} disabled style={{ alignSelf: "flex-start" }}>Добавить материал</Button>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
+function TemplateGoalCreateDrawer({ draft, setDraft, onClose, onCreate, onAddSubgoal }) {
+  const canCreate = draft.title.trim().length > 0;
+  return (
+    <Drawer open title="Создание цели адаптации" onClose={onClose} size="s"
+      primary={<Button disabled={!canCreate} onClick={onCreate}>Создать</Button>}
+      secondary={<Button mode="secondary" onClick={onClose}>Отменить</Button>}>
+      <div className="sk-col sk-gap-4">
+        <Input label="Название" required placeholder="Что сотрудник должен выполнить к окончанию периода адаптации"
+          value={draft.title} onChange={(e) => setDraft((d) => ({ ...d, title: e.target.value || "" }))} />
+        <Textarea label="Описание" rows={4} maxLength={1000} showCount
+          placeholder="Подробнее о цели: как оценивается результат, что поможет успешному достижению"
+          value={draft.description} onChange={(e) => setDraft((d) => ({ ...d, description: e.target.value || "" }))} />
+        <Input label="Срок (дней от начала плана)" required type="number" min={1} value={draft.dueDays}
+          onChange={(e) => setDraft((d) => ({ ...d, dueDays: Math.max(1, Number(e.target.value) || 1) }))} style={{ width: 160 }} />
+
+        <div className="sk-col sk-gap-2">
+          <div className="sk-label-3">Шаги для достижения{draft.subgoals.length ? " " + draft.subgoals.length : ""}</div>
+          <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>
+            Разбейте цель на подцели — конкретные шаги, которые помогут сотруднику её достичь. Можно добавить сейчас или позже.
+          </div>
+          {draft.subgoals.map((sg, i) => (
+            <div key={i} className="sk-row sk-gap-3" style={{ justifyContent: "space-between", padding: 10, border: "1px solid var(--sk-stroke)", borderRadius: "var(--sk-radius-2)" }}>
+              <div className="sk-col sk-gap-1">
+                <div className="sk-label-4">{sg.title}</div>
+                <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>День {sg.dueDays} от начала плана</div>
+              </div>
+              <button className="sk-link-btn" onClick={() => setDraft((d) => ({ ...d, subgoals: d.subgoals.filter((_, ix) => ix !== i) }))}>
+                <IconTrash size={15} color="var(--sk-icon-secondary)" />
+              </button>
+            </div>
+          ))}
+          <button className="sk-link-btn sk-label-3-regular" onClick={onAddSubgoal} style={{ alignSelf: "flex-start" }}>+ Добавить</button>
+        </div>
+      </div>
+    </Drawer>
+  );
+}
+
+function TemplateGoalRow({ goal, onDelete }) {
+  return (
+    <div className="sk-col sk-gap-3" style={{ padding: 14, border: "1px solid var(--sk-stroke)", borderRadius: "var(--sk-radius-3)", background: "var(--sk-surface-page)" }}>
+      <div className="sk-row sk-gap-3" style={{ justifyContent: "space-between", alignItems: "flex-start" }}>
+        <div className="sk-col sk-gap-1" style={{ flex: 1, minWidth: 0 }}>
+          <div className="sk-title-5">{goal.title || "Без названия"}</div>
+          <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>
+            {goal.subgoals.length ? goal.subgoals.length + (goal.subgoals.length === 1 ? " шаг" : " шага") + " · " : ""}День {goal.dueDays} от начала плана
+          </span>
+        </div>
+        <div className="sk-row sk-gap-1" style={{ flexShrink: 0 }}>
+          <Button size="s" mode="tertiary" disabled title="Скоро будет доступно"><IconEdit size={15} /></Button>
+          <Button size="s" mode="tertiary" onClick={onDelete}><IconTrash size={15} /></Button>
+        </div>
+      </div>
+      {!!goal.subgoals.length && (
+        <div className="sk-col sk-gap-2">
+          {goal.subgoals.map((sg) => (
+            <div key={sg.id} className="sk-row sk-gap-2" style={{ alignItems: "center", padding: 10, border: "1px solid var(--sk-stroke)", borderRadius: "var(--sk-radius-3)", background: "var(--sk-surface-secondary)" }}>
+              <IconUser size={14} color="var(--sk-icon-secondary)" />
+              <span className="sk-label-3-regular" style={{ flex: 1 }}>{sg.title}</span>
+              <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>День {sg.dueDays}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ---------------- Блок "Цели" целиком: выбор владельца + условная логика сценария ----------------
+function GoalsCard({ owner, ownerVariant, deadlineDays, goals, onOwnerChange, onDeadlineChange, onAddGoal, onDeleteGoal }) {
+  const [methodModal, setMethodModal] = React.useState(false);
+  const [goalDraft, setGoalDraft] = React.useState(null);
+  const [subgoalModal, setSubgoalModal] = React.useState(false);
+
+  function startManualGoal() {
+    setMethodModal(false);
+    setGoalDraft({ title: "", description: "", dueDays: 30, subgoals: [] });
+  }
+  function createGoal() {
+    onAddGoal(goalDraft);
+    setGoalDraft(null);
+  }
+
+  return (
+    <Card bordered>
+      <div className="sk-col sk-gap-4">
+        <div className="sk-row sk-gap-1">
+          <span className="sk-title-5">Цели</span>
+          <Tooltip content="Выберите, кто будет наполнять цели в плане: руководитель после назначения или Админ заранее в шаблоне.">
+            <IconHelpCircle size={16} color="var(--sk-icon-secondary)" />
+          </Tooltip>
+        </div>
+
+        <GoalsOwnerPicker variant={ownerVariant} owner={owner} onChange={onOwnerChange} />
+
+        {owner === "manager" ? (
+          <div className="sk-col sk-gap-3">
+            <div className="sk-row" style={{ justifyContent: "space-between", alignItems: "center" }}>
+              <div className="sk-row sk-gap-1" style={{ color: "var(--sk-text-secondary)" }}>
+                <span className="sk-label-3-regular">Срок постановки целей руководителем после назначения плана (дней)</span>
+                <Tooltip content="После назначения плана руководитель получит уведомление о необходимости поставить цели. Цели создаются уже в индивидуальном плане сотрудника.">
+                  <IconHelpCircle size={16} color="var(--sk-icon-secondary)" />
+                </Tooltip>
+              </div>
+              <Input type="number" min={1} max={30} value={deadlineDays}
+                onChange={(e) => onDeadlineChange(Math.max(1, Math.min(30, Number(e.target.value) || 1)))}
+                style={{ width: 88 }} />
+            </div>
+            <div className="sk-row sk-gap-2" style={{ padding: "10px 12px", borderRadius: "var(--sk-radius-3)", background: "var(--sk-surface-secondary)" }}>
+              <IconInfo size={16} color="var(--sk-icon-secondary)" style={{ flexShrink: 0, marginTop: 1 }} />
+              <span className="sk-label-4-regular" style={{ color: "var(--sk-text-secondary)" }}>В первой версии цели не создаются в шаблоне и не копируются в план</span>
+            </div>
+          </div>
+        ) : (
+          <div className="sk-col sk-gap-3">
+            <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Добавьте цели заранее, если для этой роли используется типовой процесс адаптации.</span>
+
+            <div className="sk-row sk-gap-2">
+              <Button mode="secondary" size="s" icon={<IconPlusSm size={16} />} onClick={() => setMethodModal(true)}>Создать цель</Button>
+              <Button mode="secondary" size="s" icon={<IconLayers size={16} />} disabled title="Скоро будет доступно">Добавить из каталога</Button>
+            </div>
+
+            {goals.length ? (
+              <div className="sk-col sk-gap-2">
+                {goals.map((g) => <TemplateGoalRow key={g.id} goal={g} onDelete={() => onDeleteGoal(g.id)} />)}
+              </div>
+            ) : (
+              <div className="sk-row sk-gap-2" style={{ padding: "10px 12px", borderRadius: "var(--sk-radius-3)", background: "var(--sk-warning-secondary)" }}>
+                <IconAlertCircle size={16} color="var(--sk-text-warning-dark)" style={{ flexShrink: 0, marginTop: 1 }} />
+                <span className="sk-label-4-regular" style={{ color: "var(--sk-text-primary)" }}>Добавьте хотя бы одну цель — иначе руководитель и сотрудник не увидят целей в плане</span>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {methodModal && <GoalMethodModal onClose={() => setMethodModal(false)} onManual={startManualGoal} />}
+      {goalDraft && (
+        <TemplateGoalCreateDrawer draft={goalDraft} setDraft={setGoalDraft} onClose={() => setGoalDraft(null)}
+          onCreate={createGoal} onAddSubgoal={() => setSubgoalModal(true)} />
+      )}
+      {subgoalModal && (
+        <SubgoalFormModal onClose={() => setSubgoalModal(false)}
+          onCreate={(form) => {
+            setGoalDraft((d) => ({ ...d, subgoals: [...d.subgoals, { id: "sg" + Date.now(), ...form }] }));
+            setSubgoalModal(false);
+          }} />
+      )}
+    </Card>
+  );
+}
+
+function CheckpointsCard({ checkpoints, onAddCheckpoint, onEditCheckpoint, onDeleteCheckpoint }) {
+  return (
+    <Card bordered>
+      <div className="sk-col sk-gap-3">
+        <div className="sk-row sk-gap-1">
+          <span className="sk-title-5">Контрольные точки</span>
+          <Tooltip content="Контрольные точки — точки сверки прогресса с руководителем по датам от начала плана. Настройте состав здесь, в шаблоне, — они автоматически появятся во всех планах, назначенных по нему.">
+            <IconHelpCircle size={16} color="var(--sk-icon-secondary)" />
+          </Tooltip>
+        </div>
+        <TemplateCheckpointsSection checkpoints={checkpoints}
+          onAdd={onAddCheckpoint} onEdit={onEditCheckpoint} onDelete={onDeleteCheckpoint} />
+      </div>
+    </Card>
+  );
+}
+
+function GoalsSettingsCard({ template, enabled, ownerVariant, owner, deadlineDays, goals, checkpoints,
+  onToggle, onOwnerVariantChange, onOwnerChange, onDeadlineChange, onAddGoal, onDeleteGoal,
+  onAddCheckpoint, onEditCheckpoint, onDeleteCheckpoint }) {
   return (
     <div className="sk-col sk-gap-4">
       <Card bordered>
         <div className="sk-col sk-gap-4">
-          <div className="sk-title-5">План достижения цели адаптации</div>
-          <div className="sk-col sk-gap-3">
-            <div className="sk-row" style={{ justifyContent: "space-between" }}>
-              <div className="sk-row sk-gap-1">
-                <span className="sk-label-3">Включить план с целями</span>
-                <Tooltip content="Это план достижения целей в рамках адаптации: в нём сотруднику можно поставить цели, шаги к ним и полезные материалы. С этим планом сотрудник не просто проходит чек-лист, а приближается к тому, чтобы перформить в своей роли.">
-                  <IconHelpCircle size={16} color="var(--sk-icon-secondary)" />
-                </Tooltip>
-              </div>
-              <Switch checked={enabled} onChange={onToggle} />
+          <div className="sk-title-5">План адаптации</div>
+          <div className="sk-row" style={{ justifyContent: "space-between" }}>
+            <div className="sk-row sk-gap-1">
+              <span className="sk-label-3">Включить план адаптации с целями</span>
+              <Tooltip content="В этом плане сотруднику можно поставить цели, шаги к ним и полезные материалы. С этим планом сотрудник не просто проходит чек-лист, а приближается к тому, чтобы перформить в своей роли.">
+                <IconHelpCircle size={16} color="var(--sk-icon-secondary)" />
+              </Tooltip>
             </div>
-            {enabled && (
-              <div className="sk-row" style={{ justifyContent: "space-between", alignItems: "center", paddingLeft: 4 }}>
-                <div className="sk-row sk-gap-1" style={{ color: "var(--sk-text-secondary)" }}>
-                  <span style={{ marginRight: 2 }}>↳</span>
-                  <span className="sk-label-3-regular">Срок постановки целей руководителем после назначения плана (дней)</span>
-                  <Tooltip content="После назначения плана руководитель получит уведомление о необходимости поставить цели. Цели создаются уже в индивидуальном плане сотрудника.">
-                    <IconHelpCircle size={16} color="var(--sk-icon-secondary)" />
-                  </Tooltip>
-                </div>
-                <Input type="number" min={1} max={30} value={deadlineDays}
-                  onChange={(e) => onDeadlineChange(Math.max(1, Math.min(30, Number(e.target.value) || 1)))}
-                  style={{ width: 88 }} />
-              </div>
-            )}
+            <Switch checked={enabled} onChange={onToggle} />
           </div>
         </div>
       </Card>
 
+      {enabled && <OwnerVariantSwitcher variant={ownerVariant} onChange={onOwnerVariantChange} />}
+
       {enabled && (
-        <Card bordered>
-          <div className="sk-col sk-gap-3">
-            <div className="sk-row sk-gap-1">
-              <span className="sk-title-5">Контрольные точки</span>
-              <Tooltip content="Контрольные точки — точки сверки прогресса с руководителем по датам от начала плана. Настройте состав здесь, в шаблоне, — они автоматически появятся во всех планах, назначенных по нему.">
-                <IconHelpCircle size={16} color="var(--sk-icon-secondary)" />
-              </Tooltip>
-            </div>
-            <TemplateCheckpointsSection checkpoints={checkpoints}
-              onAdd={onAddCheckpoint} onEdit={onEditCheckpoint} onDelete={onDeleteCheckpoint} />
-          </div>
-        </Card>
+        <GoalsCard owner={owner} ownerVariant={ownerVariant} deadlineDays={deadlineDays} goals={goals}
+          onOwnerChange={onOwnerChange} onDeadlineChange={onDeadlineChange}
+          onAddGoal={onAddGoal} onDeleteGoal={onDeleteGoal} />
+      )}
+
+      {enabled && (
+        <CheckpointsCard checkpoints={checkpoints}
+          onAddCheckpoint={onAddCheckpoint} onEditCheckpoint={onEditCheckpoint} onDeleteCheckpoint={onDeleteCheckpoint} />
       )}
     </div>
   );
@@ -315,7 +613,10 @@ function Page() {
   const baseTemplate = D.templates.find((t) => t.id === tplId) || D.templates[0];
   const [section, setSection] = React.useState("goals");
   const [enabled, setEnabled] = React.useState(baseTemplate.goalsEnabled);
+  const [ownerVariant, setOwnerVariant] = React.useState("segmented");
+  const [owner, setOwner] = React.useState(baseTemplate.goalsOwner || "manager");
   const [deadlineDays, setDeadlineDays] = React.useState(baseTemplate.goalsDeadlineDays);
+  const [goals, setGoals] = React.useState(baseTemplate.goals || []);
   const [checkpoints, setCheckpoints] = React.useState(baseTemplate.checkpoints || []);
   const [deleteConfirm, setDeleteConfirm] = React.useState(false);
   const [toast, setToast] = React.useState(null);
@@ -323,6 +624,15 @@ function Page() {
   function showToast(msg) {
     setToast(msg);
     window.setTimeout(() => setToast(null), 2600);
+  }
+
+  function addGoal(draft) {
+    setGoals((list) => [...list, { id: "tgoal" + Date.now(), ...draft }]);
+    showToast("Цель добавлена в шаблон");
+  }
+  function deleteGoal(id) {
+    setGoals((list) => list.filter((g) => g.id !== id));
+    showToast("Цель удалена");
   }
 
   function addCheckpoint(form) {
@@ -338,7 +648,7 @@ function Page() {
     showToast("Контрольная точка удалена");
   }
 
-  const template = { ...baseTemplate, goalsEnabled: enabled, goalsDeadlineDays: deadlineDays };
+  const template = { ...baseTemplate, goalsEnabled: enabled, goalsOwner: owner, goalsDeadlineDays: deadlineDays, goals };
 
   return (
     <AppShell role="hr" active="hr-templates" base=".."
@@ -353,9 +663,13 @@ function Page() {
 
         <div style={{ flex: 1, minWidth: 0 }}>
           {section === "goals" ? (
-            <GoalsSettingsCard template={template} enabled={enabled} deadlineDays={deadlineDays} checkpoints={checkpoints}
-              onToggle={(v) => { setEnabled(v); showToast(v ? "План с целями включён" : "План с целями выключен"); }}
+            <GoalsSettingsCard template={template} enabled={enabled} ownerVariant={ownerVariant} owner={owner}
+              deadlineDays={deadlineDays} goals={goals} checkpoints={checkpoints}
+              onToggle={(v) => { setEnabled(v); showToast(v ? "План адаптации включён" : "План адаптации выключен"); }}
+              onOwnerVariantChange={setOwnerVariant}
+              onOwnerChange={(v) => { setOwner(v); showToast(v === "manager" ? "Цели настраивает руководитель" : "Цели добавляются сразу в шаблон"); }}
               onDeadlineChange={setDeadlineDays}
+              onAddGoal={addGoal} onDeleteGoal={deleteGoal}
               onAddCheckpoint={addCheckpoint} onEditCheckpoint={editCheckpoint} onDeleteCheckpoint={deleteCheckpoint} />
           ) : section === "checklist" ? (
             <ChecklistSection />
