@@ -139,10 +139,12 @@ const target = path.resolve(__dirname, "..", "hr", "template.html");
     console.log("Step title visible directly in goals list (not just inside drawer):", body.includes("Настроить доступы к CRM") ? "PASS" : "FAIL");
     console.log("Materials pill visible directly in goals list:", body.includes("Полезные материалы: 1") ? "PASS" : "FAIL");
 
-    // Левая колонка теперь объединяет разделы плана, информацию, статистику и кнопки действий
-    console.log("Left column merges 'Разделы плана' + 'Информация' + 'Статистика':",
-      body.includes("Разделы плана") && body.includes("Информация") && body.includes("Статистика") ? "PASS" : "FAIL");
-    console.log("'Вернуться' button present in merged left column:", body.includes("Вернуться") ? "PASS" : "FAIL");
+    // Левая колонка содержит только разделы плана + кнопки действий — блоки "Информация"
+    // и "Статистика" убраны из UI совсем (не просто свёрнуты)
+    console.log("Left column shows 'Разделы плана':", body.includes("Разделы плана") ? "PASS" : "FAIL");
+    console.log("'Информация' block removed entirely:", !body.includes("Информация") ? "PASS" : "FAIL");
+    console.log("'Статистика' block removed entirely:", !body.includes("Статистика") ? "PASS" : "FAIL");
+    console.log("'Вернуться' button present in left column:", body.includes("Вернуться") ? "PASS" : "FAIL");
 
     // Только вариант A (SegmentedControl) для "Кто настраивает цели" — без bold
     const ownerLabel = [...w.document.querySelectorAll("span")].find(el => el.textContent.trim() === "Кто настраивает цели");
@@ -167,6 +169,8 @@ const target = path.resolve(__dirname, "..", "hr", "template.html");
     const deadlineLabel = [...w2.document.querySelectorAll("span")].find(el => el.textContent.trim() === "Срок постановки целей руководителем после назначения плана (дней)");
     console.log("Deadline label present (manager scenario):", !!deadlineLabel ? "PASS" : "FAIL");
     console.log("Deadline label is not bold (sk-label-3-regular):", deadlineLabel && deadlineLabel.className.includes("sk-label-3-regular") ? "PASS" : "FAIL");
+    const body2 = w2.document.body.textContent;
+    console.log("'В первой версии цели не создаются...' hint removed:", !body2.includes("В первой версии цели не создаются") ? "PASS" : "FAIL");
   } catch (e) {
     console.error("THREW:", e.message);
     console.error(e.stack);
