@@ -54,7 +54,7 @@ const target = path.resolve(__dirname, "..", "hr", "template.html");
     let body = w.document.body.textContent;
     console.log("Header 'Настройка плана адаптации' present:", body.includes("Настройка плана адаптации") ? "PASS" : "FAIL");
     console.log("Two separate cards 'Цели' and 'Контрольные точки':", body.includes("Цели") && body.includes("Контрольные точки") ? "PASS" : "FAIL");
-    console.log("Owner variant switcher rendered near header:", body.includes("выберите вариант переключателя") ? "PASS" : "FAIL");
+    console.log("No dev variant switcher (removed, only Variant A kept):", !body.includes("выберите вариант переключателя") ? "PASS" : "FAIL");
     console.log("No stray hint text about typical roles:", !body.includes("используется типовой процесс") ? "PASS" : "FAIL");
     console.log("No separate catalog button next to 'Создать цель':", !body.includes("Добавить из каталога") ? "PASS" : "FAIL");
     console.log("No checkpoint 'Обязательная' tag text ('required' label removed):", !body.includes("Обязательная") ? "PASS" : "FAIL");
@@ -139,17 +139,34 @@ const target = path.resolve(__dirname, "..", "hr", "template.html");
     console.log("Step title visible directly in goals list (not just inside drawer):", body.includes("Настроить доступы к CRM") ? "PASS" : "FAIL");
     console.log("Materials pill visible directly in goals list:", body.includes("Полезные материалы: 1") ? "PASS" : "FAIL");
 
-    // Переключаем дев-свитчер на вариант B (радио-карточки) и проверяем нейминг
-    const variantB = findByText(w, "span", "Вариант B · радио-карточки");
-    click(w, variantB);
-    await tick(80);
-    body = w.document.body.textContent;
-    console.log("[Variant B] 'Кто настраивает цели' label removed:", !body.includes("Кто настраивает цели") ? "PASS" : "FAIL");
-    console.log("[Variant B] Shows 'Создает руководитель':", body.includes("Создает руководитель") ? "PASS" : "FAIL");
-    console.log("[Variant B] Shows 'Создать сразу в шаблоне':", body.includes("Создать сразу в шаблоне") ? "PASS" : "FAIL");
-    console.log("[Variant B] Manager hint text updated:", body.includes("Руководитель сформулирует цели сотруднику после назначения плана") ? "PASS" : "FAIL");
+    // Левая колонка теперь объединяет разделы плана, информацию, статистику и кнопки действий
+    console.log("Left column merges 'Разделы плана' + 'Информация' + 'Статистика':",
+      body.includes("Разделы плана") && body.includes("Информация") && body.includes("Статистика") ? "PASS" : "FAIL");
+    console.log("'Вернуться' button present in merged left column:", body.includes("Вернуться") ? "PASS" : "FAIL");
+
+    // Только вариант A (SegmentedControl) для "Кто настраивает цели" — без bold
+    const ownerLabel = [...w.document.querySelectorAll("span")].find(el => el.textContent.trim() === "Кто настраивает цели");
+    console.log("'Кто настраивает цели' label present:", !!ownerLabel ? "PASS" : "FAIL");
+    console.log("'Кто настраивает цели' label is not bold (sk-label-3-regular):", ownerLabel && ownerLabel.className.includes("sk-label-3-regular") ? "PASS" : "FAIL");
 
     console.log("\nOK: сценарий HR-цели прошёл без падений");
+  } catch (e) {
+    console.error("THREW:", e.message);
+    console.error(e.stack);
+    process.exit(1);
+  }
+
+  // Отдельная свежая загрузка со сценарием по умолчанию ("Создает руководитель"),
+  // чтобы проверить лейбл срока постановки целей (виден только при owner === "manager").
+  try {
+    const w2 = loadPage(target, "tpl=tpl_sales");
+    await tick(150);
+    const switchEl2 = w2.document.querySelector('[role="switch"]');
+    click(w2, switchEl2);
+    await tick(80);
+    const deadlineLabel = [...w2.document.querySelectorAll("span")].find(el => el.textContent.trim() === "Срок постановки целей руководителем после назначения плана (дней)");
+    console.log("Deadline label present (manager scenario):", !!deadlineLabel ? "PASS" : "FAIL");
+    console.log("Deadline label is not bold (sk-label-3-regular):", deadlineLabel && deadlineLabel.className.includes("sk-label-3-regular") ? "PASS" : "FAIL");
   } catch (e) {
     console.error("THREW:", e.message);
     console.error(e.stack);
