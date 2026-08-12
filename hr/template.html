@@ -20,7 +20,7 @@ const { AppShell, Icons } = window.Site;
 const {
   IconInfo, IconTarget, IconCheck, IconClipboard, IconSettings,
   IconHelpCircle, IconTrash, IconArrowLeft, IconClock, IconFileText, IconLink2, IconGraduationCap, IconMessageCircle,
-  IconPlusSm, IconEdit, IconLayers, IconBookOpen, IconChevronUp, IconChevronDown,
+  IconPlusSm, IconEdit, IconLayers, IconBookOpen,
 } = Icons;
 
 const TEMPLATE_SECTIONS = [
@@ -60,25 +60,9 @@ function SectionNavItem({ item, active, disabled, onClick }) {
   );
 }
 
-function CollapsibleNavSection({ title, defaultOpen = true, children }) {
-  const [open, setOpen] = React.useState(defaultOpen);
-  return (
-    <div className="sk-col sk-gap-1">
-      <div className="sk-row sk-clickable" style={{ justifyContent: "space-between", alignItems: "center", padding: "0 12px" }}
-        onClick={() => setOpen((o) => !o)}>
-        <span className="sk-label-3">{title}</span>
-        {open ? <IconChevronUp size={15} color="var(--sk-icon-secondary)" /> : <IconChevronDown size={15} color="var(--sk-icon-secondary)" />}
-      </div>
-      {open && <div className="sk-col sk-gap-2" style={{ padding: "4px 12px 8px" }}>{children}</div>}
-    </div>
-  );
-}
-
-// ---------------- Левая колонка целиком: разделы плана + информация + статистика + действия
-// с шаблоном — объединены в одну колонку (было три отдельных блока: навигация слева, инфо-панель
-// справа), чтобы освободить правую зону под настройки, как в референсе Юли. ----------------
+// ---------------- Левая колонка: разделы плана + действия с шаблоном. Блоки "Информация"
+// и "Статистика" убраны из UI по просьбе Юли — были избыточны, отвлекали от настроек. ----------------
 function PlanSectionsNav({ section, onChange, template, onDeleteTemplate }) {
-  const st = TEMPLATE_STATUS[template.status];
   return (
     <div style={{ width: 260, flexShrink: 0 }}>
       <Card bordered>
@@ -93,48 +77,6 @@ function PlanSectionsNav({ section, onChange, template, onDeleteTemplate }) {
               );
             })}
           </div>
-
-          <Divider />
-
-          <CollapsibleNavSection title="Информация">
-            <div className="sk-row sk-gap-2 sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>
-              <IconClock size={15} />{template.savedAtLabel}
-            </div>
-            <Divider />
-            <div className="sk-row" style={{ justifyContent: "space-between" }}>
-              <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Статус</span>
-              <Tag size="s" hue={st.hue}>{st.label}</Tag>
-            </div>
-            <div className="sk-row" style={{ justifyContent: "space-between" }}>
-              <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Дата создания</span>
-              <span className="sk-label-4">{template.createdAt}</span>
-            </div>
-            <div className="sk-row" style={{ justifyContent: "space-between" }}>
-              <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Срок плана</span>
-              <span className="sk-label-4">{template.durationDays} дней</span>
-            </div>
-            <div className="sk-row" style={{ justifyContent: "space-between" }}>
-              <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Использован</span>
-              <span className="sk-label-4">{template.usageCount} {template.usageCount === 1 ? "раз" : "раза"}</span>
-            </div>
-          </CollapsibleNavSection>
-
-          <Divider />
-
-          <CollapsibleNavSection title="Статистика">
-            {[
-              ["Задач", template.stats.tasks, IconCheck],
-              ["Файлов", template.stats.files, IconFileText],
-              ["Ссылок", template.stats.links, IconLink2],
-              ["Обучение", template.stats.courses, IconGraduationCap],
-              ["Опросов", template.stats.surveys, IconMessageCircle],
-            ].map(([label, val, Ic]) => (
-              <div key={label} className="sk-row" style={{ justifyContent: "space-between" }}>
-                <div className="sk-row sk-gap-2 sk-muted" style={{ font: "var(--sk-label-4-regular)" }}><Ic size={15} />{label}</div>
-                <span className="sk-label-4">{val}</span>
-              </div>
-            ))}
-          </CollapsibleNavSection>
 
           <Divider />
 
@@ -613,10 +555,6 @@ function GoalsSection({ owner, deadlineDays, goals, onOwnerChange, onDeadlineCha
             <Input type="number" min={1} max={30} value={deadlineDays}
               onChange={(e) => onDeadlineChange(Math.max(1, Math.min(30, Number(e.target.value) || 1)))}
               style={{ width: 88 }} />
-          </div>
-          <div className="sk-row sk-gap-2" style={{ padding: "10px 12px", borderRadius: "var(--sk-radius-3)", background: "var(--sk-surface-secondary)" }}>
-            <IconInfo size={16} color="var(--sk-icon-secondary)" style={{ flexShrink: 0, marginTop: 1 }} />
-            <span className="sk-label-4-regular" style={{ color: "var(--sk-text-secondary)" }}>В первой версии цели не создаются в шаблоне и не копируются в план</span>
           </div>
         </div>
       ) : (
