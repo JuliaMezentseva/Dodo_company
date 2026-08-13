@@ -17,7 +17,18 @@
 <script type="text/babel">
 const { Card, Tag, Input, Textarea, Select, Checkbox, Divider, Button, Tooltip, Modal, Drawer, Snackbar, Alert } = window.SkillazCoreDesignSystem_bf9566;
 const { AppShell, Icons } = window.Site;
-const { IconPlusSm, IconSearch, IconFilter, IconTrash, IconX, IconChevronRight, IconEdit, IconCopyLocal2, IconTarget } = Icons;
+const { IconPlusSm, IconSearch, IconFilter, IconTrash, IconX, IconChevronRight, IconEdit, IconCopyLocal2 } = Icons;
+
+// Иконка цели — две концентрические окружности без заливки в центре (ближе к референсу,
+// чем стандартная IconTarget из набора ДС, у которой есть закрашенная точка в центре).
+function IconGoalRing({ size = 16, color = "currentColor" }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" style={{ color, flexShrink: 0 }}>
+      <circle cx="12" cy="12" r="8.7" stroke="currentColor" strokeWidth="1.6" />
+      <circle cx="12" cy="12" r="4.3" stroke="currentColor" strokeWidth="1.6" />
+    </svg>
+  );
+}
 
 // В наборе иконок ДС нет "ручки" для перетаскивания — та же локальная иконка,
 // что и в hr/template.html (IconGripVertical).
@@ -340,35 +351,42 @@ function pluralTimes(n) {
   return "раз";
 }
 
-// ---------------- Левая панель категорий — обёрнута в Card, чтобы явно читаться
-// отдельным блоком, а не сливаться с таблицей целей рядом. Поиск по названию категории
-// сверху, "Все категории" первым пунктом, активный пункт подсвечен. ----------------
-function CategorySidebar({ categories, active, onSelect }) {
-  const [q, setQ] = React.useState("");
-  const needle = q.trim().toLowerCase();
-  const list = needle ? categories.filter((c) => c.toLowerCase().includes(needle)) : categories;
-  // "Все категории" подсвечивается нейтрально (это состояние по умолчанию), а выбор
-  // конкретной категории — акцентным синим, чтобы активный фильтр было видно сразу.
-  function itemStyle(isActive, isAccent) {
+// ---------------- Пилюли категорий над таблицей — "Все категории" + самые популярные
+// (по числу целей в каталоге), плюс "+" в конце, чтобы развернуть остальные направления.
+// Серый фон в состоянии покоя, синий акцент — только когда выбрана конкретная категория
+// (не "Все категории"), чтобы активный фильтр было видно с первого взгляда. ----------------
+function CategoryPillsBar({ categories, catalog, active, onSelect }) {
+  const [expanded, setExpanded] = React.useState(false);
+  const counts = {};
+  catalog.forEach((g) => { counts[g.category] = (counts[g.category] || 0) + 1; });
+  const sorted = categories.slice().sort((a, b) => (counts[b] || 0) - (counts[a] || 0));
+  const TOP_N = 5;
+  const shown = expanded ? sorted : sorted.slice(0, TOP_N);
+  const hasMore = !expanded && sorted.length > TOP_N;
+
+  function pillStyle(isActive) {
     return {
-      display: "block", width: "100%", textAlign: "left", padding: "9px 10px", borderRadius: "var(--sk-radius-2)",
-      border: "none", cursor: "pointer", font: isActive ? "var(--sk-label-3)" : "var(--sk-label-3-regular)",
-      background: isActive ? (isAccent ? "var(--sk-accent)" : "var(--sk-surface-secondary)") : "transparent",
-      color: isActive ? (isAccent ? "var(--sk-text-contrast)" : "var(--sk-text-primary)") : "var(--sk-text-secondary)",
+      height: 32, padding: "0 14px", borderRadius: "var(--sk-radius-full)", border: "none", cursor: "pointer",
+      background: isActive ? "var(--sk-accent)" : "var(--sk-surface-secondary)",
+      color: isActive ? "var(--sk-text-contrast)" : "var(--sk-text-secondary)",
+      font: isActive ? "var(--sk-label-3)" : "var(--sk-label-3-regular)", whiteSpace: "nowrap", flexShrink: 0,
     };
   }
+
   return (
-    <Card bordered style={{ width: 240, flexShrink: 0, padding: 16 }}>
-      <div className="sk-col sk-gap-3">
-        <Input icon={<IconSearch size={18} />} placeholder="Поиск категории" value={q} onChange={(e) => setQ(e.target.value || "")} />
-        <div className="sk-col sk-gap-1">
-          <button style={itemStyle(!active, false)} onClick={() => onSelect("")}>Все категории</button>
-          {list.map((c) => (
-            <button key={c} style={itemStyle(active === c, true)} onClick={() => onSelect(active === c ? "" : c)}>{c}</button>
-          ))}
-        </div>
-      </div>
-    </Card>
+    <div className="sk-row sk-gap-2" style={{ flexWrap: "wrap" }}>
+      <button style={pillStyle(!active)} onClick={() => onSelect("")}>Все категории</button>
+      {shown.map((c) => (
+        <button key={c} style={pillStyle(active === c)} onClick={() => onSelect(active === c ? "" : c)}>{c}</button>
+      ))}
+      {hasMore && (
+        <button onClick={() => setExpanded(true)} aria-label="Показать все категории" style={{
+          width: 32, height: 32, borderRadius: "50%", border: "none", cursor: "pointer", flexShrink: 0,
+          background: "var(--sk-surface-secondary)", color: "var(--sk-text-secondary)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+        }}><IconPlusSm size={16} /></button>
+      )}
+    </div>
   );
 }
 
@@ -421,7 +439,7 @@ function StepPreviewRow({ index, sg }) {
 function GoalCatalogRow({ goal, expanded, onToggle, onEdit, onDuplicate, onDelete }) {
   const [hover, setHover] = React.useState(false);
   const stepsCount = goal.subgoals.length;
-  const cellText = { color: "var(--sk-text-secondary)", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" };
+  const cellText = { color: "var(--sk-text-primary)", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" };
   return (
     <div style={{ borderBottom: "1px solid var(--sk-stroke)" }}>
       <div className="sk-clickable" onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)} onClick={onEdit} style={{
@@ -429,14 +447,14 @@ function GoalCatalogRow({ goal, expanded, onToggle, onEdit, onDuplicate, onDelet
         background: hover ? "var(--sk-hover-table)" : "transparent",
       }}>
         <button onClick={(e) => { e.stopPropagation(); onToggle(); }} aria-label="Показать шаги" style={{
-          width: 24, height: 24, display: "flex", alignItems: "center", justifyContent: "center", background: "none", border: "none", cursor: "pointer",
+          width: 26, height: 26, display: "flex", alignItems: "center", justifyContent: "center", background: "none", border: "none", cursor: "pointer",
           color: "var(--sk-icon-secondary)", transform: expanded ? "rotate(90deg)" : "none", transition: "transform var(--sk-duration) var(--sk-ease)",
         }}><IconChevronRight size={16} /></button>
         <div className="sk-row sk-gap-2" style={{ minWidth: 0 }}>
           <span style={{
             width: 26, height: 26, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center",
             background: "var(--sk-accent-secondary)", color: "var(--sk-text-accent)",
-          }}><IconTarget size={15} /></span>
+          }}><IconGoalRing size={15} /></span>
           <div className="sk-col sk-gap-1" style={{ minWidth: 0 }}>
             <span className="sk-label-3" style={{ minWidth: 0 }}>{goal.title}</span>
             {stepsCount > 0 && (
@@ -532,60 +550,57 @@ function Page() {
         <Button variant="accent" icon={<IconPlusSm size={16} />} onClick={() => setFormDrawer("create")}>Добавить цель</Button>
       </div>
 
-      <div className="sk-row" style={{ alignItems: "flex-start", gap: 24 }}>
-        <div className="sk-col sk-gap-4" style={{ flex: 1, minWidth: 0 }}>
-          <div className="sk-col sk-gap-3">
-            <div className="sk-row sk-gap-2" style={{ flexWrap: "wrap", alignItems: "center", minHeight: 48 }}>
-              <Input icon={<IconSearch size={20} />} placeholder="Название, описание, должность, тэг" value={q}
-                onChange={(e) => setQ(e.target.value || "")} style={{ flex: 1, minWidth: 220 }} />
-              <Button mode="secondary" icon={<IconFilter size={16} />} onClick={() => setFiltersOpen((o) => !o)}>
-                Фильтры{filters.position ? " · 1" : ""}
-              </Button>
-              {(hasActiveFilters || q) && <button className="sk-link-btn sk-label-4-regular" onClick={() => { setFilters(emptyFilters); setQ(""); }}>Сбросить</button>}
-            </div>
-            {filtersOpen && (
-              <div className="sk-row sk-gap-2">
-                <Select placeholder="Должность: все" value={filters.position || null} options={positions.map((v) => ({ value: v, label: v }))}
-                  onChange={(v) => setFilters((f) => ({ ...f, position: v || "" }))} style={{ width: 220 }} />
-              </div>
-            )}
-          </div>
+      <CategoryPillsBar categories={D.goalCategories} catalog={catalog} active={filters.category}
+        onSelect={(c) => setFilters((f) => ({ ...f, category: c }))} />
 
-          <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>
-            Найдено целей: {list.length} из {catalog.length} · Всего шагов в каталоге: {totalSteps}
-          </div>
-
-          {list.length > 0 ? (
-            <div>
-              <GoalCatalogListHeader />
-              {list.map((g) => (
-                <GoalCatalogRow key={g.id} goal={g} expanded={!!expandedIds[g.id]} onToggle={() => toggleExpand(g.id)}
-                  onEdit={() => setFormDrawer({ edit: g })} onDuplicate={() => duplicateGoal(g)} onDelete={() => setDeleteConfirm(g)} />
-              ))}
-            </div>
-          ) : catalog.length === 0 ? (
-            <Card>
-              <div className="sk-col sk-gap-3" style={{ alignItems: "center", textAlign: "center", padding: "24px 16px" }}>
-                <div className="sk-title-5">Добавьте первую цель в каталог</div>
-                <div className="sk-muted" style={{ maxWidth: 440 }}>
-                  Готовая цель с шагами и материалами — чтобы потом не собирать её заново, а выбрать из каталога при создании шаблона
-                </div>
-                <Button variant="accent" onClick={() => setFormDrawer("create")}>+ Добавить цель</Button>
-              </div>
-            </Card>
-          ) : (
-            <Card><div className="sk-muted" style={{ textAlign: "center", padding: "16px 0" }}>Ничего не нашлось — попробуйте изменить запрос или фильтры.</div></Card>
-          )}
-
-          <Alert hue="neutral" title="Как это работает">
-            Цель выбирается из каталога как заготовка: HR может донастроить её перед сохранением в шаблон, дальнейшее редактирование в шаблоне
-            не меняет исходную запись в каталоге и наоборот.
-          </Alert>
+      <div className="sk-col sk-gap-3">
+        <div className="sk-row sk-gap-2" style={{ flexWrap: "wrap", alignItems: "center", minHeight: 40 }}>
+          <Input size="s" icon={<IconSearch size={18} />} placeholder="Название, описание, должность, тэг" value={q}
+            onChange={(e) => setQ(e.target.value || "")} style={{ flex: 1, minWidth: 220, maxWidth: 420 }} />
+          <Button mode="secondary" icon={<IconFilter size={16} />} onClick={() => setFiltersOpen((o) => !o)}
+            style={{ background: "var(--sk-surface-page)", border: "1px solid var(--sk-stroke)" }}>
+            Фильтры{filters.position ? " · 1" : ""}
+          </Button>
+          {(hasActiveFilters || q) && <button className="sk-link-btn sk-label-4-regular" onClick={() => { setFilters(emptyFilters); setQ(""); }}>Сбросить</button>}
         </div>
-
-        <CategorySidebar categories={D.goalCategories} active={filters.category}
-          onSelect={(c) => setFilters((f) => ({ ...f, category: c }))} />
+        {filtersOpen && (
+          <div className="sk-row sk-gap-2" style={{ flexWrap: "wrap", alignItems: "flex-end" }}>
+            <Select label="Должность" placeholder="Все" value={filters.position || null} options={positions.map((v) => ({ value: v, label: v }))}
+              onChange={(v) => setFilters((f) => ({ ...f, position: v || "" }))} style={{ width: 220 }} />
+          </div>
+        )}
       </div>
+
+      <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>
+        Найдено целей: {list.length} из {catalog.length} · Всего шагов в каталоге: {totalSteps}
+      </div>
+
+      {list.length > 0 ? (
+        <div>
+          <GoalCatalogListHeader />
+          {list.map((g) => (
+            <GoalCatalogRow key={g.id} goal={g} expanded={!!expandedIds[g.id]} onToggle={() => toggleExpand(g.id)}
+              onEdit={() => setFormDrawer({ edit: g })} onDuplicate={() => duplicateGoal(g)} onDelete={() => setDeleteConfirm(g)} />
+          ))}
+        </div>
+      ) : catalog.length === 0 ? (
+        <Card>
+          <div className="sk-col sk-gap-3" style={{ alignItems: "center", textAlign: "center", padding: "24px 16px" }}>
+            <div className="sk-title-5">Добавьте первую цель в каталог</div>
+            <div className="sk-muted" style={{ maxWidth: 440 }}>
+              Готовая цель с шагами и материалами — чтобы потом не собирать её заново, а выбрать из каталога при создании шаблона
+            </div>
+            <Button variant="accent" onClick={() => setFormDrawer("create")}>+ Добавить цель</Button>
+          </div>
+        </Card>
+      ) : (
+        <Card><div className="sk-muted" style={{ textAlign: "center", padding: "16px 0" }}>Ничего не нашлось — попробуйте изменить запрос или фильтры.</div></Card>
+      )}
+
+      <Alert hue="neutral" title="Как это работает">
+        Цель выбирается из каталога как заготовка: HR может донастроить её перед сохранением в шаблон, дальнейшее редактирование в шаблоне
+        не меняет исходную запись в каталоге и наоборот.
+      </Alert>
 
       {(formDrawer === "create" || (formDrawer && formDrawer.edit)) && (
         <GoalCatalogFormDrawer
