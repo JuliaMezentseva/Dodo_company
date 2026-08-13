@@ -321,6 +321,54 @@ function pluralTimes(n) {
   return "раз";
 }
 
+// Чип одиночного фильтра (Должность/Уровень — один выбор, не массив) — тот же паттерн
+// клика-вне-закрывает и позиционирования, что и у выпадашки "+ направление" ниже, и тот
+// же визуальный стиль чипов, что теперь на витрине вакансий: клик сразу открывает список
+// вариантов под чипом, без промежуточного шага "+ Фильтр".
+function FilterChip({ label, options, value, onChange }) {
+  const [open, setOpen] = React.useState(false);
+  const ref = React.useRef(null);
+  React.useEffect(() => {
+    if (!open) return;
+    const close = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener("mousedown", close);
+    return () => document.removeEventListener("mousedown", close);
+  }, [open]);
+  const selected = options.find((o) => o.value === value);
+  return (
+    <div ref={ref} style={{ position: "relative" }}>
+      <button type="button" onClick={() => setOpen((o) => !o)} className="sk-clickable" style={{
+        display: "inline-flex", alignItems: "center", gap: 6, height: 36, padding: "0 12px",
+        borderRadius: "var(--sk-radius-2)", cursor: "pointer", whiteSpace: "nowrap",
+        border: open ? "1px solid var(--sk-stroke-accent)" : "1px solid var(--sk-stroke)",
+        background: "var(--sk-surface-page)", font: "var(--sk-label-3-regular)", color: "var(--sk-text-primary)",
+      }}>
+        {label}{selected ? ": " + selected.label : ""}
+        {value && (
+          <span onClick={(e) => { e.stopPropagation(); onChange(""); }} style={{ display: "inline-flex", opacity: 0.55 }}>
+            <IconX size={13} />
+          </span>
+        )}
+      </button>
+      {open && (
+        <div style={{
+          position: "absolute", top: "calc(100% + 4px)", left: 0, zIndex: 20, minWidth: 200, maxHeight: 300, overflowY: "auto",
+          background: "var(--sk-surface-page)", borderRadius: "var(--sk-radius-2)", boxShadow: "var(--sk-shadow-m)", padding: 6,
+        }}>
+          {options.map((o) => (
+            <button key={o.value} onClick={() => { onChange(o.value === value ? "" : o.value); setOpen(false); }} style={{
+              display: "block", width: "100%", textAlign: "left", padding: "8px 10px", borderRadius: "var(--sk-radius-2)",
+              border: "none", cursor: "pointer", font: "var(--sk-label-3-regular)",
+              background: o.value === value ? "var(--sk-surface-secondary)" : "transparent",
+              color: "var(--sk-text-primary)",
+            }}>{o.label}</button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ---------------- Пилюли категорий над таблицей — "Все категории" + самые популярные
 // (по числу целей в каталоге), плюс "+" в конце, чтобы развернуть остальные направления.
 // Серый фон в состоянии покоя, синий акцент — только когда выбрана конкретная категория
@@ -591,11 +639,11 @@ function Page() {
         <CategoryPillsBar categories={D.goalCategories} catalog={scoped} active={filters.category}
           onSelect={(c) => setFilters((f) => ({ ...f, category: c }))} />
         {filtersOpen && (
-          <div className="sk-row sk-gap-2" style={{ flexWrap: "wrap", alignItems: "flex-end" }}>
-            <Select label="Должность" placeholder="Все" value={filters.position || null} options={positions.map((v) => ({ value: v, label: v }))}
-              onChange={(v) => setFilters((f) => ({ ...f, position: v || "" }))} style={{ width: 220 }} />
-            <Select label="Уровень" placeholder="Все" value={filters.level || null} options={D.goalLevels.map((v) => ({ value: v, label: v }))}
-              onChange={(v) => setFilters((f) => ({ ...f, level: v || "" }))} style={{ width: 160 }} />
+          <div className="sk-row sk-gap-2" style={{ flexWrap: "wrap" }}>
+            <FilterChip label="Должность" options={positions.map((v) => ({ value: v, label: v }))}
+              value={filters.position} onChange={(v) => setFilters((f) => ({ ...f, position: v }))} />
+            <FilterChip label="Уровень" options={D.goalLevels.map((v) => ({ value: v, label: v }))}
+              value={filters.level} onChange={(v) => setFilters((f) => ({ ...f, level: v }))} />
           </div>
         )}
       </div>
