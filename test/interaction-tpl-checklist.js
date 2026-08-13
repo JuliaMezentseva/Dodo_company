@@ -79,7 +79,7 @@ const target = path.resolve(__dirname, "..", "hr", "template.html");
     await tick(80);
     body = w.document.body.textContent;
     console.log("After enabling — empty-state stub shown (no prefilled checkpoints):",
-      body.includes("Отслеживайте прогресс адаптации на регулярных встречах") && !body.includes("Контрольная точка по итогам 30 дней") ? "PASS" : "FAIL");
+      body.includes("Запланируйте регулярные встречи с сотрудником") && !body.includes("Контрольная точка по итогам 30 дней") ? "PASS" : "FAIL");
     console.log("Empty state has explanatory text with 30/60/90 recommendation (symmetric to goals empty state):",
       body.includes("Рекомендуем добавить 3: на 30 / 60 / 90 дней") ? "PASS" : "FAIL");
     console.log("Empty-state CTA button reads 'Добавить контрольную точку' (same wording as list-mode button):",
@@ -122,7 +122,7 @@ const target = path.resolve(__dirname, "..", "hr", "template.html");
     await tick(80);
     body = w.document.body.textContent;
     console.log("Checkpoint removed after delete click:", !body.includes("КТ по итогам 90 дней") ? "PASS" : "FAIL");
-    console.log("Empty-state stub reappears after deleting the only checkpoint:", body.includes("Отслеживайте прогресс адаптации на регулярных встречах") ? "PASS" : "FAIL");
+    console.log("Empty-state stub reappears after deleting the only checkpoint:", body.includes("Запланируйте регулярные встречи с сотрудником") ? "PASS" : "FAIL");
 
     // tpl_support: goalsEnabled=false, без предзаполненных checkpoints — проверяем включение
     // тумблера с чистого листа (пустая заглушка, кнопка добавления доступна сразу).
@@ -139,7 +139,7 @@ const target = path.resolve(__dirname, "..", "hr", "template.html");
     checkpointsTab2.dispatchEvent(new w2.MouseEvent("click", { bubbles: true }));
     await tick(80);
     body2 = w2.document.body.textContent;
-    console.log("[empty tpl] Empty-state stub available even with empty list:", body2.includes("Отслеживайте прогресс адаптации на регулярных встречах") ? "PASS" : "FAIL");
+    console.log("[empty tpl] Empty-state stub available even with empty list:", body2.includes("Запланируйте регулярные встречи с сотрудником") ? "PASS" : "FAIL");
 
     console.log("\nOK: сценарий CRUD контрольных точек шаблона прошёл без падений");
   } catch (e) {
