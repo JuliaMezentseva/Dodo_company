@@ -20,12 +20,15 @@ const { AppShell, Icons } = window.Site;
 const { IconPlusSm, IconSearch, IconFilter, IconTrash, IconX, IconChevronRight, IconEdit, IconCopyLocal2 } = Icons;
 
 // Иконка цели — две концентрические окружности без заливки в центре (ближе к референсу,
-// чем стандартная IconTarget из набора ДС, у которой есть закрашенная точка в центре).
+// чем стандартная IconTarget из набора ДС, у которой есть закрашенная точка в центре),
+// плюс стрела, летящая в мишень справа сверху — стандартный визуальный код "цель/достижение".
 function IconGoalRing({ size = 16, color = "currentColor" }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" style={{ color, flexShrink: 0 }}>
-      <circle cx="12" cy="12" r="8.7" stroke="currentColor" strokeWidth="1.6" />
-      <circle cx="12" cy="12" r="4.3" stroke="currentColor" strokeWidth="1.6" />
+      <circle cx="10" cy="14" r="7.6" stroke="currentColor" strokeWidth="1.6" />
+      <circle cx="10" cy="14" r="3.6" stroke="currentColor" strokeWidth="1.6" />
+      <path d="M11.5 12.5L20 4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+      <path d="M14.5 3.5H20.5V9.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
@@ -266,7 +269,7 @@ function GoalCatalogFormDrawer({ initial, onClose, onSave }) {
                 </span>
                 <span style={{
                   width: 26, height: 26, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center",
-                  background: "var(--sk-special)", color: "var(--sk-text-contrast)", font: "var(--sk-label-4)",
+                  background: "var(--sk-special-secondary)", color: "var(--text-text-special)", font: "var(--sk-label-4)",
                 }}>{i + 1}</span>
                 <div className="sk-row sk-gap-2 sk-clickable" onClick={() => setSubgoalModal({ edit: i })} style={{ flex: 1, minWidth: 0, alignItems: "center" }}>
                   <div className="sk-col sk-gap-1" style={{ flex: 1, minWidth: 0 }}>
@@ -413,7 +416,7 @@ function StepPreviewRow({ index, sg }) {
     <div className="sk-row sk-gap-2" style={{ alignItems: "center", padding: "8px 0", borderTop: "1px solid var(--sk-stroke)" }}>
       <span style={{
         width: 22, height: 22, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center",
-        background: "var(--sk-special)", color: "var(--sk-text-contrast)", font: "var(--sk-label-4)",
+        background: "var(--sk-special-secondary)", color: "var(--text-text-special)", font: "var(--sk-label-4)",
       }}>{index}</span>
       <span className="sk-label-4-regular" style={{ flex: 1, minWidth: 0 }}>{sg.title}</span>
     </div>
