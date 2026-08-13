@@ -16,7 +16,7 @@
 <div id="root"></div>
 <script type="text/babel">
 const { Card, Tag, Input, Button, Checkbox } = window.SkillazCoreDesignSystem_bf9566;
-const { AppShell, Icons, directionHue } = window.Site;
+const { AppShell, Icons } = window.Site;
 const { IconSearch, IconMapPin, IconBriefcase, IconCheck, IconFilter, IconX, IconChevronDown } = Icons;
 const D = window.SITE_DATA;
 
@@ -94,7 +94,7 @@ function VacancyCard({ vacancy, hasResponse }) {
         <div className="sk-col sk-gap-3" style={{ height: "100%" }}>
           <div className="sk-row" style={{ justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
             <span style={{ opacity: hasResponse ? 0.55 : 1 }}>
-              <Tag size="s" hue={directionHue(vacancy.direction)}>{vacancy.direction}</Tag>
+              <Tag size="s" hue="neutral">{vacancy.direction}</Tag>
             </span>
             {hasResponse
               ? <Tag size="s" hue="positive" icon={<IconThumbUp size={13} />}>Уже откликнулись</Tag>
