@@ -38,6 +38,17 @@ function IconGripVertical({ size = 16, color = "currentColor" }) {
   );
 }
 
+// Иконка цели — две концентрические окружности, тот же вид, что и в hr/goals-catalog.html
+// (IconGoalRing), для единого визуального языка "цель/шаг" во всём прототипе.
+function IconGoalRing({ size = 16, color = "currentColor" }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" style={{ color, flexShrink: 0 }}>
+      <circle cx="12" cy="12" r="8.7" stroke="currentColor" strokeWidth="1.6" />
+      <circle cx="12" cy="12" r="4.3" stroke="currentColor" strokeWidth="1.6" />
+    </svg>
+  );
+}
+
 const TEMPLATE_SECTIONS = [
   { id: "description", label: "Описание", icon: IconInfo },
   { id: "goals", label: "План адаптации", icon: IconTarget },
@@ -264,7 +275,7 @@ function TemplateCheckpointsSection({ checkpoints, onAdd, onEdit, onDelete }) {
           <div className="sk-col sk-gap-3" style={{ alignItems: "center", textAlign: "center", padding: "24px 16px" }}>
             <div className="sk-title-5">Запланируйте регулярные встречи с сотрудником</div>
             <div className="sk-muted" style={{ maxWidth: 440 }}>Контрольные точки помогут фиксировать, как сотрудник справляется и вовремя помочь ему. Рекомендуем добавить 3: на 30 / 60 / 90 дней</div>
-            <Button variant="accent" onClick={() => setFormModal({ mode: "create" })}>Добавить контрольную точку</Button>
+            <Button variant="neutral" onClick={() => setFormModal({ mode: "create" })}>Добавить контрольную точку</Button>
           </div>
         </Card>
       ) : (
@@ -274,7 +285,7 @@ function TemplateCheckpointsSection({ checkpoints, onAdd, onEdit, onDelete }) {
             <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Контрольные точки помогут фиксировать, как сотрудник справляется и вовремя помочь ему. Рекомендуем добавить 3 точки: на 30 / 60 / 90 дней</span>
           </div>
           <div className="sk-row sk-gap-2">
-            <Button variant="accent" size="s" icon={<IconPlusSm size={16} />} onClick={() => setFormModal({ mode: "create" })}>
+            <Button variant="neutral" size="s" icon={<IconPlusSm size={16} />} onClick={() => setFormModal({ mode: "create" })}>
               Добавить контрольную точку
             </Button>
           </div>
@@ -584,7 +595,7 @@ function TemplateGoalCreateDrawer({ draft, setDraft, onClose, onCreate, onAddSub
               </span>
               <span style={{
                 width: 26, height: 26, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center",
-                background: "var(--sk-accent)", color: "var(--sk-text-contrast)", font: "var(--sk-label-4)",
+                background: "var(--sk-special-secondary)", color: "var(--text-text-special)", font: "var(--sk-label-4)",
               }}>{i + 1}</span>
               <div className="sk-col sk-gap-1" style={{ flex: 1, minWidth: 0 }}>
                 <div className="sk-label-4">{sg.title}</div>
@@ -615,7 +626,7 @@ function TemplateSubgoalRow({ index, subgoal, onOpen, dragHandleProps, dragging 
       </span>
       <span style={{
         width: 26, height: 26, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center",
-        background: "var(--sk-accent)", color: "var(--sk-text-contrast)", font: "var(--sk-label-4)",
+        background: "var(--sk-special-secondary)", color: "var(--text-text-special)", font: "var(--sk-label-4)",
       }}>{index}</span>
       <div className="sk-row sk-gap-2 sk-clickable" onClick={onOpen} style={{ alignItems: "center", flex: 1, minWidth: 0 }}>
         <div className="sk-col sk-gap-1" style={{ flex: 1, minWidth: 0 }}>
@@ -687,11 +698,17 @@ function TemplateGoalRow({ goal, onOpen, onDelete, onOpenSubgoal, onReorderSubgo
   return (
     <div className="sk-col sk-gap-3" style={{ padding: 14, border: "1px solid var(--sk-stroke)", borderRadius: "var(--sk-radius-3)", background: "var(--sk-surface-page)" }}>
       <div className="sk-row sk-gap-3 sk-clickable" onClick={onOpen} style={{ justifyContent: "space-between", alignItems: "flex-start" }}>
-        <div className="sk-col sk-gap-1" style={{ flex: 1, minWidth: 0 }}>
-          <div className="sk-title-5">{goal.title || "Без названия"}</div>
-          <span className="sk-row sk-gap-1 sk-muted" style={{ font: "var(--sk-label-4-regular)", alignItems: "center" }}>
-            <IconCalendar size={13} color="var(--sk-icon-secondary)" />{dueDateLabel(goal.dueDays)}
-          </span>
+        <div className="sk-row sk-gap-2" style={{ flex: 1, minWidth: 0 }}>
+          <span style={{
+            width: 26, height: 26, marginTop: 2, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center",
+            background: "var(--sk-accent-secondary)", color: "var(--sk-text-accent)",
+          }}><IconGoalRing size={15} /></span>
+          <div className="sk-col sk-gap-1" style={{ flex: 1, minWidth: 0 }}>
+            <div className="sk-title-5">{goal.title || "Без названия"}</div>
+            <span className="sk-row sk-gap-1 sk-muted" style={{ font: "var(--sk-label-4-regular)", alignItems: "center" }}>
+              <IconCalendar size={13} color="var(--sk-icon-secondary)" />{dueDateLabel(goal.dueDays)}
+            </span>
+          </div>
         </div>
         <div className="sk-row sk-gap-1" style={{ flexShrink: 0 }} onClick={(e) => e.stopPropagation()}>
           <Button size="s" mode="tertiary" onClick={onDelete}><IconTrash size={15} /></Button>
@@ -795,7 +812,7 @@ function GoalsSection({ owner, deadlineDays, goals, onOwnerChange, onDeadlineCha
       ) : (
         <div className="sk-col sk-gap-3">
           <div className="sk-row sk-gap-2">
-            <Button variant="accent" size="s" icon={<IconPlusSm size={16} />} onClick={() => setMethodModal(true)}>Создать цель</Button>
+            <Button variant="neutral" size="s" icon={<IconPlusSm size={16} />} onClick={() => setMethodModal(true)}>Создать цель</Button>
           </div>
 
           <div className="sk-col sk-gap-2">
@@ -894,7 +911,7 @@ function GoalsSettingsCard({ template, enabled, owner, deadlineDays, goals, chec
       {enabled && (
         <Card bordered style={{ padding: 0, overflow: "hidden" }}>
           <div className="sk-col">
-            <div style={{ padding: "12px 24px 0" }}>
+            <div style={{ padding: "12px 24px 0", "--sk-accent": "var(--sk-text-primary)" }}>
               <Tabs items={tabs} active={tab} onChange={setTab} />
             </div>
             <div style={{ minHeight: 360 }}>
