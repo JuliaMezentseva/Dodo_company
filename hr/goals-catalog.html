@@ -225,7 +225,7 @@ function GoalCatalogFormDrawer({ initial, onClose, onSave }) {
         primary={<Button disabled={!canSave} onClick={() => onSave(form)}>{initial ? "Сохранить" : "Добавить в каталог"}</Button>}
         secondary={<Button mode="secondary" onClick={onClose}>Отменить</Button>}>
         <div className="sk-col sk-gap-4">
-          <Input label="Название" required placeholder="Например, Изучить продукт компании"
+          <Input label="Название" required placeholder="Например, Сдать аттестацию по продукту с результатом не ниже 90%"
             value={form.title} onChange={(e) => set("title")(e.target.value || "")} />
           <Textarea label="Описание" rows={3} maxLength={1000} showCount
             placeholder="Какой измеримый результат должен получить сотрудник"
@@ -339,11 +339,14 @@ function CategoryPillsBar({ categories, catalog, active, onSelect }) {
   const shown = [...topCategories, ...pinned.filter((c) => !topCategories.includes(c))];
   const remaining = sorted.filter((c) => !shown.includes(c));
 
+  // Серый = выбрано (тот же тег, что и в столбце "Категория" таблицы — одинаковый
+  // визуальный язык), белая обводка = не выбрано.
   function pillStyle(isActive) {
     return {
-      height: 28, padding: "0 10px", borderRadius: "var(--sk-radius-full)", border: "none", cursor: "pointer",
-      background: isActive ? "var(--sk-accent)" : "var(--sk-surface-secondary)",
-      color: isActive ? "var(--sk-text-contrast)" : "var(--sk-text-secondary)",
+      height: 28, padding: "0 10px", borderRadius: "var(--sk-radius-full)", cursor: "pointer",
+      border: isActive ? "none" : "1px solid var(--sk-stroke)",
+      background: isActive ? "var(--sk-surface-secondary)" : "var(--sk-surface-page)",
+      color: isActive ? "var(--sk-text-primary)" : "var(--sk-text-secondary)",
       font: isActive ? "var(--sk-label-4)" : "var(--sk-label-4-regular)", whiteSpace: "nowrap", flexShrink: 0,
     };
   }
@@ -421,8 +424,9 @@ function StepPreviewRow({ index, sg }) {
 // шеврон разворачивает список шагов прямо тут же, без перехода в дровер. Название —
 // главный, самый заметный элемент строки (жирным, переносится на несколько строк, не
 // обрезается многоточием); счётчик шагов — второстепенная подпись под названием, не
-// перед ним. Категория показана обычным текстом, а не цветной плашкой: Tag не сжимается
-// внутри grid-колонки и при длинном названии категории наезжал на соседние колонки.
+// перед ним. Категория — серым тегом (не компонент Tag из ДС: он не сжимается внутри
+// grid-колонки, поэтому тег собран вручную с overflow/ellipsis, чтобы длинное название
+// категории аккуратно обрезалось, а не наезжало на соседние колонки, как было раньше).
 // Синий кружок с иконкой-мишенью перед названием — визуальный маркер "это цель", тот же
 // приём, что и у шагов (см. StepPreviewRow), но другим цветом (фиолетовый), чтобы цель и
 // шаг различались с первого взгляда, а не только размером текста. ----------------
@@ -452,7 +456,12 @@ function GoalCatalogRow({ goal, expanded, onToggle, onEdit, onDuplicate, onDelet
             )}
           </div>
         </div>
-        <span className="sk-label-4-regular" style={cellText}>{goal.category}</span>
+        <div style={{ minWidth: 0 }}>
+          <span className="sk-label-4-regular" style={{
+            display: "inline-block", maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+            background: "var(--sk-surface-secondary)", color: "var(--sk-text-primary)", borderRadius: "var(--sk-radius-full)", padding: "3px 10px",
+          }}>{goal.category}</span>
+        </div>
         <span className="sk-label-4-regular" style={cellText}>
           {(goal.positions || []).length ? goal.positions.join(", ") : "—"}
         </span>
