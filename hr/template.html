@@ -121,8 +121,8 @@ function NotBuiltSection({ label }) {
 
 // Контрольные точки шаблона — нумерованные кружки (стиль из RightPanel employee/plan.html),
 // но, в отличие от превью прошлой итерации, полноценно редактируемые: HR может добавить,
-// изменить или удалить КТ прямо в шаблоне. По умолчанию для новых шаблонов предзаполнены
-// стандартные 30/60 дней (см. tpl_sales в данных), но состав не зафиксирован жёстко.
+// изменить или удалить КТ прямо в шаблоне. Для новых шаблонов список стартует пустым —
+// симметрично блоку "Цели", без заранее предсозданных точек.
 const emptyCpForm = { title: "", agenda: "", dueDays: 30, surveyId: "" };
 
 function CheckpointFormModal({ initial, onClose, onSave }) {
@@ -175,18 +175,29 @@ function TemplateCheckpointsSection({ checkpoints, onAdd, onEdit, onDelete }) {
   const [formModal, setFormModal] = React.useState(null); // null | { mode: "create" } | { mode: "edit", cp }
   return (
     <div className="sk-col sk-gap-3">
-      {checkpoints.length > 0 && (
-        <div className="sk-col sk-gap-2">
-          {checkpoints.map((cp, i) => (
-            <TemplateCheckpointRow key={cp.id} index={i + 1} cp={cp}
-              onEdit={() => setFormModal({ mode: "edit", cp })} onDelete={() => onDelete(cp.id)} />
-          ))}
+      {checkpoints.length === 0 ? (
+        <Card>
+          <div className="sk-col sk-gap-3" style={{ alignItems: "center", textAlign: "center", padding: "24px 16px" }}>
+            <div className="sk-title-5">Добавьте контрольные точки плана</div>
+            <div className="sk-muted" style={{ maxWidth: 440 }}>Контрольная точка — это встреча-сверка с сотрудником: обсуждение прогресса, повестка и, при необходимости, опрос</div>
+            <Button variant="accent" onClick={() => setFormModal({ mode: "create" })}>+ Добавить</Button>
+          </div>
+        </Card>
+      ) : (
+        <div className="sk-col sk-gap-3">
+          <div className="sk-row sk-gap-2">
+            <Button variant="accent" size="s" icon={<IconPlusSm size={16} />} onClick={() => setFormModal({ mode: "create" })}>
+              Добавить контрольную точку
+            </Button>
+          </div>
+          <div className="sk-col sk-gap-2">
+            {checkpoints.map((cp, i) => (
+              <TemplateCheckpointRow key={cp.id} index={i + 1} cp={cp}
+                onEdit={() => setFormModal({ mode: "edit", cp })} onDelete={() => onDelete(cp.id)} />
+            ))}
+          </div>
         </div>
       )}
-      <Button variant="accent" size="s" icon={<IconPlusSm size={16} />} style={{ alignSelf: "flex-start" }}
-        onClick={() => setFormModal({ mode: "create" })}>
-        Добавить контрольную точку
-      </Button>
 
       {formModal && (
         <CheckpointFormModal
@@ -206,8 +217,8 @@ const GOALS_OWNER_OPTIONS = [
 
 function GoalsOwnerPicker({ owner, onChange }) {
   return (
-    <div className="sk-col sk-gap-2">
-      <span className="sk-label-3-regular" style={{ color: "var(--sk-text-primary)" }}>Способ настройки целей</span>
+    <div className="sk-col sk-gap-2" style={{ paddingBottom: 16, marginBottom: 4, borderBottom: "1px solid var(--sk-stroke)" }}>
+      <span className="sk-label-3" style={{ color: "var(--sk-text-primary)" }}>Способ настройки целей</span>
       <SegmentedControl size="m"
         items={GOALS_OWNER_OPTIONS.map((o) => ({ id: o.id, label: o.label }))}
         active={owner} onChange={onChange} style={{ alignSelf: "flex-start" }} />
@@ -662,17 +673,19 @@ function GoalsSettingsCard({ template, enabled, owner, deadlineDays, goals, chec
       {enabled && (
         <Card bordered style={{ padding: 0, overflow: "hidden" }}>
           <div className="sk-col">
-            <div style={{ padding: "0 24px" }}>
+            <div style={{ padding: "12px 24px 0" }}>
               <Tabs items={tabs} active={tab} onChange={setTab} />
             </div>
-            {tab === "goals" ? (
-              <GoalsSection owner={owner} deadlineDays={deadlineDays} goals={goals}
-                onOwnerChange={onOwnerChange} onDeadlineChange={onDeadlineChange}
-                onAddGoal={onAddGoal} onUpdateGoal={onUpdateGoal} onDeleteGoal={onDeleteGoal} />
-            ) : (
-              <CheckpointsSection checkpoints={checkpoints}
-                onAddCheckpoint={onAddCheckpoint} onEditCheckpoint={onEditCheckpoint} onDeleteCheckpoint={onDeleteCheckpoint} />
-            )}
+            <div style={{ minHeight: 360 }}>
+              {tab === "goals" ? (
+                <GoalsSection owner={owner} deadlineDays={deadlineDays} goals={goals}
+                  onOwnerChange={onOwnerChange} onDeadlineChange={onDeadlineChange}
+                  onAddGoal={onAddGoal} onUpdateGoal={onUpdateGoal} onDeleteGoal={onDeleteGoal} />
+              ) : (
+                <CheckpointsSection checkpoints={checkpoints}
+                  onAddCheckpoint={onAddCheckpoint} onEditCheckpoint={onEditCheckpoint} onDeleteCheckpoint={onDeleteCheckpoint} />
+              )}
+            </div>
           </div>
         </Card>
       )}

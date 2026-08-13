@@ -64,7 +64,7 @@ const target = path.resolve(__dirname, "..", "hr", "template.html");
     click(w, checkpointsTab);
     await tick(80);
     body = w.document.body.textContent;
-    console.log("After clicking checkpoints tab — checkpoints content visible:", body.includes("Добавить контрольную точку") ? "PASS" : "FAIL");
+    console.log("After clicking checkpoints tab — checkpoints content visible (empty state):", body.includes("Добавьте контрольные точки плана") ? "PASS" : "FAIL");
     console.log("After clicking checkpoints tab — goals content hidden:", !body.includes("Способ настройки целей") ? "PASS" : "FAIL");
 
     // Возвращаемся на таб "Цели" для продолжения сценария
@@ -179,10 +179,13 @@ const target = path.resolve(__dirname, "..", "hr", "template.html");
     console.log("'Статистика' block removed entirely:", !body.includes("Статистика") ? "PASS" : "FAIL");
     console.log("'Вернуться' button present in left column:", body.includes("Вернуться") ? "PASS" : "FAIL");
 
-    // Только вариант A (SegmentedControl) для "Способ настройки целей" — без bold
+    // Только вариант A (SegmentedControl) для "Способ настройки целей" — подпись выделена
+    // жирным и отделена нижней границей, чтобы читаться как "шаг 1" настройки, а не рядовое поле
     const ownerLabel = [...w.document.querySelectorAll("span")].find(el => el.textContent.trim() === "Способ настройки целей");
     console.log("'Способ настройки целей' label present:", !!ownerLabel ? "PASS" : "FAIL");
-    console.log("'Способ настройки целей' label is not bold (sk-label-3-regular):", ownerLabel && ownerLabel.className.includes("sk-label-3-regular") ? "PASS" : "FAIL");
+    console.log("'Способ настройки целей' label is bold (sk-label-3, stands out as step 1):", ownerLabel && ownerLabel.className.includes("sk-label-3") && !ownerLabel.className.includes("sk-label-3-regular") ? "PASS" : "FAIL");
+    console.log("Owner picker block has bottom separator (visually distinct step):",
+      ownerLabel && ownerLabel.parentElement && ownerLabel.parentElement.style.borderBottom ? "PASS" : "FAIL");
 
     console.log("\nOK: сценарий HR-цели прошёл без падений");
   } catch (e) {

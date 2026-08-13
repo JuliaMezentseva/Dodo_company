@@ -817,10 +817,7 @@ window.SITE_DATA = {
       goalsDeadlineDays: 7,
       goals: [],
       stats: { tasks: 12, files: 3, links: 4, courses: 2, surveys: 1 },
-      checkpoints: [
-        { id: "tcp1", title: "Контрольная точка по итогам 30 дней", agenda: "Обсудить прогресс, сложности и необходимую поддержку.\nСверить понимание целей и ожиданий.", required: true, dueDays: 30, surveyId: "survey_30" },
-        { id: "tcp2", title: "Контрольная точка по итогам 60 дней", agenda: "Обсудить прогресс, сложности и необходимую поддержку.\nОпределить следующие шаги.", required: true, dueDays: 60, surveyId: null },
-      ],
+      checkpoints: [],
     },
     {
       id: "tpl_frontend",

@@ -42,14 +42,14 @@ const target = path.resolve(__dirname, "..", "hr", "template.html");
 
 (async () => {
   try {
-    // tpl_sales: goalsEnabled=false из коробки, но есть 2 предзаполненные КТ (30/60 дней) —
-    // не показываются, пока план с целями выключен.
+    // tpl_sales: goalsEnabled=false из коробки, контрольные точки не предзаполнены —
+    // список стартует пустым, симметрично блоку "Цели".
     const w = loadPage(target, "tpl=tpl_sales");
     await tick(150);
     let body = w.document.body.textContent;
     console.log("Goals section is default:", body.includes("План адаптации") ? "PASS" : "FAIL");
     console.log("Toggle label updated:", body.includes("Включить план адаптации с целями") ? "PASS" : "FAIL");
-    console.log("Checkpoints hidden while goals disabled:", !body.includes("Контрольная точка по итогам 30 дней") ? "PASS" : "FAIL");
+    console.log("Checkpoints hidden while goals disabled:", !body.includes("Контрольные точки") ? "PASS" : "FAIL");
 
     // Некликабельный пункт навигации не переключает секцию
     const descNav = findNavItem(w, "Описание");
@@ -66,7 +66,8 @@ const target = path.resolve(__dirname, "..", "hr", "template.html");
     console.log("Checklist stub has no CRUD controls:", !w.document.body.innerHTML.includes("Добавить контрольную точку") ? "PASS" : "FAIL");
 
     // Возвращаемся в "План адаптации" и включаем тумблер — по умолчанию открыт таб "Цели",
-    // переключаемся на таб "Контрольные точки", чтобы увидеть предзаполненные КТ и кнопку добавления.
+    // переключаемся на таб "Контрольные точки", чтобы увидеть пустую заглушку (симметричную
+    // заглушке блока "Цели") и кнопку добавления первой КТ.
     const goalsNav = findNavItem(w, "План адаптации");
     goalsNav.dispatchEvent(new w.MouseEvent("click", { bubbles: true }));
     await tick(50);
@@ -77,12 +78,14 @@ const target = path.resolve(__dirname, "..", "hr", "template.html");
     checkpointsTab.dispatchEvent(new w.MouseEvent("click", { bubbles: true }));
     await tick(80);
     body = w.document.body.textContent;
-    console.log("After enabling — 2 prefilled checkpoints shown:",
-      body.includes("Контрольная точка по итогам 30 дней") && body.includes("Контрольная точка по итогам 60 дней") ? "PASS" : "FAIL");
-    console.log("'Добавить контрольную точку' button present:", body.includes("Добавить контрольную точку") ? "PASS" : "FAIL");
+    console.log("After enabling — empty-state stub shown (no prefilled checkpoints):",
+      body.includes("Добавьте контрольные точки плана") && !body.includes("Контрольная точка по итогам 30 дней") ? "PASS" : "FAIL");
+    console.log("Empty state has explanatory text (symmetric to goals empty state):",
+      body.includes("встреча-сверка с сотрудником") ? "PASS" : "FAIL");
+    console.log("'Добавить контрольную точку' list-mode button absent while list is empty:", !body.includes("Добавить контрольную точку") ? "PASS" : "FAIL");
 
-    // Добавляем новую КТ через модалку
-    const addBtn = [...w.document.querySelectorAll("button")].find(b => b.textContent.includes("Добавить контрольную точку"));
+    // Добавляем первую КТ через кнопку в заглушке
+    const addBtn = [...w.document.querySelectorAll("button")].find(b => b.textContent.trim() === "+ Добавить");
     addBtn.dispatchEvent(new w.MouseEvent("click", { bubbles: true }));
     await tick(80);
     console.log("Create modal opened:", w.document.body.textContent.includes("Новая контрольная точка") ? "PASS" : "FAIL");
@@ -102,8 +105,9 @@ const target = path.resolve(__dirname, "..", "hr", "template.html");
     saveBtn.dispatchEvent(new w.MouseEvent("click", { bubbles: true }));
     await tick(80);
     body = w.document.body.textContent;
-    console.log("New checkpoint appears in list (3rd, numbered '3'):", body.includes("КТ по итогам 90 дней") ? "PASS" : "FAIL");
+    console.log("New checkpoint appears in list (1st, numbered '1'):", body.includes("КТ по итогам 90 дней") ? "PASS" : "FAIL");
     console.log("Toast shown after add:", body.includes("добавлена") ? "PASS" : "FAIL");
+    console.log("List-mode 'Добавить контрольную точку' button appears once list is non-empty:", body.includes("Добавить контрольную точку") ? "PASS" : "FAIL");
 
     // Удаляем добавленную КТ через кнопку корзины на её строке (нужен самый вложенный
     // div-контейнер строки — ровно с двумя кнопками: редактировать и удалить).
@@ -116,9 +120,10 @@ const target = path.resolve(__dirname, "..", "hr", "template.html");
     body = w.document.body.textContent;
     console.log("Checkpoint removed after delete click:", !body.includes("КТ по итогам 90 дней") ? "PASS" : "FAIL");
     console.log("Toast shown after delete:", body.includes("удалена") ? "PASS" : "FAIL");
+    console.log("Empty-state stub reappears after deleting the only checkpoint:", body.includes("Добавьте контрольные точки плана") ? "PASS" : "FAIL");
 
     // tpl_support: goalsEnabled=false, без предзаполненных checkpoints — проверяем включение
-    // тумблера с чистого листа (список пуст, но кнопка добавления сразу доступна).
+    // тумблера с чистого листа (пустая заглушка, кнопка добавления доступна сразу).
     const w2 = loadPage(target, "tpl=tpl_support");
     await tick(150);
     console.log("[empty tpl] Checkpoints section hidden while goals disabled:",
@@ -132,7 +137,7 @@ const target = path.resolve(__dirname, "..", "hr", "template.html");
     checkpointsTab2.dispatchEvent(new w2.MouseEvent("click", { bubbles: true }));
     await tick(80);
     body2 = w2.document.body.textContent;
-    console.log("[empty tpl] 'Добавить контрольную точку' available even with empty list:", body2.includes("Добавить контрольную точку") ? "PASS" : "FAIL");
+    console.log("[empty tpl] Empty-state stub available even with empty list:", body2.includes("Добавьте контрольные точки плана") ? "PASS" : "FAIL");
 
     console.log("\nOK: сценарий CRUD контрольных точек шаблона прошёл без падений");
   } catch (e) {
