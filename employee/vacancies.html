@@ -17,7 +17,7 @@
 <script type="text/babel">
 const { Card, Tag, Input, Button, Checkbox } = window.SkillazCoreDesignSystem_bf9566;
 const { AppShell, Icons, directionHue } = window.Site;
-const { IconSearch, IconMapPin, IconBriefcase, IconCheck, IconFilter, IconX } = Icons;
+const { IconSearch, IconMapPin, IconBriefcase, IconCheck, IconFilter, IconX, IconChevronDown } = Icons;
 const D = window.SITE_DATA;
 
 // Локальные иконки в стилистике общего набора (mkIcon: viewBox 24, strokeWidth 1.5, currentColor).
@@ -154,10 +154,12 @@ function FilterChip({ label, options, value, onChange, searchable }) {
         background: "var(--sk-surface-page)", font: "var(--sk-label-3-regular)", color: "var(--sk-text-primary)",
       }}>
         {label}{value.length ? ": " + value.length : ""}
-        {value.length > 0 && (
+        {value.length > 0 ? (
           <span onClick={(e) => { e.stopPropagation(); onChange([]); }} style={{ display: "inline-flex", opacity: 0.55 }}>
             <IconX size={13} />
           </span>
+        ) : (
+          <IconChevronDown size={14} style={{ opacity: 0.55 }} />
         )}
       </button>
       {open && (

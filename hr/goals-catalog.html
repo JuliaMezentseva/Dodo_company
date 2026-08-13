@@ -17,7 +17,7 @@
 <script type="text/babel">
 const { Card, Input, Textarea, Select, Checkbox, Divider, Button, Tooltip, Modal, Drawer, Snackbar } = window.SkillazCoreDesignSystem_bf9566;
 const { AppShell, Icons } = window.Site;
-const { IconPlusSm, IconSearch, IconFilter, IconTrash, IconX, IconChevronRight, IconEdit, IconCopyLocal2 } = Icons;
+const { IconPlusSm, IconSearch, IconFilter, IconTrash, IconX, IconChevronRight, IconChevronDown, IconEdit, IconCopyLocal2 } = Icons;
 
 // Иконка цели — мишень со стрелой (target-arrow), по макету из вложения.
 function IconGoalRing({ size = 16, color = "currentColor" }) {
@@ -344,10 +344,12 @@ function FilterChip({ label, options, value, onChange }) {
         background: "var(--sk-surface-page)", font: "var(--sk-label-3-regular)", color: "var(--sk-text-primary)",
       }}>
         {label}{selected ? ": " + selected.label : ""}
-        {value && (
+        {value ? (
           <span onClick={(e) => { e.stopPropagation(); onChange(""); }} style={{ display: "inline-flex", opacity: 0.55 }}>
             <IconX size={13} />
           </span>
+        ) : (
+          <IconChevronDown size={14} style={{ opacity: 0.55 }} />
         )}
       </button>
       {open && (
