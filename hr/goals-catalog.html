@@ -17,7 +17,7 @@
 <script type="text/babel">
 const { Card, Input, Textarea, Select, Checkbox, Divider, Button, Tooltip, Modal, Drawer, Snackbar } = window.SkillazCoreDesignSystem_bf9566;
 const { AppShell, Icons } = window.Site;
-const { IconPlusSm, IconSearch, IconFilter, IconTrash, IconX, IconChevronRight, IconChevronDown, IconEdit, IconCopyLocal2 } = Icons;
+const { IconPlusSm, IconSearch, IconLink2, IconTrash, IconX, IconChevronRight, IconChevronDown, IconEdit, IconCopyLocal2 } = Icons;
 
 // Иконка цели — мишень со стрелой (target-arrow), по макету из вложения.
 function IconGoalRing({ size = 16, color = "currentColor" }) {
@@ -615,7 +615,7 @@ function Page() {
         <div className="sk-row sk-gap-2" style={{ flexWrap: "wrap", alignItems: "center", minHeight: 40 }}>
           <Input size="s" icon={<IconSearch size={18} />} placeholder="Название, описание, должность" value={q}
             onChange={(e) => setQ(e.target.value || "")} style={{ flex: 1, minWidth: 220, maxWidth: 420 }} />
-          <Button mode="secondary" icon={<IconFilter size={16} color="var(--sk-icon-accent)" />} onClick={() => setFiltersOpen((o) => !o)}
+          <Button mode="secondary" icon={<IconLink2 size={16} color="var(--sk-icon-primary)" />} onClick={() => setFiltersOpen((o) => !o)}
             style={{ background: "var(--sk-surface-page)", border: toolbarFilterCount ? "1px solid var(--sk-stroke-accent)" : "1px solid var(--sk-stroke)" }}>
             <span className="sk-row sk-gap-1" style={{ alignItems: "center" }}>
               Фильтры{toolbarFilterCount ? " · " + toolbarFilterCount : ""}
