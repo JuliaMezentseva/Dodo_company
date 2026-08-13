@@ -15,7 +15,7 @@
 <body>
 <div id="root"></div>
 <script type="text/babel">
-const { Card, Tag, Switch, Input, Textarea, Select, Checkbox, SegmentedControl, Tabs, Tooltip, Divider, Button, IconButton, Modal, Drawer, Snackbar } = window.SkillazCoreDesignSystem_bf9566;
+const { Card, Tag, Switch, Input, Textarea, Select, Checkbox, SegmentedControl, Tabs, Tooltip, Divider, Button, IconButton, Modal, Drawer } = window.SkillazCoreDesignSystem_bf9566;
 const { AppShell, Icons } = window.Site;
 const {
   IconInfo, IconTarget, IconCheck, IconClipboard, IconSettings,
@@ -178,8 +178,8 @@ function TemplateCheckpointsSection({ checkpoints, onAdd, onEdit, onDelete }) {
       {checkpoints.length === 0 ? (
         <Card>
           <div className="sk-col sk-gap-3" style={{ alignItems: "center", textAlign: "center", padding: "24px 16px" }}>
-            <div className="sk-title-5">Добавьте контрольные точки плана</div>
-            <div className="sk-muted" style={{ maxWidth: 440 }}>Контрольная точка — это встреча-сверка с сотрудником: обсуждение прогресса, повестка и, при необходимости, опрос</div>
+            <div className="sk-title-5">Покажите сотруднику, что его адаптация важна</div>
+            <div className="sk-muted" style={{ maxWidth: 440 }}>Регулярные встречи с руководителем или HR показывают: компания следит за результатом, а не просто выдала чек-лист. Рекомендуем 3 точки: на 30, 60 и 90 день</div>
             <Button variant="accent" onClick={() => setFormModal({ mode: "create" })}>+ Добавить</Button>
           </div>
         </Card>
@@ -722,36 +722,25 @@ function Page() {
   const [goals, setGoals] = React.useState(baseTemplate.goals || []);
   const [checkpoints, setCheckpoints] = React.useState(baseTemplate.checkpoints || []);
   const [deleteConfirm, setDeleteConfirm] = React.useState(false);
-  const [toast, setToast] = React.useState(null);
-
-  function showToast(msg) {
-    setToast(msg);
-    window.setTimeout(() => setToast(null), 2600);
-  }
 
   function addGoal(draft) {
     setGoals((list) => [...list, { id: "tgoal" + Date.now(), ...draft }]);
-    showToast("Цель добавлена в шаблон");
   }
   function updateGoal(id, updater) {
     setGoals((list) => list.map((g) => g.id === id ? updater(g) : g));
   }
   function deleteGoal(id) {
     setGoals((list) => list.filter((g) => g.id !== id));
-    showToast("Цель удалена");
   }
 
   function addCheckpoint(form) {
     setCheckpoints((list) => [...list, { id: "tcp" + Date.now(), ...form }]);
-    showToast("Контрольная точка добавлена");
   }
   function editCheckpoint(id, form) {
     setCheckpoints((list) => list.map((c) => c.id === id ? { ...c, ...form } : c));
-    showToast("Контрольная точка обновлена");
   }
   function deleteCheckpoint(id) {
     setCheckpoints((list) => list.filter((c) => c.id !== id));
-    showToast("Контрольная точка удалена");
   }
 
   const template = { ...baseTemplate, goalsEnabled: enabled, goalsOwner: owner, goalsDeadlineDays: deadlineDays, goals };
@@ -774,9 +763,8 @@ function Page() {
               onToggle={(v) => {
                 setEnabled(v);
                 if (v) setOwner("hr");
-                showToast(v ? "План адаптации включён" : "План адаптации выключен");
               }}
-              onOwnerChange={(v) => { setOwner(v); showToast(v === "manager" ? "Цели настраивает руководитель" : "Цели добавляются сразу в шаблон"); }}
+              onOwnerChange={setOwner}
               onDeadlineChange={setDeadlineDays}
               onAddGoal={addGoal} onUpdateGoal={updateGoal} onDeleteGoal={deleteGoal}
               onAddCheckpoint={addCheckpoint} onEditCheckpoint={editCheckpoint} onDeleteCheckpoint={deleteCheckpoint} />
@@ -797,12 +785,6 @@ function Page() {
             <div className="sk-muted">Уже назначенные по этому шаблону индивидуальные планы не изменятся — шаблон живёт независимо от них.</div>
           </div>
         </Modal>
-      )}
-
-      {toast && (
-        <div style={{ position: "fixed", bottom: 24, left: "50%", transform: "translateX(-50%)", zIndex: 100 }}>
-          <Snackbar>{toast}</Snackbar>
-        </div>
       )}
     </AppShell>
   );

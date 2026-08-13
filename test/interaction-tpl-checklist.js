@@ -79,9 +79,9 @@ const target = path.resolve(__dirname, "..", "hr", "template.html");
     await tick(80);
     body = w.document.body.textContent;
     console.log("After enabling — empty-state stub shown (no prefilled checkpoints):",
-      body.includes("Добавьте контрольные точки плана") && !body.includes("Контрольная точка по итогам 30 дней") ? "PASS" : "FAIL");
-    console.log("Empty state has explanatory text (symmetric to goals empty state):",
-      body.includes("встреча-сверка с сотрудником") ? "PASS" : "FAIL");
+      body.includes("Покажите сотруднику, что его адаптация важна") && !body.includes("Контрольная точка по итогам 30 дней") ? "PASS" : "FAIL");
+    console.log("Empty state has explanatory text with 30/60/90 recommendation (symmetric to goals empty state):",
+      body.includes("Рекомендуем 3 точки: на 30, 60 и 90 день") ? "PASS" : "FAIL");
     console.log("'Добавить контрольную точку' list-mode button absent while list is empty:", !body.includes("Добавить контрольную точку") ? "PASS" : "FAIL");
 
     // Добавляем первую КТ через кнопку в заглушке
@@ -106,7 +106,6 @@ const target = path.resolve(__dirname, "..", "hr", "template.html");
     await tick(80);
     body = w.document.body.textContent;
     console.log("New checkpoint appears in list (1st, numbered '1'):", body.includes("КТ по итогам 90 дней") ? "PASS" : "FAIL");
-    console.log("Toast shown after add:", body.includes("добавлена") ? "PASS" : "FAIL");
     console.log("List-mode 'Добавить контрольную точку' button appears once list is non-empty:", body.includes("Добавить контрольную точку") ? "PASS" : "FAIL");
 
     // Удаляем добавленную КТ через кнопку корзины на её строке (нужен самый вложенный
@@ -119,8 +118,7 @@ const target = path.resolve(__dirname, "..", "hr", "template.html");
     await tick(80);
     body = w.document.body.textContent;
     console.log("Checkpoint removed after delete click:", !body.includes("КТ по итогам 90 дней") ? "PASS" : "FAIL");
-    console.log("Toast shown after delete:", body.includes("удалена") ? "PASS" : "FAIL");
-    console.log("Empty-state stub reappears after deleting the only checkpoint:", body.includes("Добавьте контрольные точки плана") ? "PASS" : "FAIL");
+    console.log("Empty-state stub reappears after deleting the only checkpoint:", body.includes("Покажите сотруднику, что его адаптация важна") ? "PASS" : "FAIL");
 
     // tpl_support: goalsEnabled=false, без предзаполненных checkpoints — проверяем включение
     // тумблера с чистого листа (пустая заглушка, кнопка добавления доступна сразу).
@@ -137,7 +135,7 @@ const target = path.resolve(__dirname, "..", "hr", "template.html");
     checkpointsTab2.dispatchEvent(new w2.MouseEvent("click", { bubbles: true }));
     await tick(80);
     body2 = w2.document.body.textContent;
-    console.log("[empty tpl] Empty-state stub available even with empty list:", body2.includes("Добавьте контрольные точки плана") ? "PASS" : "FAIL");
+    console.log("[empty tpl] Empty-state stub available even with empty list:", body2.includes("Покажите сотруднику, что его адаптация важна") ? "PASS" : "FAIL");
 
     console.log("\nOK: сценарий CRUD контрольных точек шаблона прошёл без падений");
   } catch (e) {

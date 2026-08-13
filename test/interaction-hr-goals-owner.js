@@ -64,7 +64,7 @@ const target = path.resolve(__dirname, "..", "hr", "template.html");
     click(w, checkpointsTab);
     await tick(80);
     body = w.document.body.textContent;
-    console.log("After clicking checkpoints tab — checkpoints content visible (empty state):", body.includes("Добавьте контрольные точки плана") ? "PASS" : "FAIL");
+    console.log("After clicking checkpoints tab — checkpoints content visible (empty state):", body.includes("Покажите сотруднику, что его адаптация важна") ? "PASS" : "FAIL");
     console.log("After clicking checkpoints tab — goals content hidden:", !body.includes("Способ настройки целей") ? "PASS" : "FAIL");
 
     // Возвращаемся на таб "Цели" для продолжения сценария
