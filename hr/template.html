@@ -15,7 +15,7 @@
 <body>
 <div id="root"></div>
 <script type="text/babel">
-const { Card, Tag, Switch, Input, Textarea, Select, Checkbox, SegmentedControl, Tabs, Tooltip, Divider, Button, IconButton, Modal, Drawer } = window.SkillazCoreDesignSystem_bf9566;
+const { Card, Tag, Switch, Input, Textarea, Select, DatePicker, Checkbox, SegmentedControl, Tabs, Tooltip, Divider, Button, IconButton, Modal, Drawer } = window.SkillazCoreDesignSystem_bf9566;
 const { AppShell, Icons } = window.Site;
 const {
   IconInfo, IconTarget, IconCheck, IconClipboard, IconSettings,
@@ -50,6 +50,25 @@ function dueDateLabel(days) {
   const d = new Date();
   d.setDate(d.getDate() + (Number(days) || 0));
   return "до " + d.getDate() + " " + RU_MONTHS_GENITIVE[d.getMonth()];
+}
+
+// Тот же условный отсчёт "от сегодня", что и в dueDateLabel, но в обе стороны —
+// нужен, чтобы поле срока в шаблоне могло быть таким же DatePicker, как у руководителя,
+// сохраняя при этом дни (dueDays) как единственный источник правды под капотом.
+function dayToDate(days) {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  d.setDate(d.getDate() + (Number(days) || 0));
+  return d;
+}
+function dateToDay(date) {
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const picked = new Date(date); picked.setHours(0, 0, 0, 0);
+  return Math.max(1, Math.round((picked - today) / 86400000));
+}
+function fmtDueDate(days) {
+  const d = dayToDate(days);
+  return d.getDate() + " " + RU_MONTHS_GENITIVE[d.getMonth()] + " " + d.getFullYear();
 }
 
 function SectionNavItem({ item, active, disabled, onClick }) {
@@ -386,8 +405,8 @@ function SubgoalFormModal({ initial, onClose, onCreate }) {
           <Textarea label="Описание" rows={2} maxLength={1000} value={form.description} onChange={(e) => set("description")(e.target.value || "")} />
         </div>
         <div className="sk-row sk-gap-3">
-          <Input label="Срок (дней от начала плана)" required type="number" min={1} value={form.dueDays}
-            onChange={(e) => set("dueDays")(Math.max(1, Number(e.target.value) || 1))} style={{ flex: 1 }} />
+          <DatePicker label="Дата завершения" required value={dayToDate(form.dueDays)}
+            onChange={(date) => set("dueDays")(dateToDay(date))} style={{ flex: 1 }} />
           <Select label="Проверяющий" value={form.reviewer}
             options={[{ value: "Руководитель", label: "Руководитель" }, { value: "Наставник", label: "Наставник" }]}
             onChange={set("reviewer")} style={{ flex: 1 }} />
@@ -417,8 +436,8 @@ function TemplateGoalCreateDrawer({ draft, setDraft, onClose, onCreate, onAddSub
         <Textarea label="Описание" rows={4} maxLength={1000} showCount
           placeholder="Подробнее о цели: как оценивается результат, что поможет успешному достижению"
           value={draft.description} onChange={(e) => setDraft((d) => ({ ...d, description: e.target.value || "" }))} />
-        <Input label="Срок (дней от начала плана)" required type="number" min={1} value={draft.dueDays}
-          onChange={(e) => setDraft((d) => ({ ...d, dueDays: Math.max(1, Number(e.target.value) || 1) }))} style={{ width: 160 }} />
+        <DatePicker label="Дата завершения" required value={dayToDate(draft.dueDays)}
+          onChange={(date) => setDraft((d) => ({ ...d, dueDays: dateToDay(date) }))} />
 
         <div className="sk-col sk-gap-2">
           <div className="sk-label-3">Шаги для достижения{draft.subgoals.length ? " " + draft.subgoals.length : ""}</div>
@@ -429,7 +448,7 @@ function TemplateGoalCreateDrawer({ draft, setDraft, onClose, onCreate, onAddSub
             <div key={i} className="sk-row sk-gap-3" style={{ justifyContent: "space-between", padding: 10, border: "1px solid var(--sk-stroke)", borderRadius: "var(--sk-radius-2)" }}>
               <div className="sk-col sk-gap-1">
                 <div className="sk-label-4">{sg.title}</div>
-                <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>День {sg.dueDays} от начала плана</div>
+                <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{fmtDueDate(sg.dueDays)}</div>
               </div>
               <button className="sk-link-btn" onClick={() => setDraft((d) => ({ ...d, subgoals: d.subgoals.filter((_, ix) => ix !== i) }))}>
                 <IconTrash size={15} color="var(--sk-icon-secondary)" />
@@ -476,8 +495,8 @@ function TemplateGoalDrawer({ goal, onClose, onChange, onAddSubgoal, onOpenSubgo
         <Input label="Название" required value={goal.title} onChange={(e) => onChange({ title: e.target.value || "" })} />
         <Textarea label="Описание" rows={3} maxLength={1000} showCount value={goal.description}
           onChange={(e) => onChange({ description: e.target.value || "" })} />
-        <Input label="Срок (дней от начала плана)" required type="number" min={1} value={goal.dueDays}
-          onChange={(e) => onChange({ dueDays: Math.max(1, Number(e.target.value) || 1) })} style={{ width: 160 }} />
+        <DatePicker label="Дата завершения" required value={dayToDate(goal.dueDays)}
+          onChange={(date) => onChange({ dueDays: dateToDay(date) })} />
 
         <div className="sk-col sk-gap-2">
           <div className="sk-label-3">Шаги для выполнения{goal.subgoals.length ? " " + goal.subgoals.length : ""}</div>
