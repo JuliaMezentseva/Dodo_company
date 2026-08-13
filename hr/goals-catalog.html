@@ -356,20 +356,30 @@ function pluralTimes(n) {
 // Серый фон в состоянии покоя, синий акцент — только когда выбрана конкретная категория
 // (не "Все категории"), чтобы активный фильтр было видно с первого взгляда. ----------------
 function CategoryPillsBar({ categories, catalog, active, onSelect }) {
-  const [expanded, setExpanded] = React.useState(false);
+  const [pinned, setPinned] = React.useState([]);
+  const [dropdownOpen, setDropdownOpen] = React.useState(false);
+  const dropdownRef = React.useRef(null);
+  React.useEffect(() => {
+    if (!dropdownOpen) return;
+    const close = (e) => { if (dropdownRef.current && !dropdownRef.current.contains(e.target)) setDropdownOpen(false); };
+    document.addEventListener("mousedown", close);
+    return () => document.removeEventListener("mousedown", close);
+  }, [dropdownOpen]);
+
   const counts = {};
   catalog.forEach((g) => { counts[g.category] = (counts[g.category] || 0) + 1; });
   const sorted = categories.slice().sort((a, b) => (counts[b] || 0) - (counts[a] || 0));
   const TOP_N = 5;
-  const shown = expanded ? sorted : sorted.slice(0, TOP_N);
-  const hasMore = !expanded && sorted.length > TOP_N;
+  const topCategories = sorted.slice(0, TOP_N);
+  const shown = [...topCategories, ...pinned.filter((c) => !topCategories.includes(c))];
+  const remaining = sorted.filter((c) => !shown.includes(c));
 
   function pillStyle(isActive) {
     return {
-      height: 32, padding: "0 14px", borderRadius: "var(--sk-radius-full)", border: "none", cursor: "pointer",
+      height: 28, padding: "0 10px", borderRadius: "var(--sk-radius-full)", border: "none", cursor: "pointer",
       background: isActive ? "var(--sk-accent)" : "var(--sk-surface-secondary)",
       color: isActive ? "var(--sk-text-contrast)" : "var(--sk-text-secondary)",
-      font: isActive ? "var(--sk-label-3)" : "var(--sk-label-3-regular)", whiteSpace: "nowrap", flexShrink: 0,
+      font: isActive ? "var(--sk-label-4)" : "var(--sk-label-4-regular)", whiteSpace: "nowrap", flexShrink: 0,
     };
   }
 
@@ -379,13 +389,28 @@ function CategoryPillsBar({ categories, catalog, active, onSelect }) {
       {shown.map((c) => (
         <button key={c} style={pillStyle(active === c)} onClick={() => onSelect(active === c ? "" : c)}>{c}</button>
       ))}
-      {hasMore && (
-        <button onClick={() => setExpanded(true)} aria-label="Показать все категории" style={{
-          width: 32, height: 32, borderRadius: "50%", border: "none", cursor: "pointer", flexShrink: 0,
+      <div ref={dropdownRef} style={{ position: "relative" }}>
+        <button onClick={() => setDropdownOpen((o) => !o)} aria-label="Добавить направление" style={{
+          width: 28, height: 28, borderRadius: "50%", border: "none", cursor: "pointer", flexShrink: 0,
           background: "var(--sk-surface-secondary)", color: "var(--sk-text-secondary)",
           display: "flex", alignItems: "center", justifyContent: "center",
-        }}><IconPlusSm size={16} /></button>
-      )}
+        }}><IconPlusSm size={14} /></button>
+        {dropdownOpen && (
+          <div style={{
+            position: "absolute", top: "calc(100% + 4px)", left: 0, minWidth: 220, maxHeight: 280, overflowY: "auto",
+            background: "var(--sk-surface-page)", borderRadius: "var(--sk-radius-2)", boxShadow: "var(--sk-shadow-m)", padding: 6, zIndex: 20,
+          }}>
+            {remaining.length ? remaining.map((c) => (
+              <button key={c} onClick={() => { setPinned((p) => [...p, c]); onSelect(c); setDropdownOpen(false); }} style={{
+                display: "block", width: "100%", textAlign: "left", padding: "8px 10px", borderRadius: "var(--sk-radius-2)",
+                border: "none", background: "transparent", cursor: "pointer", font: "var(--sk-label-3-regular)", color: "var(--sk-text-primary)",
+              }}>{c}</button>
+            )) : (
+              <div style={{ padding: "8px 10px", color: "var(--sk-text-secondary)", font: "var(--sk-label-4-regular)" }}>Все направления уже показаны</div>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -447,7 +472,7 @@ function GoalCatalogRow({ goal, expanded, onToggle, onEdit, onDuplicate, onDelet
         background: hover ? "var(--sk-hover-table)" : "transparent",
       }}>
         <button onClick={(e) => { e.stopPropagation(); onToggle(); }} aria-label="Показать шаги" style={{
-          width: 26, height: 26, display: "flex", alignItems: "center", justifyContent: "center", background: "none", border: "none", cursor: "pointer",
+          width: 26, height: 26, marginTop: 3, display: "flex", alignItems: "center", justifyContent: "center", background: "none", border: "none", cursor: "pointer",
           color: "var(--sk-icon-secondary)", transform: expanded ? "rotate(90deg)" : "none", transition: "transform var(--sk-duration) var(--sk-ease)",
         }}><IconChevronRight size={16} /></button>
         <div className="sk-row sk-gap-2" style={{ minWidth: 0 }}>
@@ -550,9 +575,6 @@ function Page() {
         <Button variant="accent" icon={<IconPlusSm size={16} />} onClick={() => setFormDrawer("create")}>Добавить цель</Button>
       </div>
 
-      <CategoryPillsBar categories={D.goalCategories} catalog={catalog} active={filters.category}
-        onSelect={(c) => setFilters((f) => ({ ...f, category: c }))} />
-
       <div className="sk-col sk-gap-3">
         <div className="sk-row sk-gap-2" style={{ flexWrap: "wrap", alignItems: "center", minHeight: 40 }}>
           <Input size="s" icon={<IconSearch size={18} />} placeholder="Название, описание, должность, тэг" value={q}
@@ -563,6 +585,8 @@ function Page() {
           </Button>
           {(hasActiveFilters || q) && <button className="sk-link-btn sk-label-4-regular" onClick={() => { setFilters(emptyFilters); setQ(""); }}>Сбросить</button>}
         </div>
+        <CategoryPillsBar categories={D.goalCategories} catalog={catalog} active={filters.category}
+          onSelect={(c) => setFilters((f) => ({ ...f, category: c }))} />
         {filtersOpen && (
           <div className="sk-row sk-gap-2" style={{ flexWrap: "wrap", alignItems: "flex-end" }}>
             <Select label="Должность" placeholder="Все" value={filters.position || null} options={positions.map((v) => ({ value: v, label: v }))}
