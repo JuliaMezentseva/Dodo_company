@@ -19,6 +19,21 @@ const { Card, Tag, Table, Input, Textarea, Select, Checkbox, Divider, Button, To
 const { AppShell, Icons } = window.Site;
 const { IconPlusSm, IconSearch, IconFilter, IconTrash, IconEdit, IconX } = Icons;
 
+// В наборе иконок ДС нет "ручки" для перетаскивания — та же локальная иконка,
+// что и в hr/template.html (IconGripVertical).
+function IconGripVertical({ size = 16, color = "currentColor" }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" style={{ color, flexShrink: 0 }}>
+      <circle cx="9" cy="6" r="1.4" fill="currentColor" />
+      <circle cx="9" cy="12" r="1.4" fill="currentColor" />
+      <circle cx="9" cy="18" r="1.4" fill="currentColor" />
+      <circle cx="15" cy="6" r="1.4" fill="currentColor" />
+      <circle cx="15" cy="12" r="1.4" fill="currentColor" />
+      <circle cx="15" cy="18" r="1.4" fill="currentColor" />
+    </svg>
+  );
+}
+
 const PLAN_TYPE_OPTIONS = ["Адаптация", "Пребординг", "Стажировка", "Внутренний переход"];
 const ELEMENT_LABEL = { article: "Статья", task: "Задача", course: "Курс", file: "Файл", link: "Ссылка" };
 
@@ -197,6 +212,7 @@ function GoalCatalogFormDrawer({ initial, onClose, onSave }) {
   const [form, setForm] = React.useState(initial || emptyGoalForm);
   const set = (k) => (v) => setForm((f) => ({ ...f, [k]: v }));
   const [subgoalModal, setSubgoalModal] = React.useState(null); // null | "create" | { edit: index }
+  const [dragIndex, setDragIndex] = React.useState(null);
   const canSave = form.title.trim().length > 0 && !!form.category;
 
   const departments = [...new Set(D.templates.map((t) => t.department))];
@@ -211,6 +227,15 @@ function GoalCatalogFormDrawer({ initial, onClose, onSave }) {
   }
   function deleteSubgoal(index) {
     setForm((f) => ({ ...f, subgoals: f.subgoals.filter((_, i) => i !== index) }));
+  }
+  function reorderSubgoals(from, to) {
+    if (from === null || from === to) return;
+    setForm((f) => {
+      const list = f.subgoals.slice();
+      const [item] = list.splice(from, 1);
+      list.splice(to, 0, item);
+      return { ...f, subgoals: list };
+    });
   }
 
   return (
@@ -261,10 +286,20 @@ function GoalCatalogFormDrawer({ initial, onClose, onSave }) {
               Разбейте цель на подцели — с материалами и проверкой выполнения, если нужно. Можно добавить сейчас или позже.
             </div>
             {form.subgoals.map((sg, i) => (
-              <div key={sg.id} className="sk-row sk-gap-2" style={{ alignItems: "center" }}>
-                <div className="sk-row sk-gap-2 sk-clickable" onClick={() => setSubgoalModal({ edit: i })} style={{
-                  flex: 1, minWidth: 0, alignItems: "center", padding: 10, borderRadius: "var(--sk-radius-3)", background: "var(--sk-surface-secondary)",
-                }}>
+              <div key={sg.id} className="sk-row sk-gap-2" style={{
+                alignItems: "center", padding: "10px 4px", borderBottom: "1px solid var(--sk-stroke)", opacity: dragIndex === i ? 0.5 : 1,
+              }}
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={() => { reorderSubgoals(dragIndex, i); setDragIndex(null); }}>
+                <span draggable onDragStart={() => setDragIndex(i)} onDragEnd={() => setDragIndex(null)}
+                  style={{ display: "flex", flexShrink: 0, cursor: "grab" }}>
+                  <IconGripVertical size={16} color="var(--sk-icon-secondary)" />
+                </span>
+                <span style={{
+                  width: 26, height: 26, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center",
+                  background: "var(--sk-accent)", color: "var(--sk-text-contrast)", font: "var(--sk-label-4)",
+                }}>{i + 1}</span>
+                <div className="sk-row sk-gap-2 sk-clickable" onClick={() => setSubgoalModal({ edit: i })} style={{ flex: 1, minWidth: 0, alignItems: "center" }}>
                   <div className="sk-col sk-gap-1" style={{ flex: 1, minWidth: 0 }}>
                     <span className="sk-label-3-regular">{sg.title || "Без названия"}</span>
                     <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>

@@ -23,6 +23,21 @@ const {
   IconPlusSm, IconEdit, IconLayers, IconBookOpen, IconCalendar, IconSearch, IconX,
 } = Icons;
 
+// В наборе иконок ДС нет "ручки" для перетаскивания — добавляем локально, по тому же
+// принципу, что и одноразовые иконки в других файлах (hr/templates.html: IconCopyLocal).
+function IconGripVertical({ size = 16, color = "currentColor" }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" style={{ color, flexShrink: 0 }}>
+      <circle cx="9" cy="6" r="1.4" fill="currentColor" />
+      <circle cx="9" cy="12" r="1.4" fill="currentColor" />
+      <circle cx="9" cy="18" r="1.4" fill="currentColor" />
+      <circle cx="15" cy="6" r="1.4" fill="currentColor" />
+      <circle cx="15" cy="12" r="1.4" fill="currentColor" />
+      <circle cx="15" cy="18" r="1.4" fill="currentColor" />
+    </svg>
+  );
+}
+
 const TEMPLATE_SECTIONS = [
   { id: "description", label: "Описание", icon: IconInfo },
   { id: "goals", label: "План адаптации", icon: IconTarget },
@@ -529,6 +544,16 @@ function SubgoalFormModal({ initial, onClose, onCreate }) {
 
 function TemplateGoalCreateDrawer({ draft, setDraft, onClose, onCreate, onAddSubgoal }) {
   const canCreate = draft.title.trim().length > 0;
+  const [dragIndex, setDragIndex] = React.useState(null);
+  function reorder(from, to) {
+    if (from === null || from === to) return;
+    setDraft((d) => {
+      const list = d.subgoals.slice();
+      const [item] = list.splice(from, 1);
+      list.splice(to, 0, item);
+      return { ...d, subgoals: list };
+    });
+  }
   return (
     <Drawer open title="Создание цели адаптации" onClose={onClose} size="s"
       primary={<Button disabled={!canCreate} onClick={onCreate}>Создать</Button>}
@@ -548,8 +573,20 @@ function TemplateGoalCreateDrawer({ draft, setDraft, onClose, onCreate, onAddSub
             Разбейте цель на подцели — конкретные шаги, которые помогут сотруднику её достичь. Можно добавить сейчас или позже, после создания цели.
           </div>
           {draft.subgoals.map((sg, i) => (
-            <div key={i} className="sk-row sk-gap-3" style={{ justifyContent: "space-between", padding: 10, border: "1px solid var(--sk-stroke)", borderRadius: "var(--sk-radius-2)" }}>
-              <div className="sk-col sk-gap-1">
+            <div key={i} className="sk-row sk-gap-2" style={{
+              alignItems: "center", padding: "10px 4px", borderBottom: "1px solid var(--sk-stroke)", opacity: dragIndex === i ? 0.5 : 1,
+            }}
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={() => { reorder(dragIndex, i); setDragIndex(null); }}>
+              <span draggable onDragStart={() => setDragIndex(i)} onDragEnd={() => setDragIndex(null)}
+                style={{ display: "flex", flexShrink: 0, cursor: "grab" }}>
+                <IconGripVertical size={16} color="var(--sk-icon-secondary)" />
+              </span>
+              <span style={{
+                width: 26, height: 26, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center",
+                background: "var(--sk-accent)", color: "var(--sk-text-contrast)", font: "var(--sk-label-4)",
+              }}>{i + 1}</span>
+              <div className="sk-col sk-gap-1" style={{ flex: 1, minWidth: 0 }}>
                 <div className="sk-label-4">{sg.title}</div>
                 <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{fmtDueDate(sg.dueDays)}</div>
               </div>
@@ -565,25 +602,36 @@ function TemplateGoalCreateDrawer({ draft, setDraft, onClose, onCreate, onAddSub
   );
 }
 
-// ---------------- Строка шага внутри дровера цели — компактная карточка на сером фоне
-// (без статус-иконки: до назначения плана сотруднику у шага ещё нет статуса выполнения). ----------------
-function TemplateSubgoalRow({ subgoal, onOpen }) {
+// ---------------- Строка шага внутри дровера цели — номер в синем кружке слева (вместо
+// серой плашки-фона) + ручка перетаскивания; список шагов можно переупорядочить
+// drag-and-drop'ом (см. TemplateGoalDrawer, который передаёт dragHandleProps и index/dragging).
+// Без статус-иконки: до назначения плана сотруднику у шага ещё нет статуса выполнения. ----------------
+function TemplateSubgoalRow({ index, subgoal, onOpen, dragHandleProps, dragging }) {
   const hasMaterials = (subgoal.materials || []).length > 0;
   return (
-    <div className="sk-row sk-gap-2 sk-clickable" onClick={onOpen} style={{ alignItems: "center", padding: 10, borderRadius: "var(--sk-radius-3)", background: "var(--sk-surface-secondary)" }}>
-      <div className="sk-col sk-gap-1" style={{ flex: 1, minWidth: 0 }}>
-        <span className="sk-label-3-regular">{subgoal.title || "Без названия"}</span>
-        <span className="sk-row sk-gap-1 sk-muted" style={{ font: "var(--sk-label-4-regular)", alignItems: "center" }}>
-          <IconCalendar size={13} color="var(--sk-icon-secondary)" />{dueDateLabel(subgoal.dueDays)}
-        </span>
+    <div className="sk-row sk-gap-2" style={{ alignItems: "center", padding: "10px 4px", borderBottom: "1px solid var(--sk-stroke)", opacity: dragging ? 0.5 : 1 }}>
+      <span {...dragHandleProps} style={{ display: "flex", flexShrink: 0, cursor: "grab" }}>
+        <IconGripVertical size={16} color="var(--sk-icon-secondary)" />
+      </span>
+      <span style={{
+        width: 26, height: 26, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center",
+        background: "var(--sk-accent)", color: "var(--sk-text-contrast)", font: "var(--sk-label-4)",
+      }}>{index}</span>
+      <div className="sk-row sk-gap-2 sk-clickable" onClick={onOpen} style={{ alignItems: "center", flex: 1, minWidth: 0 }}>
+        <div className="sk-col sk-gap-1" style={{ flex: 1, minWidth: 0 }}>
+          <span className="sk-label-3-regular">{subgoal.title || "Без названия"}</span>
+          <span className="sk-row sk-gap-1 sk-muted" style={{ font: "var(--sk-label-4-regular)", alignItems: "center" }}>
+            <IconCalendar size={13} color="var(--sk-icon-secondary)" />{dueDateLabel(subgoal.dueDays)}
+          </span>
+        </div>
+        {hasMaterials ? (
+          <span className="sk-row sk-gap-1" style={{ color: "var(--sk-text-secondary)", font: "var(--sk-label-4)", whiteSpace: "nowrap" }}>
+            <IconBookOpen size={15} />Полезные материалы: {subgoal.materials.length}</span>
+        ) : (
+          <span className="sk-row sk-gap-1 sk-clickable" onClick={(e) => { e.stopPropagation(); onOpen(); }} style={{ color: "var(--sk-text-accent)", font: "var(--sk-label-4)", whiteSpace: "nowrap" }}>
+            <IconBookOpen size={15} />Добавить материалы</span>
+        )}
       </div>
-      {hasMaterials ? (
-        <span className="sk-row sk-gap-1" style={{ color: "var(--sk-text-secondary)", font: "var(--sk-label-4)", whiteSpace: "nowrap" }}>
-          <IconBookOpen size={15} />Полезные материалы: {subgoal.materials.length}</span>
-      ) : (
-        <span className="sk-row sk-gap-1 sk-clickable" onClick={(e) => { e.stopPropagation(); onOpen(); }} style={{ color: "var(--sk-text-accent)", font: "var(--sk-label-4)", whiteSpace: "nowrap" }}>
-          <IconBookOpen size={15} />Добавить материалы</span>
-      )}
     </div>
   );
 }
@@ -592,6 +640,14 @@ function TemplateSubgoalRow({ subgoal, onOpen }) {
 // руководителя (manager/plan.html), но без прогресса и статусов (их не существует до
 // назначения плана сотруднику) и без кнопки "Опубликовать" — у HR цель создаётся сразу. ----------------
 function TemplateGoalDrawer({ goal, onClose, onChange, onAddSubgoal, onOpenSubgoal, onDeleteSubgoal }) {
+  const [dragIndex, setDragIndex] = React.useState(null);
+  function reorder(from, to) {
+    if (from === null || from === to) return;
+    const list = goal.subgoals.slice();
+    const [item] = list.splice(from, 1);
+    list.splice(to, 0, item);
+    onChange({ subgoals: list });
+  }
   return (
     <Drawer open title="Цель адаптации" onClose={onClose} size="s">
       <div className="sk-col sk-gap-4">
@@ -604,9 +660,15 @@ function TemplateGoalDrawer({ goal, onClose, onChange, onAddSubgoal, onOpenSubgo
         <div className="sk-col sk-gap-2">
           <div className="sk-label-3">Шаги для выполнения{goal.subgoals.length ? " " + goal.subgoals.length : ""}</div>
           {goal.subgoals.length ? (
-            goal.subgoals.map((sg) => (
-              <div key={sg.id} className="sk-row sk-gap-2" style={{ alignItems: "center" }}>
-                <div style={{ flex: 1, minWidth: 0 }}><TemplateSubgoalRow subgoal={sg} onOpen={() => onOpenSubgoal(sg.id)} /></div>
+            goal.subgoals.map((sg, i) => (
+              <div key={sg.id} className="sk-row sk-gap-2" style={{ alignItems: "center" }}
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={() => { reorder(dragIndex, i); setDragIndex(null); }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <TemplateSubgoalRow index={i + 1} subgoal={sg} onOpen={() => onOpenSubgoal(sg.id)}
+                    dragging={dragIndex === i}
+                    dragHandleProps={{ draggable: true, onDragStart: () => setDragIndex(i), onDragEnd: () => setDragIndex(null) }} />
+                </div>
                 <button className="sk-link-btn" onClick={() => onDeleteSubgoal(sg.id)}><IconTrash size={15} color="var(--sk-icon-secondary)" /></button>
               </div>
             ))
@@ -620,7 +682,8 @@ function TemplateGoalDrawer({ goal, onClose, onChange, onAddSubgoal, onOpenSubgo
   );
 }
 
-function TemplateGoalRow({ goal, onOpen, onDelete, onOpenSubgoal }) {
+function TemplateGoalRow({ goal, onOpen, onDelete, onOpenSubgoal, onReorderSubgoals }) {
+  const [dragIndex, setDragIndex] = React.useState(null);
   return (
     <div className="sk-col sk-gap-3" style={{ padding: 14, border: "1px solid var(--sk-stroke)", borderRadius: "var(--sk-radius-3)", background: "var(--sk-surface-page)" }}>
       <div className="sk-row sk-gap-3 sk-clickable" onClick={onOpen} style={{ justifyContent: "space-between", alignItems: "flex-start" }}>
@@ -635,8 +698,15 @@ function TemplateGoalRow({ goal, onOpen, onDelete, onOpenSubgoal }) {
         </div>
       </div>
       {goal.subgoals.length ? (
-        <div className="sk-col sk-gap-2">
-          {goal.subgoals.map((sg) => <TemplateSubgoalRow key={sg.id} subgoal={sg} onOpen={() => onOpenSubgoal(sg.id)} />)}
+        <div className="sk-col">
+          {goal.subgoals.map((sg, i) => (
+            <div key={sg.id} onDragOver={(e) => e.preventDefault()}
+              onDrop={() => { onReorderSubgoals(dragIndex, i); setDragIndex(null); }}>
+              <TemplateSubgoalRow index={i + 1} subgoal={sg} onOpen={() => onOpenSubgoal(sg.id)}
+                dragging={dragIndex === i}
+                dragHandleProps={{ draggable: true, onDragStart: () => setDragIndex(i), onDragEnd: () => setDragIndex(null) }} />
+            </div>
+          ))}
         </div>
       ) : (
         <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Шаги ещё не добавлены</span>
@@ -731,7 +801,16 @@ function GoalsSection({ owner, deadlineDays, goals, onOwnerChange, onDeadlineCha
           <div className="sk-col sk-gap-2">
             {goals.map((g) => (
               <TemplateGoalRow key={g.id} goal={g} onOpen={() => setOpenGoalId(g.id)} onDelete={() => onDeleteGoal(g.id)}
-                onOpenSubgoal={(id) => setOpenRowSubgoalId(id)} />
+                onOpenSubgoal={(id) => setOpenRowSubgoalId(id)}
+                onReorderSubgoals={(from, to) => {
+                  if (from === null || from === to) return;
+                  onUpdateGoal(g.id, (goal) => {
+                    const list = goal.subgoals.slice();
+                    const [item] = list.splice(from, 1);
+                    list.splice(to, 0, item);
+                    return { ...goal, subgoals: list };
+                  });
+                }} />
             ))}
           </div>
         </div>
