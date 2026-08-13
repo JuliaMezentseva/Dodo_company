@@ -241,7 +241,7 @@ function Page() {
   const [q, setQ] = React.useState("");
   const [direction, setDirection] = React.useState(null); // null = все направления
   const [filters, setFilters] = React.useState(emptyFilters);
-  const [filtersOpen, setFiltersOpen] = React.useState(true); // по умолчанию сразу раскрыты
+  const [filtersOpen, setFiltersOpen] = React.useState(false);
 
   // "Моё подразделение" / "Моя должность" закреплены первым пунктом списка — значение
   // совпадает с реальным department/title вакансии, поэтому фильтрация ниже не требует
