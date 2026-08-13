@@ -290,7 +290,7 @@ function Page() {
         <div className="sk-row sk-gap-2" style={{ alignItems: "center", flexWrap: "wrap" }}>
           <Input size="s" icon={<IconSearch size={20} />} placeholder="По названию, должности или подразделению"
             value={q} onChange={(e) => setQ(e.target.value || "")} style={{ width: 460, flexShrink: 0 }} />
-          <Button mode="secondary" icon={<IconFilter size={16} />} onClick={() => setFiltersOpen((o) => !o)}
+          <Button mode="secondary" icon={<IconFilter size={16} color="var(--sk-icon-accent)" />} onClick={() => setFiltersOpen((o) => !o)}
             style={{ background: "var(--sk-surface-page)", border: hasActiveFilters ? "1px solid var(--sk-stroke-accent)" : "1px solid var(--sk-stroke)" }}>
             <span className="sk-row sk-gap-1" style={{ alignItems: "center" }}>
               Фильтры{activeFilterCount ? " · " + activeFilterCount : ""}
