@@ -17,7 +17,7 @@
 <script type="text/babel">
 const { Card, Tag, Input, Textarea, Select, Checkbox, Divider, Button, Tooltip, Modal, Drawer, Snackbar, Alert } = window.SkillazCoreDesignSystem_bf9566;
 const { AppShell, Icons } = window.Site;
-const { IconPlusSm, IconSearch, IconTrash, IconX, IconChevronRight } = Icons;
+const { IconPlusSm, IconSearch, IconTrash, IconX, IconChevronRight, IconEdit, IconCopyLocal2 } = Icons;
 
 // В наборе иконок ДС нет "ручки" для перетаскивания — та же локальная иконка,
 // что и в hr/template.html (IconGripVertical).
@@ -326,7 +326,7 @@ function GoalCatalogFormDrawer({ initial, onClose, onSave }) {
   );
 }
 
-const emptyFilters = { category: "", department: "", level: "", position: "" };
+const emptyFilters = { category: "", department: "", position: "" };
 
 const SORT_OPTIONS = [
   { value: "new", label: "Сначала новые" },
@@ -347,6 +347,11 @@ function pluralDays(n) {
   if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) return "дня";
   return "дней";
 }
+function pluralTimes(n) {
+  const mod10 = n % 10, mod100 = n % 100;
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) return "раза";
+  return "раз";
+}
 
 // ---------------- Левая панель категорий — поиск по названию категории + список,
 // по образцу референса (Profit.co Goals Library): поиск сверху, "Все категории"
@@ -355,19 +360,23 @@ function CategorySidebar({ categories, active, onSelect }) {
   const [q, setQ] = React.useState("");
   const needle = q.trim().toLowerCase();
   const list = needle ? categories.filter((c) => c.toLowerCase().includes(needle)) : categories;
-  const itemStyle = (isActive) => ({
-    display: "block", width: "100%", textAlign: "left", padding: "9px 10px", borderRadius: "var(--sk-radius-2)",
-    border: "none", cursor: "pointer", font: isActive ? "var(--sk-label-3)" : "var(--sk-label-3-regular)",
-    background: isActive ? "var(--sk-surface-secondary)" : "transparent",
-    color: isActive ? "var(--sk-text-primary)" : "var(--sk-text-secondary)",
-  });
+  // "Все категории" подсвечивается нейтрально (это состояние по умолчанию), а выбор
+  // конкретной категории — акцентным синим, чтобы активный фильтр было видно сразу.
+  function itemStyle(isActive, isAccent) {
+    return {
+      display: "block", width: "100%", textAlign: "left", padding: "9px 10px", borderRadius: "var(--sk-radius-2)",
+      border: "none", cursor: "pointer", font: isActive ? "var(--sk-label-3)" : "var(--sk-label-3-regular)",
+      background: isActive ? (isAccent ? "var(--sk-accent)" : "var(--sk-surface-secondary)") : "transparent",
+      color: isActive ? (isAccent ? "var(--sk-text-contrast)" : "var(--sk-text-primary)") : "var(--sk-text-secondary)",
+    };
+  }
   return (
     <div className="sk-col sk-gap-3" style={{ width: 240, flexShrink: 0 }}>
       <Input icon={<IconSearch size={18} />} placeholder="Поиск категории" value={q} onChange={(e) => setQ(e.target.value || "")} />
       <div className="sk-col sk-gap-1">
-        <button style={itemStyle(!active)} onClick={() => onSelect("")}>Все категории</button>
+        <button style={itemStyle(!active, false)} onClick={() => onSelect("")}>Все категории</button>
         {list.map((c) => (
-          <button key={c} style={itemStyle(active === c)} onClick={() => onSelect(active === c ? "" : c)}>{c}</button>
+          <button key={c} style={itemStyle(active === c, true)} onClick={() => onSelect(active === c ? "" : c)}>{c}</button>
         ))}
       </div>
     </div>
@@ -376,7 +385,7 @@ function CategorySidebar({ categories, active, onSelect }) {
 
 // Общая сетка колонок для шапки и строк списка — держит их выровненными. Без отдельной
 // колонки "Шагов" (счётчик теперь у названия цели) и без "Описания" (оно только в дровере).
-const GOAL_ROW_GRID = "28px minmax(260px,1fr) 150px 190px 220px 140px 44px";
+const GOAL_ROW_GRID = "28px minmax(260px,1fr) 150px 190px 220px 140px 116px";
 
 function GoalCatalogListHeader() {
   const th = { font: "var(--sk-label-3-regular)", color: "var(--sk-text-secondary)" };
@@ -414,37 +423,41 @@ function StepPreviewRow({ index, sg }) {
 // Строка цели — клик по строке открывает дровер редактирования (как везде в прототипе),
 // шеврон разворачивает список шагов прямо тут же, без перехода в дровер. Название —
 // жирным, счётчик шагов — пилюлей перед названием, описание сюда не выводится (оно в дровере).
-function GoalCatalogRow({ goal, expanded, onToggle, onEdit, onDelete }) {
+function GoalCatalogRow({ goal, expanded, onToggle, onEdit, onDuplicate, onDelete }) {
   const [hover, setHover] = React.useState(false);
   const stepsCount = goal.subgoals.length;
   return (
     <div style={{ borderBottom: "1px solid var(--sk-stroke)" }}>
       <div className="sk-clickable" onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)} onClick={onEdit} style={{
-        display: "grid", gridTemplateColumns: GOAL_ROW_GRID, gap: 12, alignItems: "center", padding: "12px 8px",
+        display: "grid", gridTemplateColumns: GOAL_ROW_GRID, gap: 12, alignItems: "flex-start", padding: "14px 8px",
         background: hover ? "var(--sk-hover-table)" : "transparent",
       }}>
         <button onClick={(e) => { e.stopPropagation(); onToggle(); }} aria-label="Показать шаги" style={{
           width: 24, height: 24, display: "flex", alignItems: "center", justifyContent: "center", background: "none", border: "none", cursor: "pointer",
           color: "var(--sk-icon-secondary)", transform: expanded ? "rotate(90deg)" : "none", transition: "transform var(--sk-duration) var(--sk-ease)",
         }}><IconChevronRight size={16} /></button>
-        <div className="sk-row sk-gap-2" style={{ alignItems: "center", minWidth: 0 }}>
+        <div className="sk-row sk-gap-2" style={{ alignItems: "flex-start", minWidth: 0 }}>
           {stepsCount > 0 && (
             <span style={{
               flexShrink: 0, font: "var(--sk-label-4)", color: "var(--sk-text-secondary)",
-              background: "var(--sk-surface-secondary)", borderRadius: "var(--sk-radius-full)", padding: "2px 8px", whiteSpace: "nowrap",
+              background: "var(--sk-surface-secondary)", borderRadius: "var(--sk-radius-full)", padding: "2px 8px", whiteSpace: "nowrap", marginTop: 2,
             }}>{stepsCount} {pluralSteps(stepsCount)}</span>
           )}
-          <span className="sk-label-3" style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{goal.title}</span>
+          {/* Название переносится на несколько строк (не обрезается многоточием) —
+              в библиотеке формулировки целей часто длиннее, чем в один ряд. */}
+          <span className="sk-label-3" style={{ minWidth: 0 }}>{goal.title}</span>
         </div>
-        <div><Tag size="s" hue="accent">{goal.category}</Tag></div>
+        <div><Tag size="s" hue="neutral">{goal.category}</Tag></div>
         <span className="sk-label-4-regular" style={{ color: "var(--sk-text-secondary)" }}>{goal.department || "—"}</span>
-        <span className="sk-label-4-regular" style={{ color: "var(--sk-text-secondary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+        <span className="sk-label-4-regular" style={{ color: "var(--sk-text-secondary)" }}>
           {(goal.positions || []).length ? goal.positions.join(", ") : "—"}
         </span>
         <span className="sk-label-4-regular" style={{ color: "var(--sk-text-secondary)", whiteSpace: "nowrap" }}>
           {goal.dueDays} {pluralDays(goal.dueDays)}
         </span>
-        <div onClick={(e) => e.stopPropagation()}>
+        <div className="sk-row sk-gap-1" onClick={(e) => e.stopPropagation()}>
+          <Tooltip content="Редактировать"><Button size="s" mode="tertiary" onClick={onEdit}><IconEdit size={15} /></Button></Tooltip>
+          <Tooltip content="Копировать"><Button size="s" mode="tertiary" onClick={onDuplicate}><IconCopyLocal2 size={15} /></Button></Tooltip>
           <Tooltip content="Удалить"><Button size="s" mode="tertiary" onClick={onDelete}><IconTrash size={15} /></Button></Tooltip>
         </div>
       </div>
@@ -481,7 +494,8 @@ function Page() {
 
   const departments = [...new Set(catalog.map((g) => g.department).filter(Boolean))];
   const positions = [...new Set(catalog.flatMap((g) => g.positions || []))];
-  const hasActiveFilters = !!(filters.category || filters.department || filters.level || filters.position);
+  const hasActiveFilters = !!(filters.category || filters.department || filters.position);
+  const totalSteps = catalog.reduce((sum, g) => sum + g.subgoals.length, 0);
 
   const needle = q.trim().toLowerCase();
   let list = catalog.filter((g) => {
@@ -489,7 +503,6 @@ function Page() {
       || (g.positions || []).some((p) => p.toLowerCase().includes(needle)) || (g.tags || []).some((t) => t.toLowerCase().includes(needle)))) return false;
     if (filters.category && g.category !== filters.category) return false;
     if (filters.department && g.department !== filters.department) return false;
-    if (filters.level && g.level !== filters.level) return false;
     if (filters.position && !(g.positions || []).includes(filters.position)) return false;
     return true;
   });
@@ -505,6 +518,14 @@ function Page() {
     setCatalog((list) => list.map((g) => g.id === id ? { ...g, ...form } : g));
     setFormDrawer(null);
     showToast("Изменения сохранены");
+  }
+  function duplicateGoal(g) {
+    const copy = {
+      ...g, id: "gc" + Date.now(), title: g.title + " (копия)", author: "Вы", createdAt: "сегодня", usageCount: 0,
+      subgoals: g.subgoals.map((sg, i) => ({ ...sg, id: "gcsg" + Date.now() + "_" + i })),
+    };
+    setCatalog((list) => [copy, ...list]);
+    showToast("Цель скопирована");
   }
   function removeGoal(g) {
     setCatalog((list) => list.filter((x) => x.id !== g.id));
@@ -534,21 +555,21 @@ function Page() {
               onChange={(v) => setFilters((f) => ({ ...f, department: v || "" }))} style={{ width: 190 }} />
             <Select placeholder="Должность: все" value={filters.position || null} options={positions.map((v) => ({ value: v, label: v }))}
               onChange={(v) => setFilters((f) => ({ ...f, position: v || "" }))} style={{ width: 190 }} />
-            <Select placeholder="Уровень: все" value={filters.level || null} options={D.goalLevels.map((v) => ({ value: v, label: v }))}
-              onChange={(v) => setFilters((f) => ({ ...f, level: v || "" }))} style={{ width: 150 }} />
             <Select value={sort} options={SORT_OPTIONS} onChange={setSort} style={{ width: 190 }} />
             {(hasActiveFilters || q) && <button className="sk-link-btn sk-label-4-regular" onClick={() => { setFilters(emptyFilters); setQ(""); }}>Сбросить</button>}
           </div>
 
-          <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Найдено целей: {list.length}</div>
+          <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>
+            Найдено целей: {list.length} из {catalog.length} · Всего шагов в каталоге: {totalSteps}
+          </div>
 
           {list.length > 0 ? (
             <div className="sk-scroll" style={{ overflowX: "auto" }}>
-              <div style={{ minWidth: 780 }}>
+              <div style={{ minWidth: 860 }}>
                 <GoalCatalogListHeader />
                 {list.map((g) => (
                   <GoalCatalogRow key={g.id} goal={g} expanded={!!expandedIds[g.id]} onToggle={() => toggleExpand(g.id)}
-                    onEdit={() => setFormDrawer({ edit: g })} onDelete={() => setDeleteConfirm(g)} />
+                    onEdit={() => setFormDrawer({ edit: g })} onDuplicate={() => duplicateGoal(g)} onDelete={() => setDeleteConfirm(g)} />
                 ))}
               </div>
             </div>
@@ -589,6 +610,11 @@ function Page() {
           primary={<Button variant="negative" onClick={() => removeGoal(deleteConfirm)}>Удалить цель</Button>}>
           <div className="sk-col sk-gap-2" style={{ alignItems: "center", textAlign: "center", padding: "8px 0" }}>
             <div className="sk-label-2">Удалить цель «{deleteConfirm.title}» из каталога?</div>
+            {deleteConfirm.usageCount > 0 && (
+              <div className="sk-muted">
+                Эта цель использована {deleteConfirm.usageCount} {pluralTimes(deleteConfirm.usageCount)} при создании целей в шаблонах.
+              </div>
+            )}
             <div className="sk-muted">Уже добавленные из неё цели в шаблонах не изменятся — каталог живёт независимо от них.</div>
           </div>
         </Modal>
