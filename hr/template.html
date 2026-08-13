@@ -185,14 +185,14 @@ function TemplateCheckpointsSection({ checkpoints, onAdd, onEdit, onDelete }) {
         </Card>
       ) : (
         <div className="sk-col sk-gap-3">
+          <div className="sk-row sk-gap-2" style={{ padding: "10px 14px", background: "var(--sk-surface-secondary)", borderRadius: "var(--sk-radius-2)", alignItems: "flex-start" }}>
+            <IconHelpCircle size={15} color="var(--sk-icon-secondary)" style={{ flexShrink: 0, marginTop: 1 }} />
+            <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Контрольные точки помогут фиксировать, как сотрудник справляется и вовремя помочь ему. Рекомендуем добавить 3 точки: на 30 / 60 / 90 дней</span>
+          </div>
           <div className="sk-row sk-gap-2">
             <Button variant="accent" size="s" icon={<IconPlusSm size={16} />} onClick={() => setFormModal({ mode: "create" })}>
               Добавить контрольную точку
             </Button>
-          </div>
-          <div className="sk-row sk-gap-2" style={{ padding: "10px 14px", background: "var(--sk-surface-secondary)", borderRadius: "var(--sk-radius-2)", alignItems: "flex-start" }}>
-            <IconHelpCircle size={15} color="var(--sk-icon-secondary)" style={{ flexShrink: 0, marginTop: 1 }} />
-            <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Контрольные точки помогут фиксировать, как сотрудник справляется и вовремя помочь ему. Рекомендуем добавить 3 точки: на 30 / 60 / 90 дней</span>
           </div>
           <div className="sk-col sk-gap-2">
             {checkpoints.map((cp, i) => (
