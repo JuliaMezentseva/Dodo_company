@@ -447,9 +447,9 @@ function GoalCatalogRow({ goal, expanded, onToggle, onEdit, onDuplicate, onDelet
           width: 26, height: 26, marginTop: 3, display: "flex", alignItems: "center", justifyContent: "center", background: "none", border: "none", cursor: "pointer",
           color: "var(--sk-icon-secondary)", transform: expanded ? "rotate(90deg)" : "none", transition: "transform var(--sk-duration) var(--sk-ease)",
         }}><IconChevronRight size={16} /></button>
-        <div className="sk-row sk-gap-2" style={{ minWidth: 0 }}>
+        <div className="sk-row sk-gap-2" style={{ minWidth: 0, alignItems: "flex-start" }}>
           <span style={{
-            width: 26, height: 26, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center",
+            width: 26, height: 26, marginTop: 3, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center",
             background: "var(--sk-accent-secondary)", color: "var(--sk-text-accent)",
           }}><IconGoalRing size={15} /></span>
           <div className="sk-col sk-gap-1" style={{ minWidth: 0 }}>
