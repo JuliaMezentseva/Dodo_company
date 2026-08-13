@@ -88,9 +88,9 @@ function Page() {
   }
 
   const columns = [
-    { key: "name", title: "Название и описание", render: (t) => (
+    { key: "name", title: "Название и описание", width: "28%", render: (t) => (
       <a href={"template.html?tpl=" + t.id} style={{ textDecoration: "none" }}>
-        <div className="sk-col" style={{ gap: 2, maxWidth: 320 }}>
+        <div className="sk-col" style={{ gap: 2, maxWidth: 440 }}>
           <span className="sk-label-3" style={{ color: "var(--sk-text-accent)" }}>{t.name}</span>
           <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{t.description}</span>
         </div>
