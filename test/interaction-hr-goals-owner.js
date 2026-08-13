@@ -165,6 +165,13 @@ const target = path.resolve(__dirname, "..", "hr", "template.html");
     console.log("Step title visible directly in goals list (not just inside drawer):", body.includes("Настроить доступы к CRM") ? "PASS" : "FAIL");
     console.log("Materials pill visible directly in goals list:", body.includes("Полезные материалы: 1") ? "PASS" : "FAIL");
 
+    // Проверяем облегчённую вёрстку строки шага: фон без собственной рамки (border),
+    // чтобы не создавать третий вложенный контур внутри карточки цели.
+    const subgoalRow = [...w.document.querySelectorAll("div")].find(el =>
+      el.textContent.includes("Настроить доступы к CRM") && el.textContent.includes("Полезные материалы: 1") && el.querySelector("span"));
+    console.log("Subgoal row has no own border (flat background only, no nested frame):",
+      subgoalRow && (!subgoalRow.style.border || subgoalRow.style.border === "") ? "PASS" : "FAIL");
+
     // Левая колонка содержит только разделы плана + кнопки действий — блоки "Информация"
     // и "Статистика" убраны из UI совсем (не просто свёрнуты)
     console.log("Left column shows 'Разделы плана':", body.includes("Разделы плана") ? "PASS" : "FAIL");

@@ -429,7 +429,7 @@ function TemplateGoalCreateDrawer({ draft, setDraft, onClose, onCreate, onAddSub
 function TemplateSubgoalRow({ subgoal, onOpen }) {
   const hasMaterials = (subgoal.materials || []).length > 0;
   return (
-    <div className="sk-row sk-gap-2 sk-clickable" onClick={onOpen} style={{ alignItems: "center", padding: 10, border: "1px solid var(--sk-stroke)", borderRadius: "var(--sk-radius-3)", background: "var(--sk-surface-secondary)" }}>
+    <div className="sk-row sk-gap-2 sk-clickable" onClick={onOpen} style={{ alignItems: "center", padding: 10, borderRadius: "var(--sk-radius-3)", background: "var(--sk-surface-secondary)" }}>
       <div className="sk-col sk-gap-1" style={{ flex: 1, minWidth: 0 }}>
         <span className="sk-label-3-regular">{subgoal.title || "Без названия"}</span>
         <span className="sk-row sk-gap-1 sk-muted" style={{ font: "var(--sk-label-4-regular)", alignItems: "center" }}>
@@ -437,15 +437,11 @@ function TemplateSubgoalRow({ subgoal, onOpen }) {
         </span>
       </div>
       {hasMaterials ? (
-        <span className="sk-row sk-gap-1" style={{
-          height: 26, padding: "0 10px 0 6px", borderRadius: "var(--sk-radius-full)",
-          background: "var(--sk-surface-page)", color: "var(--sk-text-secondary)", font: "var(--sk-label-4)", whiteSpace: "nowrap",
-        }}><IconBookOpen size={15} />Полезные материалы: {subgoal.materials.length}</span>
+        <span className="sk-row sk-gap-1" style={{ color: "var(--sk-text-secondary)", font: "var(--sk-label-4)", whiteSpace: "nowrap" }}>
+          <IconBookOpen size={15} />Полезные материалы: {subgoal.materials.length}</span>
       ) : (
-        <span className="sk-row sk-gap-1 sk-clickable" onClick={(e) => { e.stopPropagation(); onOpen(); }} style={{
-          height: 26, padding: "0 10px 0 6px", borderRadius: "var(--sk-radius-full)",
-          background: "var(--sk-accent-secondary)", color: "var(--sk-text-accent)", font: "var(--sk-label-4)", whiteSpace: "nowrap",
-        }}><IconBookOpen size={15} />Добавить материалы</span>
+        <span className="sk-row sk-gap-1 sk-clickable" onClick={(e) => { e.stopPropagation(); onOpen(); }} style={{ color: "var(--sk-text-accent)", font: "var(--sk-label-4)", whiteSpace: "nowrap" }}>
+          <IconBookOpen size={15} />Добавить материалы</span>
       )}
     </div>
   );
