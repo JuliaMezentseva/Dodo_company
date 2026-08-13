@@ -142,24 +142,74 @@ function NotBuiltSection({ label }) {
 // но, в отличие от превью прошлой итерации, полноценно редактируемые: HR может добавить,
 // изменить или удалить КТ прямо в шаблоне. Для новых шаблонов список стартует пустым —
 // симметрично блоку "Цели", без заранее предсозданных точек.
-const emptyCpForm = { title: "", agenda: "", dueDays: 30, surveyId: "" };
+// Шкала оценки для вопросов КТ — одна на все вопросы контрольной точки (не настраивается
+// по-вопросно): "1-5 со смайликами" по умолчанию, плюс примеры альтернативных шкал. Это
+// только подпись в селекте для Админа — реальный опрос сотрудника (employee/plan.html,
+// CheckpointModal) рисует шкалу 1-5 своими SVG-"лицами" (ScaleFace), а не эмодзи-символами
+// (эмодзи по ДС не используем — их рендер зависит от ОС), поэтому конкретный вид шкалы тут
+// не превьюим.
+const CHECKPOINT_SCALE_OPTIONS = [
+  { id: "emoji5", label: "1–5 со смайликами" },
+  { id: "num5", label: "1–5 (числа)" },
+  { id: "num10", label: "1–10 (числа)" },
+  { id: "likert5", label: "5 уровней согласия" },
+  { id: "yesno", label: "Да / Нет" },
+];
+
+const emptyCpForm = { title: "", agenda: "", dueDays: 30, questions: [], scaleId: "emoji5" };
 
 function CheckpointFormModal({ initial, onClose, onSave }) {
-  const D = window.SITE_DATA;
   const [form, setForm] = React.useState(initial || emptyCpForm);
   const set = (k) => (v) => setForm((f) => ({ ...f, [k]: v }));
   const valid = form.title.trim() && form.agenda.trim() && form.dueDays;
+
+  function addQuestion() {
+    setForm((f) => ({ ...f, questions: [...f.questions, { id: "q" + Date.now(), text: "" }] }));
+  }
+  function setQuestionText(id, text) {
+    setForm((f) => ({ ...f, questions: f.questions.map((q) => q.id === id ? { ...q, text } : q) }));
+  }
+  function removeQuestion(id) {
+    setForm((f) => ({ ...f, questions: f.questions.filter((q) => q.id !== id) }));
+  }
+
   return (
     <Modal open title={initial ? "Редактировать контрольную точку" : "Новая контрольная точка"} onClose={onClose} size="s"
       secondary={<Button mode="secondary" onClick={onClose}>Отмена</Button>}
-      primary={<Button variant="accent" disabled={!valid} onClick={() => onSave(form)}>{initial ? "Сохранить" : "Добавить"}</Button>}>
+      primary={<Button variant="accent" disabled={!valid}
+        onClick={() => onSave({ ...form, questions: form.questions.filter((q) => q.text.trim()) })}>
+        {initial ? "Сохранить" : "Добавить"}
+      </Button>}>
       <div className="sk-col sk-gap-3">
         <Input label="Название" required value={form.title} onChange={(e) => set("title")(e.target.value || "")} placeholder="Например, Контрольная точка по итогам 30 дней" />
         <Textarea label="Повестка" required helper="Каждый пункт — с новой строки" rows={3} value={form.agenda} onChange={(e) => set("agenda")(e.target.value || "")} />
         <Input label="Срок (дней от начала плана)" required type="number" min={1} value={form.dueDays} onChange={(e) => set("dueDays")(Math.max(1, Number(e.target.value) || 1))} />
-        <Select label="Опрос" placeholder="Без опроса" value={form.surveyId || null}
-          options={D.surveyCatalog.map((s) => ({ value: s.id, label: s.name }))}
-          onChange={(v) => set("surveyId")(v || "")} />
+
+        <Divider />
+
+        <div className="sk-col sk-gap-2">
+          <div className="sk-label-3">Вопросы для сотрудника{form.questions.length ? " " + form.questions.length : ""}</div>
+          <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>
+            Сотрудник ответит на них прямо на встрече по контрольной точке
+          </div>
+          {form.questions.map((q, i) => (
+            <div key={q.id} className="sk-row sk-gap-2" style={{ alignItems: "center" }}>
+              <Input value={q.text} onChange={(e) => setQuestionText(q.id, e.target.value || "")}
+                placeholder={"Вопрос " + (i + 1)} style={{ flex: 1 }} />
+              <button className="sk-link-btn" onClick={() => removeQuestion(q.id)}>
+                <IconTrash size={15} color="var(--sk-icon-secondary)" />
+              </button>
+            </div>
+          ))}
+          <button className="sk-link-btn sk-label-3-regular" onClick={addQuestion} style={{ alignSelf: "flex-start" }}>+ Добавить вопрос</button>
+        </div>
+
+        {form.questions.length > 0 && (
+          <Select label="Шкала оценки" helper="Общая для всех вопросов этой контрольной точки"
+            value={form.scaleId}
+            options={CHECKPOINT_SCALE_OPTIONS.map((s) => ({ value: s.id, label: s.label }))}
+            onChange={set("scaleId")} />
+        )}
       </div>
     </Modal>
   );
@@ -179,7 +229,7 @@ function TemplateCheckpointRow({ index, cp, onEdit, onDelete }) {
       <div className="sk-col sk-gap-1" style={{ flex: 1, minWidth: 0 }}>
         <span className="sk-label-4">{cp.title}</span>
         <div className="sk-row sk-gap-1 sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>
-          <IconClock size={13} />День {cp.dueDays} от начала плана
+          <IconClock size={13} />День {cp.dueDays} от начала плана{cp.questions && cp.questions.length > 0 ? " · Вопросов: " + cp.questions.length : ""}
         </div>
       </div>
       <div className="sk-row sk-gap-1" style={{ flexShrink: 0, opacity: hover ? 1 : 0, transition: "opacity .12s ease" }}>
@@ -224,7 +274,7 @@ function TemplateCheckpointsSection({ checkpoints, onAdd, onEdit, onDelete }) {
 
       {formModal && (
         <CheckpointFormModal
-          initial={formModal.mode === "edit" ? { title: formModal.cp.title, agenda: formModal.cp.agenda, dueDays: formModal.cp.dueDays, surveyId: formModal.cp.surveyId || "" } : null}
+          initial={formModal.mode === "edit" ? { title: formModal.cp.title, agenda: formModal.cp.agenda, dueDays: formModal.cp.dueDays, questions: formModal.cp.questions || [], scaleId: formModal.cp.scaleId || "emoji5" } : null}
           onClose={() => setFormModal(null)}
           onSave={(form) => { formModal.mode === "edit" ? onEdit(formModal.cp.id, form) : onAdd(form); setFormModal(null); }} />
       )}
