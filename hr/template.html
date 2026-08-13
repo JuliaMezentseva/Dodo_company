@@ -300,7 +300,8 @@ function GoalsOwnerPicker({ owner, onChange }) {
 }
 
 // ---------------- Блок "Цели" — способ создания цели: плитка выбора (та же логика,
-// что и у руководителя в manager/plan.html — "Из каталога" и "С AI" пока не реализованы) ----------------
+// что и у руководителя в manager/plan.html, но "Из каталога целей" здесь уже реализовано —
+// ведёт в справочник hr/goals-catalog.html; "С AI" пока не реализовано ни у кого). ----------------
 function GoalMethodTile({ icon: Icon, title, variant, disabled, onClick }) {
   const special = variant === "special";
   return (
@@ -322,13 +323,65 @@ function GoalMethodTile({ icon: Icon, title, variant, disabled, onClick }) {
   );
 }
 
-function GoalMethodModal({ onClose, onManual }) {
+function GoalMethodModal({ onClose, onManual, onCatalog }) {
   return (
     <Modal open title="Как добавить цель?" onClose={onClose} size="l"
       secondary={<Button mode="secondary" onClick={onClose}>Отменить</Button>}>
       <div className="sk-row sk-gap-3" style={{ alignItems: "stretch" }}>
         <GoalMethodTile icon={IconEdit} title="Вручную" onClick={onManual} />
-        <GoalMethodTile icon={IconLayers} title="Из каталога целей" disabled />
+        <GoalMethodTile icon={IconLayers} title="Из каталога целей" onClick={onCatalog} />
+      </div>
+    </Modal>
+  );
+}
+
+// ---------------- Выбор готовой цели из справочника (hr/goals-catalog.html) — поиск +
+// список карточек; выбранная цель превращается в обычный черновик и открывается в
+// TemplateGoalCreateDrawer, чтобы HR мог донастроить её перед сохранением в шаблон.
+// Подцели получают новые id — правки после выбора не задевают исходную запись в каталоге. ----------------
+function GoalCatalogPickerModal({ onClose, onPick }) {
+  const D = window.SITE_DATA;
+  const catalog = D.goalCatalog || [];
+  const [q, setQ] = React.useState("");
+  const [category, setCategory] = React.useState("");
+  const categories = [...new Set(catalog.map((g) => g.category).filter(Boolean))];
+  const needle = q.trim().toLowerCase();
+  const list = catalog.filter((g) => {
+    if (needle && !(g.title.toLowerCase().includes(needle) || (g.description || "").toLowerCase().includes(needle))) return false;
+    if (category && g.category !== category) return false;
+    return true;
+  });
+
+  return (
+    <Modal open title="Выберите цель из каталога" onClose={onClose} size="l" maxHeight="calc(100vh - 64px)"
+      secondary={<Button mode="secondary" onClick={onClose}>Отменить</Button>}
+      options={
+        <div className="sk-row sk-gap-2">
+          <Input icon={<IconSearch size={18} />} placeholder="Поиск по названию" value={q} onChange={(e) => setQ(e.target.value || "")} style={{ flex: 1 }} />
+          <Select placeholder="Все категории" value={category || null} options={categories.map((c) => ({ value: c, label: c }))}
+            onChange={(v) => setCategory(v || "")} style={{ width: 200 }} />
+        </div>
+      }>
+      <div className="sk-col sk-gap-2 sk-modal-scroll">
+        {list.map((g) => (
+          <div key={g.id} className="sk-row sk-gap-3 sk-clickable" onClick={() => onPick(g)} style={{
+            justifyContent: "space-between", alignItems: "flex-start", padding: 12,
+            border: "1px solid var(--sk-stroke)", borderRadius: "var(--sk-radius-3)",
+          }}>
+            <div className="sk-col sk-gap-1" style={{ flex: 1, minWidth: 0 }}>
+              <div className="sk-row sk-gap-2" style={{ alignItems: "center" }}>
+                <span className="sk-label-3">{g.title}</span>
+                <Tag size="s" hue="accent">{g.category}</Tag>
+              </div>
+              <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{g.description}</span>
+              <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>
+                Шагов: {g.subgoals.length}{g.department ? " · " + g.department : ""}{(g.positions || []).length ? " · " + g.positions.join(", ") : ""}
+              </span>
+            </div>
+            <Button size="s" mode="secondary" onClick={(e) => { e.stopPropagation(); onPick(g); }}>Выбрать</Button>
+          </div>
+        ))}
+        {!list.length && <div className="sk-muted" style={{ padding: "16px 0", textAlign: "center" }}>Ничего не нашлось</div>}
       </div>
     </Modal>
   );
@@ -598,6 +651,7 @@ function TemplateGoalRow({ goal, onOpen, onDelete, onOpenSubgoal }) {
 // одной цели в сценарии "Создать сразу в шаблоне" — вместо отдельного предупреждения ниже. ----------------
 function GoalsSection({ owner, deadlineDays, goals, onOwnerChange, onDeadlineChange, onAddGoal, onUpdateGoal, onDeleteGoal }) {
   const [methodModal, setMethodModal] = React.useState(false);
+  const [catalogPicker, setCatalogPicker] = React.useState(false);
   const [goalDraft, setGoalDraft] = React.useState(null);
   const [createSubgoalModal, setCreateSubgoalModal] = React.useState(false);
   const [openGoalId, setOpenGoalId] = React.useState(null);
@@ -612,6 +666,13 @@ function GoalsSection({ owner, deadlineDays, goals, onOwnerChange, onDeadlineCha
   function startManualGoal() {
     setMethodModal(false);
     setGoalDraft({ title: "", description: "", dueDays: 30, subgoals: [] });
+  }
+  function pickFromCatalog(g) {
+    setCatalogPicker(false);
+    setGoalDraft({
+      title: g.title, description: g.description, dueDays: g.dueDays || 30,
+      subgoals: (g.subgoals || []).map((sg, i) => ({ ...sg, id: "sg" + Date.now() + "_" + i })),
+    });
   }
   function createGoal() {
     onAddGoal(goalDraft);
@@ -676,7 +737,11 @@ function GoalsSection({ owner, deadlineDays, goals, onOwnerChange, onDeadlineCha
         </div>
       )}
 
-      {methodModal && <GoalMethodModal onClose={() => setMethodModal(false)} onManual={startManualGoal} />}
+      {methodModal && (
+        <GoalMethodModal onClose={() => setMethodModal(false)} onManual={startManualGoal}
+          onCatalog={() => { setMethodModal(false); setCatalogPicker(true); }} />
+      )}
+      {catalogPicker && <GoalCatalogPickerModal onClose={() => setCatalogPicker(false)} onPick={pickFromCatalog} />}
       {goalDraft && (
         <TemplateGoalCreateDrawer draft={goalDraft} setDraft={setGoalDraft} onClose={() => setGoalDraft(null)}
           onCreate={createGoal} onAddSubgoal={() => setCreateSubgoalModal(true)} />

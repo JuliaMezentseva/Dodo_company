@@ -152,7 +152,7 @@ function buildNavGroups(role, base) {
         { id: "hr-plans", label: "Планы сотрудников", href: base + "/hr/plans.html" },
         { id: "hr-queue", label: "Очередь назначения", href: base + "/hr/queue.html" },
         { id: "hr-templates", label: "Шаблоны планов", href: base + "/hr/templates.html" },
-        { id: "hr-refs", label: "Справочники", href: base + "/stub.html?role=hr&section=refs" },
+        { id: "hr-refs", label: "Справочники", href: base + "/hr/goals-catalog.html" },
         { id: "hr-analytics", label: "Аналитика", href: base + "/stub.html?role=hr&section=analytics" },
       ],
     });

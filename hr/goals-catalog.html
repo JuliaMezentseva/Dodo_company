@@ -1,0 +1,460 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Каталог целей — Справочники — Skillaz Start</title>
+<link rel="stylesheet" href="../assets/styles.css" />
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" crossorigin="anonymous"></script>
+<script src="../assets/ds_bundle.js"></script>
+<script src="../assets/data.js"></script>
+<script type="text/babel" src="../assets/shell.js"></script>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { Card, Tag, Table, Input, Textarea, Select, Checkbox, Divider, Button, Tooltip, Modal, Drawer, Snackbar, Alert } = window.SkillazCoreDesignSystem_bf9566;
+const { AppShell, Icons } = window.Site;
+const { IconPlusSm, IconSearch, IconFilter, IconTrash, IconEdit, IconX } = Icons;
+
+const PLAN_TYPE_OPTIONS = ["Адаптация", "Пребординг", "Стажировка", "Внутренний переход"];
+const ELEMENT_LABEL = { article: "Статья", task: "Задача", course: "Курс", file: "Файл", link: "Ссылка" };
+
+// ---------------- Полезные материалы шага — тот же UI и тот же каталог материалов,
+// что и в hr/template.html (TemplateMaterialsPicker): поиск + список с чекбоксами. ----------------
+function MaterialsPicker({ materials, onAdd, onRemove }) {
+  const D = window.SITE_DATA;
+  const [open, setOpen] = React.useState(false);
+  const [q, setQ] = React.useState("");
+  const allItems = D.templateMaterialsCatalog || [];
+  const list = q.trim() ? allItems.filter((item) => item.title.toLowerCase().includes(q.trim().toLowerCase())) : allItems;
+  const selectedIds = materials.map((m) => m.id);
+  const selectedItems = materials.map((m) => allItems.find((item) => item.id === m.id)).filter(Boolean);
+
+  function toggle(item) {
+    if (selectedIds.includes(item.id)) onRemove(item.id);
+    else onAdd({ id: item.id, title: item.title, kind: item.kind });
+  }
+
+  return (
+    <div className="sk-col sk-gap-2">
+      <span className="sk-label-3" style={{ color: "var(--sk-text-primary)" }}>Полезные материалы</span>
+      {selectedItems.length ? (
+        <div className="sk-col sk-gap-2">
+          {selectedItems.map((item) => (
+            <div key={item.id} className="sk-row" style={{ justifyContent: "space-between", padding: 10, background: "var(--sk-surface-secondary)", borderRadius: "var(--sk-radius-2)" }}>
+              <div className="sk-col sk-gap-1">
+                <div className="sk-label-4">{item.title}</div>
+                <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{ELEMENT_LABEL[item.kind]}</div>
+              </div>
+              <button className="sk-link-btn" onClick={() => onRemove(item.id)}><IconX size={15} color="var(--sk-icon-secondary)" /></button>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Материалы помогут сотруднику разобраться, что нужно сделать</span>
+      )}
+      <button className="sk-link-btn sk-label-3-regular" onClick={() => setOpen(true)}
+        style={{ alignSelf: "flex-start", color: "var(--sk-text-accent)" }}>
+        <span className="sk-row sk-gap-1"><IconPlusSm size={16} />Добавить</span>
+      </button>
+
+      {open && (
+        <Modal open title="Полезные материалы" onClose={() => setOpen(false)} size="m"
+          secondary={<Button mode="secondary" onClick={() => setOpen(false)}>Отменить</Button>}
+          primary={<Button onClick={() => setOpen(false)}>Готово</Button>}
+          options={<Input icon={<IconSearch size={18} />} placeholder="Поиск по названию" value={q} onChange={(e) => setQ(e.target.value || "")} />}>
+          <div className="sk-col sk-gap-1 sk-modal-scroll">
+            {list.map((item) => (
+              <div key={item.id} className="sk-row sk-gap-3 sk-clickable" style={{ padding: "10px 4px" }} onClick={() => toggle(item)}>
+                <Checkbox checked={selectedIds.includes(item.id)} onChange={() => toggle(item)} />
+                <div className="sk-col sk-gap-1" style={{ flex: 1 }}>
+                  <div className="sk-label-3-regular">{item.title}</div>
+                  <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{ELEMENT_LABEL[item.kind]}</div>
+                </div>
+              </div>
+            ))}
+            {!list.length && <div className="sk-muted" style={{ padding: "16px 0", textAlign: "center" }}>Ничего не нашлось</div>}
+          </div>
+        </Modal>
+      )}
+    </div>
+  );
+}
+
+// ---------------- Проверка выполнения шага — тот же UI, что и в hr/template.html ----------------
+function StepAssessmentPicker({ templateId, setTemplateId }) {
+  const D = window.SITE_DATA;
+  const templates = D.assessmentTemplates || [];
+  const checked = !!templateId;
+
+  function toggle() {
+    setTemplateId(checked ? null : (templates[0] && templates[0].id));
+  }
+
+  return (
+    <div className="sk-col sk-gap-1">
+      <div className="sk-row sk-gap-3 sk-clickable" style={{ alignItems: "flex-start" }} onClick={toggle}>
+        <div style={{ paddingTop: 1 }}><Checkbox checked={checked} onChange={toggle} /></div>
+        <span className="sk-label-4">Добавить оценочный лист</span>
+      </div>
+      <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)", marginLeft: 32 }}>Готовые критерии помогут оценить выполнение шага</span>
+      <div style={{ marginLeft: 32, marginTop: 8 }}>
+        {checked ? (
+          <Select value={templateId} options={templates.map((t) => ({ value: t.id, label: t.title }))} onChange={setTemplateId} />
+        ) : (
+          <div style={{ padding: "12px 14px", background: "var(--sk-surface-secondary)", borderRadius: "var(--sk-radius-2)" }}>
+            <span className="sk-label-3-regular">
+              Без оценочного листа итог выставляется на усмотрение проверяющего: «Шаг выполнен», «Не выполнен» или «Требует доработки».
+            </span>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ---------------- Шаг цели каталога — своя копия SubgoalFormModal из hr/template.html,
+// но срок — простое число дней "от начала цели", а не DatePicker: у цели в каталоге нет
+// ни даты старта, ни конкретного шаблона/плана, к которому она уже привязана. Абсолютная
+// дата тут была бы фиктивной сильнее, чем условный день N — день N честно показывает
+// относительный порядок шагов и остаётся понятным после того, как цель заберут из каталога. ----------------
+const emptySubgoalForm = { title: "", description: "", dueDays: 14, reviewer: "Руководитель", materials: [], templateId: null };
+
+function SubgoalFormModal({ initial, onClose, onCreate }) {
+  const [form, setForm] = React.useState(initial || emptySubgoalForm);
+  const set = (k) => (v) => setForm((f) => ({ ...f, [k]: v }));
+  const canCreate = form.title.trim().length > 0;
+  return (
+    <Modal open title="Шаг для выполнения цели" onClose={onClose} size="m" maxHeight="calc(100vh - 64px)"
+      secondary={<Button mode="secondary" onClick={onClose}>Отменить</Button>}
+      primary={<Button disabled={!canCreate} onClick={() => onCreate(form)}>{initial ? "Сохранить" : "Добавить"}</Button>}>
+      <div className="sk-col sk-gap-4">
+        <div className="sk-col sk-gap-2">
+          <Input label="Название" required value={form.title} onChange={(e) => set("title")(e.target.value || "")} />
+          <Textarea label="Описание" rows={2} maxLength={1000} value={form.description} onChange={(e) => set("description")(e.target.value || "")} />
+        </div>
+        <div className="sk-row sk-gap-3">
+          <Input label="Срок (дней от начала цели)" required type="number" min={1} value={form.dueDays}
+            onChange={(e) => set("dueDays")(Math.max(1, Number(e.target.value) || 1))} style={{ flex: 1 }} />
+          <Select label="Проверяющий" value={form.reviewer}
+            options={[{ value: "Руководитель", label: "Руководитель" }, { value: "Наставник", label: "Наставник" }]}
+            onChange={set("reviewer")} style={{ flex: 1 }} />
+        </div>
+        <MaterialsPicker materials={form.materials}
+          onAdd={(item) => set("materials")([...form.materials, item])}
+          onRemove={(id) => set("materials")(form.materials.filter((m) => m.id !== id))} />
+        <Divider />
+        <div className="sk-col sk-gap-3">
+          <span className="sk-label-3" style={{ color: "var(--sk-text-primary)" }}>Проверка выполнения шага</span>
+          <StepAssessmentPicker templateId={form.templateId} setTemplateId={set("templateId")} />
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
+// ---------------- Свободные тэги (должности, ключевые слова) — простой ввод с Enter,
+// в ДС нет готового компонента тэг-инпута, поэтому собран из Input + Tag(onRemove). ----------------
+function TagsInput({ label, helper, placeholder, values, onChange }) {
+  const [draft, setDraft] = React.useState("");
+  function commit() {
+    const v = draft.trim();
+    if (v && !values.includes(v)) onChange([...values, v]);
+    setDraft("");
+  }
+  return (
+    <div className="sk-col sk-gap-2">
+      <span className="sk-label-3" style={{ color: "var(--sk-text-primary)" }}>{label}</span>
+      {values.length > 0 && (
+        <div className="sk-row sk-gap-1" style={{ flexWrap: "wrap" }}>
+          {values.map((v) => (
+            <Tag key={v} size="s" hue="neutral" onRemove={() => onChange(values.filter((x) => x !== v))}>{v}</Tag>
+          ))}
+        </div>
+      )}
+      <Input value={draft} placeholder={placeholder} onChange={(e) => setDraft(e.target.value || "")}
+        onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); commit(); } }}
+        postfix={draft.trim() ? <button className="sk-link-btn sk-label-4-regular" onClick={commit}>Добавить</button> : null} />
+      {helper && <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{helper}</span>}
+    </div>
+  );
+}
+
+// ---------------- Дровер создания/редактирования цели каталога — структурно похож на
+// TemplateGoalCreateDrawer из hr/template.html (название, описание, срок, шаги), плюс блок
+// классификации (категория/подразделение/тип плана/уровень/должности/тэги), которого нет
+// у обычной цели шаблона — он существует только здесь, чтобы цель было проще найти в каталоге. ----------------
+const emptyGoalForm = {
+  title: "", description: "", category: "", department: "", planType: "", level: "",
+  positions: [], tags: [], dueDays: 30, subgoals: [],
+};
+
+function GoalCatalogFormDrawer({ initial, onClose, onSave }) {
+  const D = window.SITE_DATA;
+  const [form, setForm] = React.useState(initial || emptyGoalForm);
+  const set = (k) => (v) => setForm((f) => ({ ...f, [k]: v }));
+  const [subgoalModal, setSubgoalModal] = React.useState(null); // null | "create" | { edit: index }
+  const canSave = form.title.trim().length > 0 && !!form.category;
+
+  const departments = [...new Set(D.templates.map((t) => t.department))];
+
+  function addSubgoal(sgForm) {
+    setForm((f) => ({ ...f, subgoals: [...f.subgoals, { id: "gcsg" + Date.now(), ...sgForm }] }));
+    setSubgoalModal(null);
+  }
+  function saveSubgoal(index, sgForm) {
+    setForm((f) => ({ ...f, subgoals: f.subgoals.map((sg, i) => i === index ? { ...sg, ...sgForm } : sg) }));
+    setSubgoalModal(null);
+  }
+  function deleteSubgoal(index) {
+    setForm((f) => ({ ...f, subgoals: f.subgoals.filter((_, i) => i !== index) }));
+  }
+
+  return (
+    <React.Fragment>
+      <Drawer open title={initial ? "Редактировать цель каталога" : "Новая цель в каталоге"} onClose={onClose} size="m"
+        primary={<Button disabled={!canSave} onClick={() => onSave(form)}>{initial ? "Сохранить" : "Добавить в каталог"}</Button>}
+        secondary={<Button mode="secondary" onClick={onClose}>Отменить</Button>}>
+        <div className="sk-col sk-gap-4">
+          <Input label="Название" required placeholder="Например, Изучить продукт компании"
+            value={form.title} onChange={(e) => set("title")(e.target.value || "")} />
+          <Textarea label="Описание" rows={3} maxLength={1000} showCount
+            placeholder="Какой измеримый результат должен получить сотрудник"
+            value={form.description} onChange={(e) => set("description")(e.target.value || "")} />
+
+          <Divider />
+          <div className="sk-col sk-gap-1">
+            <span className="sk-label-3" style={{ color: "var(--sk-text-primary)" }}>Классификация</span>
+            <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Помогает быстрее найти цель в каталоге — для кого и для какого плана она сформулирована</span>
+          </div>
+          <div className="sk-row sk-gap-3">
+            <Select label="Основная категория" required placeholder="Выберите категорию" value={form.category || null}
+              options={D.goalCategories.map((c) => ({ value: c, label: c }))}
+              onChange={set("category")} style={{ flex: 1 }} />
+            <Select label="Подразделение" placeholder="Не указано" value={form.department || null}
+              options={departments.map((d) => ({ value: d, label: d }))}
+              onChange={(v) => set("department")(v || "")} style={{ flex: 1 }} />
+          </div>
+          <div className="sk-row sk-gap-3">
+            <Select label="Тип плана" placeholder="Любой" value={form.planType || null}
+              options={PLAN_TYPE_OPTIONS.map((v) => ({ value: v, label: v }))}
+              onChange={(v) => set("planType")(v || "")} style={{ flex: 1 }} />
+            <Select label="Уровень" placeholder="Любой" value={form.level || null}
+              options={D.goalLevels.map((v) => ({ value: v, label: v }))}
+              onChange={(v) => set("level")(v || "")} style={{ flex: 1 }} />
+          </div>
+          <TagsInput label="Должности" values={form.positions} onChange={set("positions")}
+            placeholder="Например, Менеджер по продажам — Enter, чтобы добавить"
+            helper="Для каких должностей подходит эта цель" />
+          <TagsInput label="Тэги" values={form.tags} onChange={set("tags")}
+            placeholder="Например, для новичков — Enter, чтобы добавить" />
+          <Input label="Рекомендуемый срок выполнения (дней)" required type="number" min={1} value={form.dueDays}
+            onChange={(e) => set("dueDays")(Math.max(1, Number(e.target.value) || 1))} style={{ width: 240 }} />
+
+          <Divider />
+          <div className="sk-col sk-gap-2">
+            <div className="sk-label-3">Шаги для достижения{form.subgoals.length ? " " + form.subgoals.length : ""}</div>
+            <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>
+              Разбейте цель на подцели — с материалами и проверкой выполнения, если нужно. Можно добавить сейчас или позже.
+            </div>
+            {form.subgoals.map((sg, i) => (
+              <div key={sg.id} className="sk-row sk-gap-2" style={{ alignItems: "center" }}>
+                <div className="sk-row sk-gap-2 sk-clickable" onClick={() => setSubgoalModal({ edit: i })} style={{
+                  flex: 1, minWidth: 0, alignItems: "center", padding: 10, borderRadius: "var(--sk-radius-3)", background: "var(--sk-surface-secondary)",
+                }}>
+                  <div className="sk-col sk-gap-1" style={{ flex: 1, minWidth: 0 }}>
+                    <span className="sk-label-3-regular">{sg.title || "Без названия"}</span>
+                    <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>
+                      День {sg.dueDays}{(sg.materials || []).length ? " · Материалов: " + sg.materials.length : ""}
+                    </span>
+                  </div>
+                </div>
+                <button className="sk-link-btn" onClick={() => deleteSubgoal(i)}><IconTrash size={15} color="var(--sk-icon-secondary)" /></button>
+              </div>
+            ))}
+            <button className="sk-link-btn sk-label-3-regular" onClick={() => setSubgoalModal("create")} style={{ alignSelf: "flex-start" }}>+ Добавить шаг</button>
+          </div>
+        </div>
+      </Drawer>
+
+      {subgoalModal === "create" && (
+        <SubgoalFormModal onClose={() => setSubgoalModal(null)} onCreate={addSubgoal} />
+      )}
+      {subgoalModal && subgoalModal.edit !== undefined && (
+        <SubgoalFormModal initial={form.subgoals[subgoalModal.edit]} onClose={() => setSubgoalModal(null)}
+          onCreate={(sgForm) => saveSubgoal(subgoalModal.edit, sgForm)} />
+      )}
+    </React.Fragment>
+  );
+}
+
+const emptyFilters = { category: "", department: "", planType: "", level: "", position: "" };
+
+function Page() {
+  const D = window.SITE_DATA;
+  const [catalog, setCatalog] = React.useState(D.goalCatalog);
+  const [q, setQ] = React.useState("");
+  const [filtersOpen, setFiltersOpen] = React.useState(false);
+  const [filters, setFilters] = React.useState(emptyFilters);
+  const [formDrawer, setFormDrawer] = React.useState(null); // null | "create" | { edit: goal }
+  const [deleteConfirm, setDeleteConfirm] = React.useState(null);
+  const [toast, setToast] = React.useState(null);
+
+  function showToast(msg) { setToast(msg); window.setTimeout(() => setToast(null), 2600); }
+
+  const departments = [...new Set(catalog.map((g) => g.department).filter(Boolean))];
+  const positions = [...new Set(catalog.flatMap((g) => g.positions || []))];
+  const hasActiveFilters = !!(filters.category || filters.department || filters.planType || filters.level || filters.position);
+  const activeFilterCount = Object.values(filters).filter(Boolean).length;
+
+  const needle = q.trim().toLowerCase();
+  const list = catalog.filter((g) => {
+    if (needle && !(g.title.toLowerCase().includes(needle) || (g.description || "").toLowerCase().includes(needle)
+      || (g.positions || []).some((p) => p.toLowerCase().includes(needle)) || (g.tags || []).some((t) => t.toLowerCase().includes(needle)))) return false;
+    if (filters.category && g.category !== filters.category) return false;
+    if (filters.department && g.department !== filters.department) return false;
+    if (filters.planType && g.planType !== filters.planType) return false;
+    if (filters.level && g.level !== filters.level) return false;
+    if (filters.position && !(g.positions || []).includes(filters.position)) return false;
+    return true;
+  });
+
+  function addGoal(form) {
+    setCatalog((list) => [{ id: "gc" + Date.now(), author: "Вы", createdAt: "сегодня", usageCount: 0, ...form }, ...list]);
+    setFormDrawer(null);
+    showToast("Цель добавлена в каталог");
+  }
+  function saveGoal(id, form) {
+    setCatalog((list) => list.map((g) => g.id === id ? { ...g, ...form } : g));
+    setFormDrawer(null);
+    showToast("Изменения сохранены");
+  }
+  function removeGoal(g) {
+    setCatalog((list) => list.filter((x) => x.id !== g.id));
+    setDeleteConfirm(null);
+    showToast("Цель удалена из каталога");
+  }
+
+  const columns = [
+    { key: "title", title: "Цель", render: (g) => (
+      <div className="sk-clickable" onClick={() => setFormDrawer({ edit: g })}>
+        <div className="sk-col" style={{ gap: 2, maxWidth: 320 }}>
+          <span className="sk-label-3" style={{ color: "var(--sk-text-accent)" }}>{g.title}</span>
+          <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{g.description}</span>
+        </div>
+      </div>
+    ) },
+    { key: "category", title: "Категория", render: (g) => <Tag size="s" hue="accent">{g.category}</Tag> },
+    { key: "department", title: "Подразделение", render: (g) => g.department || "—" },
+    { key: "positions", title: "Должности", render: (g) => (g.positions || []).length ? (g.positions || []).join(", ") : "—" },
+    { key: "planType", title: "Тип плана", render: (g) => g.planType ? <Tag size="s" hue="neutral">{g.planType}</Tag> : "—" },
+    { key: "steps", title: "Шагов", align: "right", render: (g) => g.subgoals.length },
+    { key: "usageCount", title: "Использований", align: "right" },
+    { key: "actions", title: "", render: (g) => (
+      <div className="sk-row sk-gap-1" onClick={(e) => e.stopPropagation()}>
+        <Tooltip content="Редактировать">
+          <Button size="s" mode="tertiary" onClick={() => setFormDrawer({ edit: g })}><IconEdit size={15} /></Button>
+        </Tooltip>
+        <Tooltip content="Удалить">
+          <Button size="s" mode="tertiary" onClick={() => setDeleteConfirm(g)}><IconTrash size={15} /></Button>
+        </Tooltip>
+      </div>
+    ) },
+  ];
+
+  return (
+    <AppShell role="hr" active="hr-refs" base="..">
+      <div className="sk-row" style={{ justifyContent: "space-between", alignItems: "flex-start" }}>
+        <div className="sk-col sk-gap-2">
+          <div className="sk-title-4">Каталог целей</div>
+          <div className="sk-muted">
+            Справочник готовых целей с шагами и материалами внутри — выбирайте их вместо ручного ввода при создании цели в шаблоне плана
+            (кнопка «Из каталога целей» в редакторе шаблона).
+          </div>
+        </div>
+        <Button variant="accent" icon={<IconPlusSm size={16} />} onClick={() => setFormDrawer("create")}>Добавить цель</Button>
+      </div>
+
+      <div className="sk-col sk-gap-3">
+        <div className="sk-row sk-gap-2">
+          <Input icon={<IconSearch size={20} />} placeholder="Название, описание, должность, тэг" value={q}
+            onChange={(e) => setQ(e.target.value || "")} style={{ flex: 1 }} />
+          <Button mode="secondary" icon={<IconFilter size={16} />} onClick={() => setFiltersOpen((o) => !o)}>
+            Фильтры{activeFilterCount ? " · " + activeFilterCount : ""}
+          </Button>
+        </div>
+        {filtersOpen && (
+          <div className="sk-row sk-gap-2" style={{ flexWrap: "wrap", alignItems: "flex-end" }}>
+            <Select label="Категория" placeholder="Все" value={filters.category || null} options={D.goalCategories.map((v) => ({ value: v, label: v }))}
+              onChange={(v) => setFilters((f) => ({ ...f, category: v || "" }))} style={{ width: 190 }} />
+            <Select label="Подразделение" placeholder="Все" value={filters.department || null} options={departments.map((v) => ({ value: v, label: v }))}
+              onChange={(v) => setFilters((f) => ({ ...f, department: v || "" }))} style={{ width: 200 }} />
+            <Select label="Должность" placeholder="Все" value={filters.position || null} options={positions.map((v) => ({ value: v, label: v }))}
+              onChange={(v) => setFilters((f) => ({ ...f, position: v || "" }))} style={{ width: 200 }} />
+            <Select label="Тип плана" placeholder="Все" value={filters.planType || null} options={PLAN_TYPE_OPTIONS.map((v) => ({ value: v, label: v }))}
+              onChange={(v) => setFilters((f) => ({ ...f, planType: v || "" }))} style={{ width: 170 }} />
+            <Select label="Уровень" placeholder="Все" value={filters.level || null} options={D.goalLevels.map((v) => ({ value: v, label: v }))}
+              onChange={(v) => setFilters((f) => ({ ...f, level: v || "" }))} style={{ width: 150 }} />
+            {(hasActiveFilters || q) && <button className="sk-link-btn sk-label-4-regular" style={{ height: 48 }} onClick={() => { setFilters(emptyFilters); setQ(""); }}>Сбросить</button>}
+          </div>
+        )}
+      </div>
+
+      <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Найдено целей: {list.length}</div>
+
+      {list.length > 0 ? (
+        <div className="sk-scroll" style={{ overflowX: "auto" }}>
+          <Table columns={columns} rows={list} />
+        </div>
+      ) : catalog.length === 0 ? (
+        <Card>
+          <div className="sk-col sk-gap-3" style={{ alignItems: "center", textAlign: "center", padding: "24px 16px" }}>
+            <div className="sk-title-5">Добавьте первую цель в каталог</div>
+            <div className="sk-muted" style={{ maxWidth: 440 }}>
+              Готовая цель с шагами и материалами — чтобы потом не собирать её заново, а выбрать из каталога при создании шаблона
+            </div>
+            <Button variant="accent" onClick={() => setFormDrawer("create")}>+ Добавить цель</Button>
+          </div>
+        </Card>
+      ) : (
+        <Card><div className="sk-muted" style={{ textAlign: "center", padding: "16px 0" }}>Ничего не нашлось — попробуйте изменить запрос или фильтры.</div></Card>
+      )}
+
+      <Alert hue="neutral" title="Как это работает">
+        Цель выбирается из каталога как заготовка: HR может донастроить её перед сохранением в шаблон, дальнейшее редактирование в шаблоне
+        не меняет исходную запись в каталоге и наоборот.
+      </Alert>
+
+      {(formDrawer === "create" || (formDrawer && formDrawer.edit)) && (
+        <GoalCatalogFormDrawer
+          initial={formDrawer && formDrawer.edit ? formDrawer.edit : null}
+          onClose={() => setFormDrawer(null)}
+          onSave={(form) => formDrawer.edit ? saveGoal(formDrawer.edit.id, form) : addGoal(form)} />
+      )}
+
+      {deleteConfirm && (
+        <Modal open title={null} onClose={() => setDeleteConfirm(null)} size="s"
+          secondary={<Button mode="secondary" onClick={() => setDeleteConfirm(null)}>Отменить</Button>}
+          primary={<Button variant="negative" onClick={() => removeGoal(deleteConfirm)}>Удалить цель</Button>}>
+          <div className="sk-col sk-gap-2" style={{ alignItems: "center", textAlign: "center", padding: "8px 0" }}>
+            <div className="sk-label-2">Удалить цель «{deleteConfirm.title}» из каталога?</div>
+            <div className="sk-muted">Уже добавленные из неё цели в шаблонах не изменятся — каталог живёт независимо от них.</div>
+          </div>
+        </Modal>
+      )}
+
+      {toast && (
+        <div style={{ position: "fixed", bottom: 24, left: "50%", transform: "translateX(-50%)", zIndex: 100 }}>
+          <Snackbar>{toast}</Snackbar>
+        </div>
+      )}
+    </AppShell>
+  );
+}
+ReactDOM.createRoot(document.getElementById("root")).render(<Page />);
+</script>
+</body>
+</html>

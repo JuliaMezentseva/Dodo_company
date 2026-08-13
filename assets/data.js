@@ -979,6 +979,133 @@ window.SITE_DATA = {
     if (!t.goals) t.goals = [];
   });
 
+  // ---- Справочники → Каталог целей: готовые цели с шагами и материалами, из которых
+  // HR-Админ может выбрать цель при создании (см. hr/goals-catalog.html и "Из каталога
+  // целей" в hr/template.html). Основная категория — то же семантическое поле, что и
+  // "направление" у вакансий (window.SITE_DATA.directions), плюс "Общие" для сквозных
+  // целей, не привязанных к одной функции (например, комплаенс/культура).
+  window.SITE_DATA.goalCategories = [...window.SITE_DATA.directions, "Общие"];
+  window.SITE_DATA.goalLevels = ["Стажёр", "Junior", "Middle", "Senior", "Lead"];
+
+  window.SITE_DATA.goalCatalog = [
+    {
+      id: "gc_sales_product",
+      title: "Изучить продукт компании",
+      description: "Сотрудник разбирается в продуктовой линейке, ценностях и позиционировании компании, чтобы уверенно консультировать клиентов.",
+      category: "Продажи",
+      department: "Департамент продаж",
+      positions: ["Менеджер по продажам", "Старший менеджер по продажам"],
+      planType: "Адаптация",
+      level: "Junior",
+      tags: ["для новичков"],
+      dueDays: 30,
+      author: "Ольга Соколова",
+      createdAt: "12.01.26",
+      usageCount: 9,
+      subgoals: [
+        { id: "gcsg_sales_1", title: "Пройти вводный курс по продукту", description: "", dueDays: 10, reviewer: "Руководитель", materials: [{ id: "tm3", title: "Вводный курс по продукту компании", kind: "course" }], templateId: null },
+        { id: "gcsg_sales_2", title: "Сдать тест на знание продукта", description: "", dueDays: 20, reviewer: "Руководитель", materials: [{ id: "tm7", title: "Пройти вводный тест по продукту", kind: "task" }], templateId: null },
+        { id: "gcsg_sales_3", title: "Провести первую консультацию под наблюдением руководителя", description: "", dueDays: 28, reviewer: "Руководитель", materials: [], templateId: "at_first_contact" },
+      ],
+    },
+    {
+      id: "gc_sales_crm",
+      title: "Освоить работу в CRM и первые сделки",
+      description: "Сотрудник самостоятельно ведёт сделки в CRM от первого контакта до закрытия по стандартам компании.",
+      category: "Продажи",
+      department: "Департамент продаж",
+      positions: ["Менеджер по продажам"],
+      planType: "Адаптация",
+      level: "Junior",
+      tags: [],
+      dueDays: 45,
+      author: "Ольга Соколова",
+      createdAt: "12.01.26",
+      usageCount: 6,
+      subgoals: [
+        { id: "gcsg_crm_1", title: "Настроить рабочее место и доступы к CRM", description: "", dueDays: 5, reviewer: "Руководитель", materials: [{ id: "tm4", title: "Настроить рабочее место и доступы", kind: "task" }], templateId: null },
+        { id: "gcsg_crm_2", title: "Изучить регламент оформления сделки", description: "", dueDays: 12, reviewer: "Руководитель", materials: [{ id: "tm1", title: "Регламент оформления сделки в CRM", kind: "article" }], templateId: null },
+        { id: "gcsg_crm_3", title: "Провести первую сделку самостоятельно", description: "", dueDays: 45, reviewer: "Руководитель", materials: [], templateId: null },
+      ],
+    },
+    {
+      id: "gc_dev_codebase",
+      title: "Освоиться в кодовой базе и процессах команды",
+      description: "Сотрудник ориентируется в архитектуре проекта, код-стайле и договорённостях команды, готов брать задачи без сопровождения.",
+      category: "IT и цифровой бизнес",
+      department: "Департамент разработки",
+      positions: ["Младший разработчик", "Frontend-разработчик"],
+      planType: "Адаптация",
+      level: "Junior",
+      tags: ["для новичков"],
+      dueDays: 30,
+      author: "Ольга Соколова",
+      createdAt: "05.12.25",
+      usageCount: 4,
+      subgoals: [
+        { id: "gcsg_dev_1", title: "Настроить окружение и запустить проект локально", description: "", dueDays: 3, reviewer: "Руководитель", materials: [], templateId: null },
+        { id: "gcsg_dev_2", title: "Пройти код-ревью первого PR", description: "", dueDays: 20, reviewer: "Руководитель", materials: [], templateId: "at_code_review" },
+      ],
+    },
+    {
+      id: "gc_support_scripts",
+      title: "Освоить скрипты и стандарты поддержки клиентов",
+      description: "Сотрудник уверенно обрабатывает типовые обращения клиентов по стандартам качества поддержки.",
+      category: "Поддержка клиентов",
+      department: "Дирекция по клиентскому сервису",
+      positions: ["Специалист поддержки"],
+      planType: "Пребординг",
+      level: "Junior",
+      tags: ["для новичков", "пребординг"],
+      dueDays: 14,
+      author: "Юлия Степанова",
+      createdAt: "18.11.25",
+      usageCount: 3,
+      subgoals: [
+        { id: "gcsg_sup_1", title: "Изучить стандарты общения с клиентом", description: "", dueDays: 5, reviewer: "Наставник", materials: [{ id: "tm2", title: "Стандарты общения с клиентом", kind: "article" }], templateId: null },
+        { id: "gcsg_sup_2", title: "Отработать 5 обращений под наблюдением наставника", description: "", dueDays: 14, reviewer: "Наставник", materials: [], templateId: null },
+      ],
+    },
+    {
+      id: "gc_analytics_dashboards",
+      title: "Научиться собирать дашборды по ключевым метрикам",
+      description: "Сотрудник самостоятельно готовит регулярную отчётность и дашборды для команды.",
+      category: "Аналитика",
+      department: "Департамент аналитики",
+      positions: ["Data-аналитик", "Стажёр-аналитик"],
+      planType: "Стажировка",
+      level: "Стажёр",
+      tags: [],
+      dueDays: 60,
+      author: "Ольга Соколова",
+      createdAt: "28.07.26",
+      usageCount: 1,
+      subgoals: [
+        { id: "gcsg_an_1", title: "Настроить доступы к BI-системе и хранилищу", description: "", dueDays: 7, reviewer: "Руководитель", materials: [], templateId: null },
+        { id: "gcsg_an_2", title: "Собрать первый дашборд по шаблону команды", description: "", dueDays: 40, reviewer: "Руководитель", materials: [], templateId: null },
+      ],
+    },
+    {
+      id: "gc_general_compliance",
+      title: "Пройти вводный тренинг по безопасности и комплаенсу",
+      description: "Сквозная цель для любой роли: сотрудник знает базовые правила информационной безопасности и корпоративного комплаенса.",
+      category: "Общие",
+      department: "",
+      positions: [],
+      planType: "Адаптация",
+      level: "",
+      tags: ["для новичков", "обязательная"],
+      dueDays: 10,
+      author: "Юлия Степанова",
+      createdAt: "20.02.26",
+      usageCount: 14,
+      subgoals: [
+        { id: "gcsg_comp_1", title: "Пройти курс по информационной безопасности", description: "", dueDays: 7, reviewer: "Руководитель", materials: [], templateId: null },
+        { id: "gcsg_comp_2", title: "Ознакомиться с политикой комплаенса и подписать", description: "", dueDays: 10, reviewer: "Руководитель", materials: [], templateId: null },
+      ],
+    },
+  ];
+
   // ---- Планы сотрудников (HR): назначенные индивидуальные планы ----
   // Денормализованный список для экрана "Планы сотрудников" — имя/должность/подразделение
   // скопированы из window.SITE_DATA.team (там, где сотрудник в нём есть), чтобы не
