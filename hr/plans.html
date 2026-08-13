@@ -742,7 +742,7 @@ function Page() {
       <div className="sk-row" style={{ justifyContent: "space-between", alignItems: "flex-start" }}>
         <div className="sk-title-4">Планы сотрудников</div>
         <div className="sk-row sk-gap-2">
-          <Tooltip content="Переход в раздел отчётов по планам адаптации.">
+          <Tooltip content={<div style={{ maxWidth: 200, whiteSpace: "normal" }}>Переход в раздел отчётов по планам адаптации.</div>}>
             <Button mode="secondary" disabled>Отчёты</Button>
           </Tooltip>
           <Button variant="accent" icon={<IconPlusSm size={16} />} disabled>Создать план</Button>

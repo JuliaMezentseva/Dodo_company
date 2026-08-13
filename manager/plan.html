@@ -1127,7 +1127,7 @@ function ChecklistPickerModal({ plan, selected, onToggle, onClose }) {
   return (
     <Modal open title="Полезные материалы" onClose={onClose} size="m"
       secondary={<Button mode="secondary" onClick={onClose}>Отменить</Button>}
-      primary={<Button onClick={onClose}>Добавить</Button>}
+      primary={<Button onClick={onClose}>Готово</Button>}
       options={<Input icon={<IconSearch size={18} />} placeholder="Поиск по названию" value={q} onChange={(e) => setQ(e.target.value || "")} />}>
       <div className="sk-col sk-gap-1 sk-modal-scroll">
         {list.map(({ item, stage }) => (

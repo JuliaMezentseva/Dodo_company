@@ -79,13 +79,15 @@ const target = path.resolve(__dirname, "..", "hr", "template.html");
     await tick(80);
     body = w.document.body.textContent;
     console.log("After enabling — empty-state stub shown (no prefilled checkpoints):",
-      body.includes("Покажите сотруднику, что его адаптация важна") && !body.includes("Контрольная точка по итогам 30 дней") ? "PASS" : "FAIL");
+      body.includes("Отслеживайте прогресс адаптации на регулярных встречах") && !body.includes("Контрольная точка по итогам 30 дней") ? "PASS" : "FAIL");
     console.log("Empty state has explanatory text with 30/60/90 recommendation (symmetric to goals empty state):",
-      body.includes("Рекомендуем 3 точки: на 30, 60 и 90 день") ? "PASS" : "FAIL");
-    console.log("'Добавить контрольную точку' list-mode button absent while list is empty:", !body.includes("Добавить контрольную точку") ? "PASS" : "FAIL");
+      body.includes("Рекомендуем добавить 3: на 30 / 60 / 90 дней") ? "PASS" : "FAIL");
+    console.log("Empty-state CTA button reads 'Добавить контрольную точку' (same wording as list-mode button):",
+      [...w.document.querySelectorAll("button")].filter(b => b.textContent.trim() === "Добавить контрольную точку").length === 1 ? "PASS" : "FAIL");
+    console.log("Persistent hint not yet shown while list is empty:", !body.includes("вовремя помочь ему") ? "PASS" : "FAIL");
 
     // Добавляем первую КТ через кнопку в заглушке
-    const addBtn = [...w.document.querySelectorAll("button")].find(b => b.textContent.trim() === "+ Добавить");
+    const addBtn = [...w.document.querySelectorAll("button")].find(b => b.textContent.trim() === "Добавить контрольную точку");
     addBtn.dispatchEvent(new w.MouseEvent("click", { bubbles: true }));
     await tick(80);
     console.log("Create modal opened:", w.document.body.textContent.includes("Новая контрольная точка") ? "PASS" : "FAIL");
@@ -107,6 +109,8 @@ const target = path.resolve(__dirname, "..", "hr", "template.html");
     body = w.document.body.textContent;
     console.log("New checkpoint appears in list (1st, numbered '1'):", body.includes("КТ по итогам 90 дней") ? "PASS" : "FAIL");
     console.log("List-mode 'Добавить контрольную точку' button appears once list is non-empty:", body.includes("Добавить контрольную точку") ? "PASS" : "FAIL");
+    console.log("Persistent hint stays visible after adding the first checkpoint:",
+      body.includes("Контрольные точки помогут фиксировать, как сотрудник справляется и вовремя помочь ему. Рекомендуем добавить 3 точки: на 30 / 60 / 90 дней") ? "PASS" : "FAIL");
 
     // Удаляем добавленную КТ через кнопку корзины на её строке (нужен самый вложенный
     // div-контейнер строки — ровно с двумя кнопками: редактировать и удалить).
@@ -118,7 +122,7 @@ const target = path.resolve(__dirname, "..", "hr", "template.html");
     await tick(80);
     body = w.document.body.textContent;
     console.log("Checkpoint removed after delete click:", !body.includes("КТ по итогам 90 дней") ? "PASS" : "FAIL");
-    console.log("Empty-state stub reappears after deleting the only checkpoint:", body.includes("Покажите сотруднику, что его адаптация важна") ? "PASS" : "FAIL");
+    console.log("Empty-state stub reappears after deleting the only checkpoint:", body.includes("Отслеживайте прогресс адаптации на регулярных встречах") ? "PASS" : "FAIL");
 
     // tpl_support: goalsEnabled=false, без предзаполненных checkpoints — проверяем включение
     // тумблера с чистого листа (пустая заглушка, кнопка добавления доступна сразу).
@@ -135,7 +139,7 @@ const target = path.resolve(__dirname, "..", "hr", "template.html");
     checkpointsTab2.dispatchEvent(new w2.MouseEvent("click", { bubbles: true }));
     await tick(80);
     body2 = w2.document.body.textContent;
-    console.log("[empty tpl] Empty-state stub available even with empty list:", body2.includes("Покажите сотруднику, что его адаптация важна") ? "PASS" : "FAIL");
+    console.log("[empty tpl] Empty-state stub available even with empty list:", body2.includes("Отслеживайте прогресс адаптации на регулярных встречах") ? "PASS" : "FAIL");
 
     console.log("\nOK: сценарий CRUD контрольных точек шаблона прошёл без падений");
   } catch (e) {

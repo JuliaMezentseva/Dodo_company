@@ -178,9 +178,9 @@ function TemplateCheckpointsSection({ checkpoints, onAdd, onEdit, onDelete }) {
       {checkpoints.length === 0 ? (
         <Card>
           <div className="sk-col sk-gap-3" style={{ alignItems: "center", textAlign: "center", padding: "24px 16px" }}>
-            <div className="sk-title-5">Покажите сотруднику, что его адаптация важна</div>
-            <div className="sk-muted" style={{ maxWidth: 440 }}>Регулярные встречи с руководителем или HR показывают: компания следит за результатом, а не просто выдала чек-лист. Рекомендуем 3 точки: на 30, 60 и 90 день</div>
-            <Button variant="accent" onClick={() => setFormModal({ mode: "create" })}>+ Добавить</Button>
+            <div className="sk-title-5">Отслеживайте прогресс адаптации на регулярных встречах</div>
+            <div className="sk-muted" style={{ maxWidth: 440 }}>Контрольные точки помогут фиксировать, как сотрудник справляется и вовремя помочь ему. Рекомендуем добавить 3: на 30 / 60 / 90 дней</div>
+            <Button variant="accent" onClick={() => setFormModal({ mode: "create" })}>Добавить контрольную точку</Button>
           </div>
         </Card>
       ) : (
@@ -189,6 +189,10 @@ function TemplateCheckpointsSection({ checkpoints, onAdd, onEdit, onDelete }) {
             <Button variant="accent" size="s" icon={<IconPlusSm size={16} />} onClick={() => setFormModal({ mode: "create" })}>
               Добавить контрольную точку
             </Button>
+          </div>
+          <div className="sk-row sk-gap-2" style={{ padding: "10px 14px", background: "var(--sk-surface-secondary)", borderRadius: "var(--sk-radius-2)", alignItems: "flex-start" }}>
+            <IconHelpCircle size={15} color="var(--sk-icon-secondary)" style={{ flexShrink: 0, marginTop: 1 }} />
+            <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Контрольные точки помогут фиксировать, как сотрудник справляется и вовремя помочь ему. Рекомендуем добавить 3 точки: на 30 / 60 / 90 дней</span>
           </div>
           <div className="sk-col sk-gap-2">
             {checkpoints.map((cp, i) => (
@@ -282,7 +286,10 @@ function StepAssessmentPicker({ templateId, setTemplateId }) {
       <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)", marginLeft: 32 }}>Готовые критерии помогут оценить выполнение шага</span>
       <div style={{ marginLeft: 32, marginTop: 8 }}>
         {checked ? (
-          <Select value={templateId} options={templates.map((t) => ({ value: t.id, label: t.title }))} onChange={setTemplateId} />
+          <React.Fragment>
+            <Select value={templateId} options={templates.map((t) => ({ value: t.id, label: t.title }))} onChange={setTemplateId} />
+            <div style={{ height: 220 }} />
+          </React.Fragment>
         ) : (
           <div style={{ padding: "12px 14px", background: "var(--sk-surface-secondary)", borderRadius: "var(--sk-radius-2)" }}>
             <span className="sk-label-3-regular">
@@ -416,12 +423,13 @@ function TemplateGoalCreateDrawer({ draft, setDraft, onClose, onCreate, onAddSub
         <div className="sk-col sk-gap-2">
           <div className="sk-label-3">Шаги для достижения{draft.subgoals.length ? " " + draft.subgoals.length : ""}</div>
           <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>
-            Разбейте цель на подцели — конкретные шаги, которые помогут сотруднику её достичь. Можно добавить сейчас или позже.
+            Разбейте цель на подцели — конкретные шаги, которые помогут сотруднику её достичь. Можно добавить сейчас или позже, после создания цели.
           </div>
           {draft.subgoals.map((sg, i) => (
             <div key={i} className="sk-row sk-gap-3" style={{ justifyContent: "space-between", padding: 10, border: "1px solid var(--sk-stroke)", borderRadius: "var(--sk-radius-2)" }}>
               <div className="sk-col sk-gap-1">
                 <div className="sk-label-4">{sg.title}</div>
+                <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>День {sg.dueDays} от начала плана</div>
               </div>
               <button className="sk-link-btn" onClick={() => setDraft((d) => ({ ...d, subgoals: d.subgoals.filter((_, ix) => ix !== i) }))}>
                 <IconTrash size={15} color="var(--sk-icon-secondary)" />
@@ -567,7 +575,7 @@ function GoalsSection({ owner, deadlineDays, goals, onOwnerChange, onDeadlineCha
           <div className="sk-row" style={{ justifyContent: "space-between", alignItems: "center" }}>
             <div className="sk-row sk-gap-1" style={{ color: "var(--sk-text-primary)" }}>
               <span className="sk-label-3-regular">Срок постановки целей руководителем после назначения плана (дней)</span>
-              <Tooltip content="После назначения плана руководитель получит уведомление о необходимости поставить цели. Цели создаются уже в индивидуальном плане сотрудника.">
+              <Tooltip content={<div style={{ maxWidth: 260, whiteSpace: "normal" }}>После назначения плана руководитель получит уведомление о необходимости поставить цели. Цели создаются уже в индивидуальном плане сотрудника.</div>}>
                 <IconHelpCircle size={16} color="var(--sk-icon-secondary)" />
               </Tooltip>
             </div>
@@ -661,7 +669,7 @@ function GoalsSettingsCard({ template, enabled, owner, deadlineDays, goals, chec
           <div className="sk-row" style={{ justifyContent: "space-between", padding: "16px 24px" }}>
             <div className="sk-row sk-gap-1">
               <span className="sk-label-3">Включить план адаптации с целями</span>
-              <Tooltip content="В этом плане сотруднику можно поставить цели, шаги к ним и полезные материалы. С этим планом сотрудник не просто проходит чек-лист, а приближается к тому, чтобы перформить в своей роли.">
+              <Tooltip content={<div style={{ maxWidth: 260, whiteSpace: "normal" }}>В этом плане сотруднику можно поставить цели, шаги к ним и полезные материалы. С этим планом сотрудник не просто проходит чек-лист, а приближается к тому, чтобы перформить в своей роли.</div>}>
                 <IconHelpCircle size={16} color="var(--sk-icon-secondary)" />
               </Tooltip>
             </div>

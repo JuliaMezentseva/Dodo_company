@@ -115,7 +115,7 @@ function Page() {
           </Tooltip>
         )}
         {t.usageCount > 0 ? (
-          <Tooltip content={"Шаблон используется в " + t.usageCount + " планах — удаление недоступно"}>
+          <Tooltip content={<div style={{ maxWidth: 220, whiteSpace: "normal" }}>{"Шаблон используется в " + t.usageCount + " планах — удаление недоступно"}</div>}>
             <Button size="s" mode="tertiary" disabled><IconTrash size={15} /></Button>
           </Tooltip>
         ) : (
@@ -132,7 +132,7 @@ function Page() {
           <div className="sk-title-4">Шаблоны планов</div>
           <div className="sk-muted">Заготовки будущих индивидуальных планов — задают этапы, элементы и настройки, которые сотрудник получит при назначении.</div>
         </div>
-        <Tooltip content="Создание нового шаблона с нуля — вне текущей итерации прототипа, используйте «Копировать» у существующего.">
+        <Tooltip content={<div style={{ maxWidth: 240, whiteSpace: "normal" }}>Создание нового шаблона с нуля — вне текущей итерации прототипа, используйте «Копировать» у существующего.</div>}>
           <Button variant="accent" icon={<IconPlusSm size={16} />} disabled>Создать шаблон</Button>
         </Tooltip>
       </div>

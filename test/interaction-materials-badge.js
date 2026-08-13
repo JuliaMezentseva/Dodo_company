@@ -96,7 +96,7 @@ const target = path.resolve(__dirname, "..", "manager", "plan.html");
 
     const dialogsAfter = w.document.querySelectorAll('[role="dialog"]');
     const pickerAfter = dialogsAfter[dialogsAfter.length - 1];
-    clickButton(w, "Добавить", pickerAfter); // закрываем пикер кнопкой "Добавить" в футере
+    clickButton(w, "Готово", pickerAfter); // закрываем пикер кнопкой "Готово" в футере
     await tick(120);
 
     body = w.document.body.textContent;

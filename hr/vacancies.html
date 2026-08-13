@@ -253,7 +253,7 @@ function Page() {
         </div>
         <div className="sk-row sk-gap-2">
           <Button mode="secondary" icon={<IconFolderHeart size={16} />} onClick={exportResponsesCsv}>Выгрузить отклики</Button>
-          <Tooltip content="Импорт из Excel — вне текущей итерации прототипа.">
+          <Tooltip content={<div style={{ maxWidth: 200, whiteSpace: "normal" }}>Импорт из Excel — вне текущей итерации прототипа.</div>}>
             <Button style={{ background: "var(--sk-accent-secondary)", color: "var(--sk-text-accent)" }} icon={<IconUpload size={16} />} disabled>Загрузить вакансии</Button>
           </Tooltip>
           <Button variant="accent" icon={<IconPlusSm size={16} />} onClick={() => setFormModal({ mode: "create" })}>Создать вакансию</Button>
