@@ -995,6 +995,10 @@ window.SITE_DATA = {
     "Frontend-разработчик", "Младший разработчик",
     "Специалист поддержки",
     "Data-аналитик", "Стажёр-аналитик",
+    "Маркетолог", "Контент-менеджер", "SMM-менеджер",
+    "HR-менеджер", "Рекрутер", "HR-бизнес-партнёр",
+    "Финансовый аналитик", "Бухгалтер", "Финансовый менеджер",
+    "Руководитель отдела", "Тимлид",
   ];
 
   window.SITE_DATA.goalCatalog = [
@@ -1092,6 +1096,424 @@ window.SITE_DATA = {
       subgoals: [
         { id: "gcsg_comp_1", title: "Пройти курс по информационной безопасности", description: "", dueDays: 7, reviewer: "Руководитель", materials: [], templateId: null },
         { id: "gcsg_comp_2", title: "Ознакомиться с политикой комплаенса и подписать", description: "", dueDays: 10, reviewer: "Руководитель", materials: [], templateId: null },
+      ],
+    },
+
+    // ---- Продажи: ещё 4 цели ----
+    {
+      id: "gc_sales_calls", title: "Выполнить план по звонкам: 50 холодных звонков в неделю",
+      description: "Сотрудник еженедельно совершает не менее 50 холодных звонков по стандарту скрипта первого контакта.",
+      category: "Продажи", positions: ["Менеджер по продажам"], level: "Junior", dueDays: 21,
+      author: "Ольга Соколова", createdAt: "14.01.26", usageCount: 5,
+      subgoals: [
+        { id: "gcsg_calls_1", title: "Изучить скрипт холодного звонка", description: "", dueDays: 5, reviewer: "Руководитель", materials: [], templateId: null },
+        { id: "gcsg_calls_2", title: "Выйти на 50 звонков в неделю", description: "", dueDays: 21, reviewer: "Руководитель", materials: [], templateId: null },
+      ],
+    },
+    {
+      id: "gc_sales_conversion", title: "Довести конверсию из лида в сделку до 15%",
+      description: "Сотрудник доводит долю лидов, закрытых сделкой, до 15% и выше на дистанции месяца.",
+      category: "Продажи", positions: ["Менеджер по продажам", "Старший менеджер по продажам"], level: "Middle", dueDays: 60,
+      author: "Ольга Соколова", createdAt: "14.01.26", usageCount: 3,
+      subgoals: [
+        { id: "gcsg_conv_1", title: "Разобрать воронку и найти узкое место", description: "", dueDays: 14, reviewer: "Руководитель", materials: [], templateId: null },
+        { id: "gcsg_conv_2", title: "Выйти на конверсию 15%", description: "", dueDays: 60, reviewer: "Руководитель", materials: [], templateId: null },
+      ],
+    },
+    {
+      id: "gc_sales_csat", title: "Получить оценку клиента не ниже 4.7 по итогам первых 10 сделок",
+      description: "Сотрудник поддерживает высокое качество обслуживания — средняя оценка клиентов по опросу после сделки не ниже 4.7 из 5.",
+      category: "Продажи", positions: ["Менеджер по продажам"], level: "Junior", dueDays: 45,
+      author: "Ольга Соколова", createdAt: "14.01.26", usageCount: 2,
+      subgoals: [
+        { id: "gcsg_csat_1", title: "Изучить стандарт сервиса при закрытии сделки", description: "", dueDays: 10, reviewer: "Руководитель", materials: [], templateId: null },
+        { id: "gcsg_csat_2", title: "Набрать 10 оценённых сделок", description: "", dueDays: 45, reviewer: "Руководитель", materials: [], templateId: null },
+      ],
+    },
+    {
+      id: "gc_sales_upsell", title: "Продать доп. услуги на сумму от 200 000 ₽ за квартал",
+      description: "Сотрудник предлагает и закрывает дополнительные услуги действующим клиентам на сумму не менее 200 000 ₽ за квартал.",
+      category: "Продажи", positions: ["Старший менеджер по продажам", "Руководитель отдела продаж"], level: "Senior", dueDays: 90,
+      author: "Ольга Соколова", createdAt: "14.01.26", usageCount: 1,
+      subgoals: [
+        { id: "gcsg_upsell_1", title: "Составить список клиентов для доп. предложений", description: "", dueDays: 14, reviewer: "Руководитель", materials: [], templateId: null },
+        { id: "gcsg_upsell_2", title: "Закрыть доп. услуги на 200 000 ₽", description: "", dueDays: 90, reviewer: "Руководитель", materials: [], templateId: null },
+      ],
+    },
+
+    // ---- IT и цифровой бизнес: ещё 4 цели ----
+    {
+      id: "gc_dev_review", title: "Сократить время код-ревью своих PR до 1 дня",
+      description: "Сотрудник готовит pull request'ы так, чтобы их проверка занимала у ревьюера не больше 1 дня — маленькие, атомарные, с понятным описанием.",
+      category: "IT и цифровой бизнес", positions: ["Младший разработчик", "Frontend-разработчик"], level: "Junior", dueDays: 30,
+      author: "Ольга Соколова", createdAt: "10.12.25", usageCount: 4,
+      subgoals: [
+        { id: "gcsg_review_1", title: "Изучить чек-лист оформления PR команды", description: "", dueDays: 5, reviewer: "Руководитель", materials: [], templateId: null },
+        { id: "gcsg_review_2", title: "Держать среднее время ревью PR ≤ 1 дня", description: "", dueDays: 30, reviewer: "Руководитель", materials: [], templateId: null },
+      ],
+    },
+    {
+      id: "gc_dev_sprint", title: "Закрыть 90% задач спринта без переноса",
+      description: "Сотрудник закрывает не менее 90% взятых в спринт задач в срок, без переноса на следующий спринт.",
+      category: "IT и цифровой бизнес", positions: ["Младший разработчик", "Frontend-разработчик"], level: "Middle", dueDays: 45,
+      author: "Ольга Соколова", createdAt: "10.12.25", usageCount: 3,
+      subgoals: [
+        { id: "gcsg_sprint_1", title: "Научиться корректно оценивать задачи в поинтах", description: "", dueDays: 14, reviewer: "Руководитель", materials: [], templateId: null },
+        { id: "gcsg_sprint_2", title: "Выйти на 90% закрытых задач спринта", description: "", dueDays: 45, reviewer: "Руководитель", materials: [], templateId: null },
+      ],
+    },
+    {
+      id: "gc_dev_tests", title: "Довести тест-покрытие нового модуля до 80%",
+      description: "Сотрудник покрывает разрабатываемый модуль автотестами не менее чем на 80%.",
+      category: "IT и цифровой бизнес", positions: ["Frontend-разработчик"], level: "Middle", dueDays: 40,
+      author: "Ольга Соколова", createdAt: "10.12.25", usageCount: 2,
+      subgoals: [
+        { id: "gcsg_tests_1", title: "Настроить сбор метрики покрытия тестами", description: "", dueDays: 7, reviewer: "Руководитель", materials: [], templateId: null },
+        { id: "gcsg_tests_2", title: "Довести покрытие модуля до 80%", description: "", dueDays: 40, reviewer: "Руководитель", materials: [], templateId: null },
+      ],
+    },
+    {
+      id: "gc_dev_bugs", title: "Устранить 5 багов из бэклога без регрессий",
+      description: "Сотрудник самостоятельно закрывает не менее 5 багов из бэклога, не вызывая новых регрессий.",
+      category: "IT и цифровой бизнес", positions: ["Младший разработчик"], level: "Junior", dueDays: 30,
+      author: "Ольга Соколова", createdAt: "10.12.25", usageCount: 3,
+      subgoals: [
+        { id: "gcsg_bugs_1", title: "Разобраться в процессе триажа багов", description: "", dueDays: 5, reviewer: "Руководитель", materials: [], templateId: null },
+        { id: "gcsg_bugs_2", title: "Закрыть 5 багов без регрессий", description: "", dueDays: 30, reviewer: "Руководитель", materials: [], templateId: "at_code_review" },
+      ],
+    },
+
+    // ---- Поддержка клиентов: ещё 4 цели ----
+    {
+      id: "gc_support_volume", title: "Обрабатывать не менее 30 обращений в день",
+      description: "Сотрудник выходит на самостоятельную обработку не менее 30 обращений клиентов в день без потери качества.",
+      category: "Поддержка клиентов", positions: ["Специалист поддержки"], level: "Junior", dueDays: 30,
+      author: "Юлия Степанова", createdAt: "20.11.25", usageCount: 4,
+      subgoals: [
+        { id: "gcsg_vol_1", title: "Освоить рабочие инструменты поддержки", description: "", dueDays: 7, reviewer: "Наставник", materials: [], templateId: null },
+        { id: "gcsg_vol_2", title: "Выйти на 30 обращений в день", description: "", dueDays: 30, reviewer: "Наставник", materials: [], templateId: null },
+      ],
+    },
+    {
+      id: "gc_support_time", title: "Снизить среднее время ответа до 5 минут",
+      description: "Сотрудник отвечает на обращения клиентов в среднем не дольше чем за 5 минут.",
+      category: "Поддержка клиентов", positions: ["Специалист поддержки"], level: "Middle", dueDays: 30,
+      author: "Юлия Степанова", createdAt: "20.11.25", usageCount: 2,
+      subgoals: [
+        { id: "gcsg_time_1", title: "Изучить базу готовых ответов", description: "", dueDays: 5, reviewer: "Наставник", materials: [], templateId: null },
+        { id: "gcsg_time_2", title: "Держать среднее время ответа ≤ 5 минут", description: "", dueDays: 30, reviewer: "Наставник", materials: [], templateId: null },
+      ],
+    },
+    {
+      id: "gc_support_fcr", title: "Закрыть 90% обращений с первого касания",
+      description: "Сотрудник решает не менее 90% обращений с первого ответа, без повторных касаний по той же теме.",
+      category: "Поддержка клиентов", positions: ["Специалист поддержки"], level: "Middle", dueDays: 45,
+      author: "Юлия Степанова", createdAt: "20.11.25", usageCount: 1,
+      subgoals: [
+        { id: "gcsg_fcr_1", title: "Изучить топ-10 частых обращений и ответы на них", description: "", dueDays: 10, reviewer: "Наставник", materials: [], templateId: null },
+        { id: "gcsg_fcr_2", title: "Выйти на 90% решений с первого касания", description: "", dueDays: 45, reviewer: "Наставник", materials: [], templateId: null },
+      ],
+    },
+    {
+      id: "gc_support_nps", title: "Получить NPS от клиентов не ниже 60",
+      description: "Сотрудник поддерживает индекс удовлетворённости клиентов (NPS) по своим обращениям не ниже 60.",
+      category: "Поддержка клиентов", positions: ["Специалист поддержки"], level: "Senior", dueDays: 60,
+      author: "Юлия Степанова", createdAt: "20.11.25", usageCount: 1,
+      subgoals: [
+        { id: "gcsg_nps_1", title: "Разобрать причины низких оценок за прошлый период", description: "", dueDays: 14, reviewer: "Руководитель", materials: [], templateId: null },
+        { id: "gcsg_nps_2", title: "Выйти на NPS ≥ 60", description: "", dueDays: 60, reviewer: "Руководитель", materials: [], templateId: null },
+      ],
+    },
+
+    // ---- Аналитика: ещё 4 цели ----
+    {
+      id: "gc_an_report", title: "Сократить время подготовки еженедельного отчёта до 2 часов",
+      description: "Сотрудник готовит регулярный еженедельный отчёт команды не дольше чем за 2 часа.",
+      category: "Аналитика", positions: ["Data-аналитик"], level: "Middle", dueDays: 30,
+      author: "Ольга Соколова", createdAt: "02.08.26", usageCount: 2,
+      subgoals: [
+        { id: "gcsg_rep_1", title: "Разобрать текущий процесс подготовки отчёта", description: "", dueDays: 7, reviewer: "Руководитель", materials: [], templateId: null },
+        { id: "gcsg_rep_2", title: "Довести время подготовки до 2 часов", description: "", dueDays: 30, reviewer: "Руководитель", materials: [], templateId: null },
+      ],
+    },
+    {
+      id: "gc_an_research", title: "Провести 3 исследования с рекомендациями, принятыми в работу",
+      description: "Сотрудник самостоятельно проводит аналитические исследования, по итогам не менее 3 из них рекомендации приняты командой в работу.",
+      category: "Аналитика", positions: ["Data-аналитик"], level: "Senior", dueDays: 90,
+      author: "Ольга Соколова", createdAt: "02.08.26", usageCount: 1,
+      subgoals: [
+        { id: "gcsg_res_1", title: "Согласовать список тем для исследований", description: "", dueDays: 14, reviewer: "Руководитель", materials: [], templateId: null },
+        { id: "gcsg_res_2", title: "Провести 3 исследования с принятыми рекомендациями", description: "", dueDays: 90, reviewer: "Руководитель", materials: [], templateId: null },
+      ],
+    },
+    {
+      id: "gc_an_automation", title: "Автоматизировать сбор данных для 2 ключевых отчётов",
+      description: "Сотрудник настраивает автоматический сбор данных как минимум для 2 регулярных отчётов, убирая ручную выгрузку.",
+      category: "Аналитика", positions: ["Data-аналитик", "Стажёр-аналитик"], level: "Middle", dueDays: 45,
+      author: "Ольга Соколова", createdAt: "02.08.26", usageCount: 1,
+      subgoals: [
+        { id: "gcsg_auto_1", title: "Выбрать 2 отчёта для автоматизации", description: "", dueDays: 7, reviewer: "Руководитель", materials: [], templateId: null },
+        { id: "gcsg_auto_2", title: "Настроить автоматический сбор данных", description: "", dueDays: 45, reviewer: "Руководитель", materials: [], templateId: null },
+      ],
+    },
+    {
+      id: "gc_an_forecast", title: "Довести точность прогнозной модели до 85%",
+      description: "Сотрудник дорабатывает прогнозную модель команды до точности не ниже 85% на тестовой выборке.",
+      category: "Аналитика", positions: ["Data-аналитик"], level: "Senior", dueDays: 60,
+      author: "Ольга Соколова", createdAt: "02.08.26", usageCount: 0,
+      subgoals: [
+        { id: "gcsg_fore_1", title: "Оценить точность текущей модели", description: "", dueDays: 10, reviewer: "Руководитель", materials: [], templateId: null },
+        { id: "gcsg_fore_2", title: "Довести точность модели до 85%", description: "", dueDays: 60, reviewer: "Руководитель", materials: [], templateId: null },
+      ],
+    },
+
+    // ---- Общие: ещё 4 цели ----
+    {
+      id: "gc_gen_probation", title: "Пройти испытательный срок без замечаний от руководителя",
+      description: "Сквозная цель: сотрудник проходит испытательный срок без зафиксированных дисциплинарных или рабочих замечаний от руководителя.",
+      category: "Общие", level: "Junior", dueDays: 90,
+      author: "Юлия Степанова", createdAt: "22.02.26", usageCount: 7,
+      subgoals: [
+        { id: "gcsg_prob_1", title: "Пройти промежуточную встречу на 30 день без замечаний", description: "", dueDays: 30, reviewer: "Руководитель", materials: [], templateId: null },
+        { id: "gcsg_prob_2", title: "Завершить испытательный срок без замечаний", description: "", dueDays: 90, reviewer: "Руководитель", materials: [], templateId: null },
+      ],
+    },
+    {
+      id: "gc_gen_feedback", title: "Получить оценку 360° не ниже 4 из 5",
+      description: "Сквозная цель: сотрудник получает среднюю оценку по итогам обратной связи 360° не ниже 4 из 5.",
+      category: "Общие", level: "Middle", dueDays: 90,
+      author: "Юлия Степанова", createdAt: "22.02.26", usageCount: 3,
+      subgoals: [
+        { id: "gcsg_fb_1", title: "Собрать обратную связь от коллег и руководителя", description: "", dueDays: 80, reviewer: "Руководитель", materials: [], templateId: null },
+        { id: "gcsg_fb_2", title: "Выйти на среднюю оценку ≥ 4 из 5", description: "", dueDays: 90, reviewer: "Руководитель", materials: [], templateId: null },
+      ],
+    },
+    {
+      id: "gc_gen_tasks", title: "Вести личный трекер задач без просрочек 30 дней подряд",
+      description: "Сквозная цель: сотрудник ведёт свои задачи в трекере и закрывает их в срок 30 дней подряд без единой просрочки.",
+      category: "Общие", level: "Junior", dueDays: 30,
+      author: "Юлия Степанова", createdAt: "22.02.26", usageCount: 5,
+      subgoals: [
+        { id: "gcsg_task_1", title: "Настроить личный трекер задач", description: "", dueDays: 3, reviewer: "Руководитель", materials: [], templateId: null },
+        { id: "gcsg_task_2", title: "Продержаться 30 дней без просрочек", description: "", dueDays: 30, reviewer: "Руководитель", materials: [], templateId: null },
+      ],
+    },
+    {
+      id: "gc_gen_onboarding", title: "Закрыть чек-лист доступов на 100% в первую неделю",
+      description: "Сквозная цель: сотрудник получает все необходимые доступы и оборудование в первую неделю работы — чек-лист закрыт на 100%.",
+      category: "Общие", level: "Стажёр", dueDays: 7,
+      author: "Юлия Степанова", createdAt: "22.02.26", usageCount: 10,
+      subgoals: [
+        { id: "gcsg_onb_1", title: "Получить доступы: почта, календарь, корпоративные чаты", description: "", dueDays: 3, reviewer: "Руководитель", materials: [], templateId: null },
+        { id: "gcsg_onb_2", title: "Закрыть чек-лист доступов на 100%", description: "", dueDays: 7, reviewer: "Руководитель", materials: [], templateId: null },
+      ],
+    },
+
+    // ---- Маркетинг ----
+    {
+      id: "gc_mkt_leads", title: "Обеспечить 500 лидов через контент-маркетинг за квартал",
+      description: "Сотрудник обеспечивает приток не менее 500 лидов через контентные каналы за квартал.",
+      category: "Маркетинг", positions: ["Маркетолог", "Контент-менеджер"], level: "Middle", dueDays: 90,
+      author: "Ольга Соколова", createdAt: "15.01.26", usageCount: 2,
+      subgoals: [
+        { id: "gcsg_leads_1", title: "Составить контент-план на квартал", description: "", dueDays: 14, reviewer: "Руководитель", materials: [], templateId: null },
+        { id: "gcsg_leads_2", title: "Выйти на 500 лидов за квартал", description: "", dueDays: 90, reviewer: "Руководитель", materials: [], templateId: null },
+      ],
+    },
+    {
+      id: "gc_mkt_reach", title: "Увеличить охват соцсетей на 20% за квартал",
+      description: "Сотрудник увеличивает суммарный охват публикаций в соцсетях компании не менее чем на 20% за квартал.",
+      category: "Маркетинг", positions: ["SMM-менеджер"], level: "Junior", dueDays: 90,
+      author: "Ольга Соколова", createdAt: "15.01.26", usageCount: 1,
+      subgoals: [
+        { id: "gcsg_reach_1", title: "Проанализировать текущие охваты по каналам", description: "", dueDays: 10, reviewer: "Руководитель", materials: [], templateId: null },
+        { id: "gcsg_reach_2", title: "Вырасти в охвате на 20%", description: "", dueDays: 90, reviewer: "Руководитель", materials: [], templateId: null },
+      ],
+    },
+    {
+      id: "gc_mkt_email", title: "Запустить 3 email-рассылки с открываемостью от 25%",
+      description: "Сотрудник запускает не менее 3 email-рассылок со средней открываемостью (Open Rate) от 25%.",
+      category: "Маркетинг", positions: ["Маркетолог"], level: "Junior", dueDays: 45,
+      author: "Ольга Соколова", createdAt: "15.01.26", usageCount: 1,
+      subgoals: [
+        { id: "gcsg_email_1", title: "Сегментировать базу подписчиков", description: "", dueDays: 10, reviewer: "Руководитель", materials: [], templateId: null },
+        { id: "gcsg_email_2", title: "Запустить 3 рассылки с Open Rate ≥ 25%", description: "", dueDays: 45, reviewer: "Руководитель", materials: [], templateId: null },
+      ],
+    },
+    {
+      id: "gc_mkt_cases", title: "Подготовить 2 кейса для сайта, принятых без правок",
+      description: "Сотрудник готовит не менее 2 клиентских кейсов для сайта, принятых руководителем без существенных правок.",
+      category: "Маркетинг", positions: ["Контент-менеджер"], level: "Middle", dueDays: 60,
+      author: "Ольга Соколова", createdAt: "15.01.26", usageCount: 0,
+      subgoals: [
+        { id: "gcsg_cases_1", title: "Согласовать список клиентов для кейсов", description: "", dueDays: 14, reviewer: "Руководитель", materials: [], templateId: null },
+        { id: "gcsg_cases_2", title: "Подготовить 2 принятых кейса", description: "", dueDays: 60, reviewer: "Руководитель", materials: [], templateId: null },
+      ],
+    },
+    {
+      id: "gc_mkt_cpl", title: "Снизить стоимость лида (CPL) на 15%",
+      description: "Сотрудник оптимизирует рекламные кампании и снижает среднюю стоимость лида не менее чем на 15%.",
+      category: "Маркетинг", positions: ["Маркетолог"], level: "Senior", dueDays: 60,
+      author: "Ольга Соколова", createdAt: "15.01.26", usageCount: 1,
+      subgoals: [
+        { id: "gcsg_cpl_1", title: "Проанализировать текущую стоимость лида по каналам", description: "", dueDays: 10, reviewer: "Руководитель", materials: [], templateId: null },
+        { id: "gcsg_cpl_2", title: "Снизить CPL на 15%", description: "", dueDays: 60, reviewer: "Руководитель", materials: [], templateId: null },
+      ],
+    },
+
+    // ---- HR ----
+    {
+      id: "gc_hr_hiring", title: "Закрыть 5 вакансий в срок не более 30 дней",
+      description: "Сотрудник закрывает не менее 5 вакансий со средним сроком закрытия не более 30 дней.",
+      category: "HR", positions: ["Рекрутер", "HR-менеджер"], level: "Middle", dueDays: 90,
+      author: "Юлия Степанова", createdAt: "10.02.26", usageCount: 3,
+      subgoals: [
+        { id: "gcsg_hire_1", title: "Согласовать профили вакансий с нанимающими менеджерами", description: "", dueDays: 10, reviewer: "Руководитель", materials: [], templateId: null },
+        { id: "gcsg_hire_2", title: "Закрыть 5 вакансий за ≤ 30 дней в среднем", description: "", dueDays: 90, reviewer: "Руководитель", materials: [], templateId: null },
+      ],
+    },
+    {
+      id: "gc_hr_adaptation", title: "Провести адаптацию 10 новичков с NPS не ниже 8",
+      description: "Сотрудник сопровождает адаптацию новичков — не менее 10 человек с итоговым NPS адаптации не ниже 8.",
+      category: "HR", positions: ["HR-менеджер", "HR-бизнес-партнёр"], level: "Middle", dueDays: 90,
+      author: "Юлия Степанова", createdAt: "10.02.26", usageCount: 2,
+      subgoals: [
+        { id: "gcsg_adapt_1", title: "Настроить регулярные точки сверки с новичками", description: "", dueDays: 14, reviewer: "Руководитель", materials: [], templateId: null },
+        { id: "gcsg_adapt_2", title: "Провести 10 адаптаций с NPS ≥ 8", description: "", dueDays: 90, reviewer: "Руководитель", materials: [], templateId: null },
+      ],
+    },
+    {
+      id: "gc_hr_turnover", title: "Снизить текучесть на испытательном сроке до 5%",
+      description: "Сотрудник снижает долю увольнений на испытательном сроке среди своих направлений найма до 5% и ниже.",
+      category: "HR", positions: ["HR-бизнес-партнёр"], level: "Senior", dueDays: 90,
+      author: "Юлия Степанова", createdAt: "10.02.26", usageCount: 1,
+      subgoals: [
+        { id: "gcsg_turn_1", title: "Проанализировать причины текущих увольнений", description: "", dueDays: 20, reviewer: "Руководитель", materials: [], templateId: null },
+        { id: "gcsg_turn_2", title: "Снизить текучесть на испытательном сроке до 5%", description: "", dueDays: 90, reviewer: "Руководитель", materials: [], templateId: null },
+      ],
+    },
+    {
+      id: "gc_hr_training", title: "Провести 3 внутренних тренинга с оценкой участников от 4.5",
+      description: "Сотрудник проводит не менее 3 внутренних тренингов со средней оценкой участников от 4.5 из 5.",
+      category: "HR", positions: ["HR-менеджер"], level: "Middle", dueDays: 60,
+      author: "Юлия Степанова", createdAt: "10.02.26", usageCount: 1,
+      subgoals: [
+        { id: "gcsg_train_1", title: "Составить программу 3 тренингов", description: "", dueDays: 14, reviewer: "Руководитель", materials: [], templateId: null },
+        { id: "gcsg_train_2", title: "Провести 3 тренинга с оценкой ≥ 4.5", description: "", dueDays: 60, reviewer: "Руководитель", materials: [], templateId: null },
+      ],
+    },
+    {
+      id: "gc_hr_law", title: "Сдать тест по трудовому законодательству на 100%",
+      description: "Сотрудник подтверждает знание основ трудового законодательства результатом теста 100%.",
+      category: "HR", positions: ["HR-менеджер", "Рекрутер"], level: "Junior", dueDays: 14,
+      author: "Юлия Степанова", createdAt: "10.02.26", usageCount: 4,
+      subgoals: [
+        { id: "gcsg_law_1", title: "Пройти курс по трудовому законодательству", description: "", dueDays: 10, reviewer: "Руководитель", materials: [], templateId: null },
+        { id: "gcsg_law_2", title: "Сдать тест на 100%", description: "", dueDays: 14, reviewer: "Руководитель", materials: [], templateId: null },
+      ],
+    },
+
+    // ---- Финансы ----
+    {
+      id: "gc_fin_close", title: "Закрывать месяц без расхождений в отчётности",
+      description: "Сотрудник закрывает финансовый месяц без расхождений в отчётности, требующих корректировок.",
+      category: "Финансы", positions: ["Бухгалтер", "Финансовый менеджер"], level: "Middle", dueDays: 60,
+      author: "Ольга Соколова", createdAt: "18.01.26", usageCount: 2,
+      subgoals: [
+        { id: "gcsg_close_1", title: "Изучить регламент закрытия месяца", description: "", dueDays: 10, reviewer: "Руководитель", materials: [], templateId: null },
+        { id: "gcsg_close_2", title: "Закрыть 2 месяца подряд без расхождений", description: "", dueDays: 60, reviewer: "Руководитель", materials: [], templateId: null },
+      ],
+    },
+    {
+      id: "gc_fin_report", title: "Сократить срок подготовки квартального отчёта до 5 дней",
+      description: "Сотрудник готовит квартальный финансовый отчёт не дольше чем за 5 рабочих дней.",
+      category: "Финансы", positions: ["Финансовый аналитик"], level: "Middle", dueDays: 90,
+      author: "Ольга Соколова", createdAt: "18.01.26", usageCount: 1,
+      subgoals: [
+        { id: "gcsg_finrep_1", title: "Разобрать текущий процесс подготовки отчёта", description: "", dueDays: 20, reviewer: "Руководитель", materials: [], templateId: null },
+        { id: "gcsg_finrep_2", title: "Сократить срок подготовки до 5 дней", description: "", dueDays: 90, reviewer: "Руководитель", materials: [], templateId: null },
+      ],
+    },
+    {
+      id: "gc_fin_debt", title: "Снизить дебиторскую задолженность на 15%",
+      description: "Сотрудник снижает объём просроченной дебиторской задолженности не менее чем на 15%.",
+      category: "Финансы", positions: ["Финансовый менеджер"], level: "Senior", dueDays: 90,
+      author: "Ольга Соколова", createdAt: "18.01.26", usageCount: 1,
+      subgoals: [
+        { id: "gcsg_debt_1", title: "Проанализировать структуру дебиторской задолженности", description: "", dueDays: 14, reviewer: "Руководитель", materials: [], templateId: null },
+        { id: "gcsg_debt_2", title: "Снизить задолженность на 15%", description: "", dueDays: 90, reviewer: "Руководитель", materials: [], templateId: null },
+      ],
+    },
+    {
+      id: "gc_fin_automation", title: "Автоматизировать 2 регулярных финансовых отчёта",
+      description: "Сотрудник настраивает автоматическую подготовку не менее 2 регулярных финансовых отчётов.",
+      category: "Финансы", positions: ["Финансовый аналитик"], level: "Middle", dueDays: 60,
+      author: "Ольга Соколова", createdAt: "18.01.26", usageCount: 0,
+      subgoals: [
+        { id: "gcsg_finauto_1", title: "Выбрать 2 отчёта для автоматизации", description: "", dueDays: 10, reviewer: "Руководитель", materials: [], templateId: null },
+        { id: "gcsg_finauto_2", title: "Настроить автоматическую подготовку отчётов", description: "", dueDays: 60, reviewer: "Руководитель", materials: [], templateId: null },
+      ],
+    },
+    {
+      id: "gc_fin_audit", title: "Пройти аудит без критичных замечаний",
+      description: "Сотрудник готовит зону ответственности к внешнему или внутреннему аудиту без критичных замечаний по итогам проверки.",
+      category: "Финансы", positions: ["Бухгалтер"], level: "Senior", dueDays: 90,
+      author: "Ольга Соколова", createdAt: "18.01.26", usageCount: 1,
+      subgoals: [
+        { id: "gcsg_audit_1", title: "Провести предварительную самопроверку", description: "", dueDays: 30, reviewer: "Руководитель", materials: [], templateId: null },
+        { id: "gcsg_audit_2", title: "Пройти аудит без критичных замечаний", description: "", dueDays: 90, reviewer: "Руководитель", materials: [], templateId: null },
+      ],
+    },
+
+    // ---- Менеджмент ----
+    {
+      id: "gc_mgmt_plan", title: "Вывести команду на выполнение плана на 100% три месяца подряд",
+      description: "Руководитель обеспечивает выполнение командой плана на 100% три месяца подряд.",
+      category: "Менеджмент", positions: ["Руководитель отдела", "Тимлид"], level: "Lead", dueDays: 90,
+      author: "Юлия Степанова", createdAt: "08.06.26", usageCount: 2,
+      subgoals: [
+        { id: "gcsg_plan_1", title: "Разобрать причины невыполнения плана за прошлый период", description: "", dueDays: 14, reviewer: "Руководитель", materials: [], templateId: null },
+        { id: "gcsg_plan_2", title: "Выполнить план 3 месяца подряд на 100%", description: "", dueDays: 90, reviewer: "Руководитель", materials: [], templateId: null },
+      ],
+    },
+    {
+      id: "gc_mgmt_1on1", title: "Провести 90% one-to-one по графику без переносов",
+      description: "Руководитель проводит не менее 90% запланированных one-to-one встреч с командой без переносов.",
+      category: "Менеджмент", positions: ["Руководитель отдела", "Тимлид"], level: "Middle", dueDays: 60,
+      author: "Юлия Степанова", createdAt: "08.06.26", usageCount: 3,
+      subgoals: [
+        { id: "gcsg_1on1_1", title: "Составить регулярный график one-to-one с командой", description: "", dueDays: 7, reviewer: "Руководитель", materials: [], templateId: null },
+        { id: "gcsg_1on1_2", title: "Провести 90% встреч без переносов", description: "", dueDays: 60, reviewer: "Руководитель", materials: [], templateId: null },
+      ],
+    },
+    {
+      id: "gc_mgmt_turnover", title: "Снизить текучесть в команде до 10% в год",
+      description: "Руководитель снижает годовую текучесть в своей команде до 10% и ниже.",
+      category: "Менеджмент", positions: ["Руководитель отдела"], level: "Lead", dueDays: 90,
+      author: "Юлия Степанова", createdAt: "08.06.26", usageCount: 1,
+      subgoals: [
+        { id: "gcsg_mgmtturn_1", title: "Провести exit-интервью с ушедшими за год сотрудниками", description: "", dueDays: 20, reviewer: "Руководитель", materials: [], templateId: null },
+        { id: "gcsg_mgmtturn_2", title: "Снизить текучесть команды до 10%", description: "", dueDays: 90, reviewer: "Руководитель", materials: [], templateId: null },
+      ],
+    },
+    {
+      id: "gc_mgmt_process", title: "Внедрить 2 улучшения процесса с измеримым эффектом",
+      description: "Руководитель внедряет не менее 2 улучшений в процессы команды с измеримым положительным эффектом.",
+      category: "Менеджмент", positions: ["Тимлид", "Руководитель отдела"], level: "Middle", dueDays: 60,
+      author: "Юлия Степанова", createdAt: "08.06.26", usageCount: 2,
+      subgoals: [
+        { id: "gcsg_proc_1", title: "Найти 2 узких места в текущих процессах команды", description: "", dueDays: 14, reviewer: "Руководитель", materials: [], templateId: null },
+        { id: "gcsg_proc_2", title: "Внедрить 2 улучшения с измеримым эффектом", description: "", dueDays: 60, reviewer: "Руководитель", materials: [], templateId: null },
+      ],
+    },
+    {
+      id: "gc_mgmt_growth", title: "Обучить и вырастить 1 сотрудника до следующей роли",
+      description: "Руководитель системно развивает сотрудника команды и доводит его до повышения на следующую роль.",
+      category: "Менеджмент", positions: ["Руководитель отдела", "Тимлид"], level: "Senior", dueDays: 90,
+      author: "Юлия Степанова", createdAt: "08.06.26", usageCount: 1,
+      subgoals: [
+        { id: "gcsg_growth_1", title: "Составить план развития для сотрудника", description: "", dueDays: 14, reviewer: "Руководитель", materials: [], templateId: null },
+        { id: "gcsg_growth_2", title: "Довести сотрудника до повышения", description: "", dueDays: 90, reviewer: "Руководитель", materials: [], templateId: null },
       ],
     },
   ];
