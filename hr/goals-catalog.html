@@ -562,23 +562,6 @@ function Page() {
         <Button variant="accent" icon={<IconPlusSm size={16} />} onClick={() => setFormDrawer("create")}>Добавить цель</Button>
       </div>
 
-      <div className="sk-row sk-gap-2">
-        <button onClick={() => setShowArchived(false)} style={{
-          height: 32, padding: "0 14px", borderRadius: "var(--sk-radius-full)", cursor: "pointer",
-          border: !showArchived ? "none" : "1px solid var(--sk-stroke)",
-          background: !showArchived ? "var(--sk-surface-secondary)" : "var(--sk-surface-page)",
-          color: !showArchived ? "var(--sk-text-primary)" : "var(--sk-text-secondary)",
-          font: !showArchived ? "var(--sk-label-3)" : "var(--sk-label-3-regular)",
-        }}>Активные{activeCount ? " · " + activeCount : ""}</button>
-        <button onClick={() => setShowArchived(true)} style={{
-          height: 32, padding: "0 14px", borderRadius: "var(--sk-radius-full)", cursor: "pointer",
-          border: showArchived ? "none" : "1px solid var(--sk-stroke)",
-          background: showArchived ? "var(--sk-surface-secondary)" : "var(--sk-surface-page)",
-          color: showArchived ? "var(--sk-text-primary)" : "var(--sk-text-secondary)",
-          font: showArchived ? "var(--sk-label-3)" : "var(--sk-label-3-regular)",
-        }}>Архив{archivedCount ? " · " + archivedCount : ""}</button>
-      </div>
-
       <div className="sk-col sk-gap-3">
         <div className="sk-row sk-gap-2" style={{ flexWrap: "wrap", alignItems: "center", minHeight: 40 }}>
           <Input size="s" icon={<IconSearch size={18} />} placeholder="Название, описание, должность" value={q}
@@ -588,6 +571,22 @@ function Page() {
             Фильтры{toolbarFilterCount ? " · " + toolbarFilterCount : ""}
           </Button>
           {(hasActiveFilters || q) && <button className="sk-link-btn sk-label-4-regular" onClick={() => { setFilters(emptyFilters); setQ(""); }}>Сбросить</button>}
+          <div className="sk-row sk-gap-2" style={{ marginLeft: "auto" }}>
+            <button onClick={() => setShowArchived(false)} style={{
+              height: 28, padding: "0 12px", borderRadius: "var(--sk-radius-full)", cursor: "pointer",
+              border: !showArchived ? "none" : "1px solid var(--sk-stroke)",
+              background: !showArchived ? "var(--sk-surface-secondary)" : "var(--sk-surface-page)",
+              color: !showArchived ? "var(--sk-text-primary)" : "var(--sk-text-secondary)",
+              font: !showArchived ? "var(--sk-label-4)" : "var(--sk-label-4-regular)",
+            }}>Активные{activeCount ? " · " + activeCount : ""}</button>
+            <button onClick={() => setShowArchived(true)} style={{
+              height: 28, padding: "0 12px", borderRadius: "var(--sk-radius-full)", cursor: "pointer",
+              border: showArchived ? "none" : "1px solid var(--sk-stroke)",
+              background: showArchived ? "var(--sk-surface-secondary)" : "var(--sk-surface-page)",
+              color: showArchived ? "var(--sk-text-primary)" : "var(--sk-text-secondary)",
+              font: showArchived ? "var(--sk-label-4)" : "var(--sk-label-4-regular)",
+            }}>Архив{archivedCount ? " · " + archivedCount : ""}</button>
+          </div>
         </div>
         <CategoryPillsBar categories={D.goalCategories} catalog={scoped} active={filters.category}
           onSelect={(c) => setFilters((f) => ({ ...f, category: c }))} />
