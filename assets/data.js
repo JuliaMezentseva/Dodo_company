@@ -999,26 +999,6 @@ window.SITE_DATA = {
 
   window.SITE_DATA.goalCatalog = [
     {
-      id: "gc_sales_product",
-      title: "Сдать аттестацию по продукту с результатом не ниже 90%",
-      description: "Сотрудник подтверждает знание продуктовой линейки, ценностей и позиционирования компании результатом итогового теста не ниже 90%.",
-      category: "Продажи",
-      department: "Департамент продаж",
-      positions: ["Менеджер по продажам", "Старший менеджер по продажам"],
-      planType: "Адаптация",
-      level: "Junior",
-      tags: ["для новичков"],
-      dueDays: 30,
-      author: "Ольга Соколова",
-      createdAt: "12.01.26",
-      usageCount: 9,
-      subgoals: [
-        { id: "gcsg_sales_1", title: "Пройти вводный курс по продукту", description: "", dueDays: 10, reviewer: "Руководитель", materials: [{ id: "tm3", title: "Вводный курс по продукту компании", kind: "course" }], templateId: null },
-        { id: "gcsg_sales_2", title: "Сдать тест на знание продукта", description: "", dueDays: 20, reviewer: "Руководитель", materials: [{ id: "tm7", title: "Пройти вводный тест по продукту", kind: "task" }], templateId: null },
-        { id: "gcsg_sales_3", title: "Провести первую консультацию под наблюдением руководителя", description: "", dueDays: 28, reviewer: "Руководитель", materials: [], templateId: "at_first_contact" },
-      ],
-    },
-    {
       id: "gc_sales_crm",
       title: "Закрыть 5 сделок в CRM по стандарту компании",
       description: "Сотрудник самостоятельно доводит сделки в CRM от первого контакта до закрытия и оформляет не менее 5 сделок по стандартам компании.",

@@ -15,20 +15,17 @@
 <body>
 <div id="root"></div>
 <script type="text/babel">
-const { Card, Input, Textarea, Select, Checkbox, Divider, Button, Tooltip, Modal, Drawer, Snackbar, Alert } = window.SkillazCoreDesignSystem_bf9566;
+const { Card, Input, Textarea, Select, Checkbox, Divider, Button, Tooltip, Modal, Drawer, Snackbar } = window.SkillazCoreDesignSystem_bf9566;
 const { AppShell, Icons } = window.Site;
 const { IconPlusSm, IconSearch, IconFilter, IconTrash, IconX, IconChevronRight, IconEdit, IconCopyLocal2 } = Icons;
 
 // Иконка цели — две концентрические окружности без заливки в центре (ближе к референсу,
-// чем стандартная IconTarget из набора ДС, у которой есть закрашенная точка в центре),
-// плюс стрела, летящая в мишень справа сверху — стандартный визуальный код "цель/достижение".
+// чем стандартная IconTarget из набора ДС, у которой есть закрашенная точка в центре).
 function IconGoalRing({ size = 16, color = "currentColor" }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" style={{ color, flexShrink: 0 }}>
-      <circle cx="10" cy="14" r="7.6" stroke="currentColor" strokeWidth="1.6" />
-      <circle cx="10" cy="14" r="3.6" stroke="currentColor" strokeWidth="1.6" />
-      <path d="M11.5 12.5L20 4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-      <path d="M14.5 3.5H20.5V9.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+      <circle cx="12" cy="12" r="8.7" stroke="currentColor" strokeWidth="1.6" />
+      <circle cx="12" cy="12" r="4.3" stroke="currentColor" strokeWidth="1.6" />
     </svg>
   );
 }
@@ -601,11 +598,6 @@ function Page() {
       ) : (
         <Card><div className="sk-muted" style={{ textAlign: "center", padding: "16px 0" }}>Ничего не нашлось — попробуйте изменить запрос или фильтры.</div></Card>
       )}
-
-      <Alert hue="neutral" title="Как это работает">
-        Цель выбирается из каталога как заготовка: HR может донастроить её перед сохранением в шаблон, дальнейшее редактирование в шаблоне
-        не меняет исходную запись в каталоге и наоборот.
-      </Alert>
 
       {(formDrawer === "create" || (formDrawer && formDrawer.edit)) && (
         <GoalCatalogFormDrawer
