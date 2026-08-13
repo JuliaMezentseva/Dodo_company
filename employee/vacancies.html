@@ -15,9 +15,9 @@
 <body>
 <div id="root"></div>
 <script type="text/babel">
-const { Card, Tag, Input, Button, Select } = window.SkillazCoreDesignSystem_bf9566;
+const { Card, Tag, Input, Button, Checkbox } = window.SkillazCoreDesignSystem_bf9566;
 const { AppShell, Icons, directionHue } = window.Site;
-const { IconSearch, IconMapPin, IconBriefcase, IconCheck, IconFilter } = Icons;
+const { IconSearch, IconMapPin, IconBriefcase, IconCheck, IconFilter, IconX } = Icons;
 const D = window.SITE_DATA;
 
 // Локальные иконки в стилистике общего набора (mkIcon: viewBox 24, strokeWidth 1.5, currentColor).
@@ -123,28 +123,82 @@ function VacancyCard({ vacancy, hasResponse }) {
   );
 }
 
-// Раскрывающийся ряд фильтров под строкой поиска — тот же паттерн кнопки "Фильтры",
-// что и в "Очереди назначения" / "Каталоге целей": единообразие вида фильтров по всей
-// системе. На витрине по умолчанию открыт сразу (filtersOpen=true изначально), а не
-// спрятан — раньше фильтры тут были не панелью сбоку.
+// Чип фильтра — клик сразу открывает выпадашку с чекбоксами под чипом (тот же
+// паттерн клика-вне-закрывает и позиционирования, что и у выпадашки "+ направление"
+// в hr/goals-catalog.html). Все чипы показаны сразу под кнопкой "Фильтры" —
+// без промежуточного шага "+ Фильтр".
+function FilterChip({ label, options, value, onChange, searchable }) {
+  const [open, setOpen] = React.useState(false);
+  const [q, setQ] = React.useState("");
+  const ref = React.useRef(null);
+  React.useEffect(() => {
+    if (!open) return;
+    const close = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener("mousedown", close);
+    return () => document.removeEventListener("mousedown", close);
+  }, [open]);
+
+  const needle = q.trim().toLowerCase();
+  const shownOptions = searchable && needle ? options.filter((o) => o.label.toLowerCase().includes(needle)) : options;
+
+  function toggle(v) {
+    onChange(value.includes(v) ? value.filter((x) => x !== v) : [...value, v]);
+  }
+
+  return (
+    <div ref={ref} style={{ position: "relative" }}>
+      <button type="button" onClick={() => setOpen((o) => !o)} className="sk-clickable" style={{
+        display: "inline-flex", alignItems: "center", gap: 6, height: 36, padding: "0 12px",
+        borderRadius: "var(--sk-radius-2)", cursor: "pointer", whiteSpace: "nowrap",
+        border: open ? "1px solid var(--sk-stroke-accent)" : "1px solid var(--sk-stroke)",
+        background: "var(--sk-surface-page)", font: "var(--sk-label-3-regular)", color: "var(--sk-text-primary)",
+      }}>
+        {label}{value.length ? ": " + value.length : ""}
+        {value.length > 0 && (
+          <span onClick={(e) => { e.stopPropagation(); onChange([]); }} style={{ display: "inline-flex", opacity: 0.55 }}>
+            <IconX size={13} />
+          </span>
+        )}
+      </button>
+      {open && (
+        <div style={{
+          position: "absolute", top: "calc(100% + 4px)", left: 0, zIndex: 20, minWidth: 240, maxHeight: 300, overflowY: "auto",
+          background: "var(--sk-surface-page)", borderRadius: "var(--sk-radius-2)", boxShadow: "var(--sk-shadow-m)", padding: 6,
+        }}>
+          {searchable && (
+            <div style={{ padding: "0 4px 6px" }}>
+              <Input size="s" icon={<IconSearch size={16} />} placeholder="Поиск" value={q} onChange={(e) => setQ(e.target.value || "")} />
+            </div>
+          )}
+          {shownOptions.length ? shownOptions.map((o) => (
+            <label key={o.value} className="sk-row sk-gap-2" style={{
+              padding: "8px 10px", borderRadius: "var(--sk-radius-2)", cursor: "pointer", alignItems: "center",
+            }}>
+              <Checkbox checked={value.includes(o.value)} onChange={() => toggle(o.value)} />
+              <span className="sk-label-3-regular">{o.label}</span>
+            </label>
+          )) : (
+            <div style={{ padding: "8px 10px", color: "var(--sk-text-secondary)", font: "var(--sk-label-4-regular)" }}>Ничего не найдено</div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Ряд фильтров под строкой поиска: все доступные фильтры показаны сразу чипами,
+// без промежуточного шага "+ Фильтр" — по умолчанию открыт (filtersOpen=true).
 function FiltersRow({ filters, onChange, positionOptions, departmentOptions }) {
   const set = (key) => (v) => onChange((f) => ({ ...f, [key]: v }));
   return (
-    <div className="sk-row sk-gap-2" style={{ flexWrap: "wrap", alignItems: "flex-end" }}>
-      <Select label="Должность" multiple searchable placeholder="Любая должность"
-        options={positionOptions} value={filters.positions} onChange={set("positions")} style={{ width: 200 }} />
-      <Select label="Подразделение" multiple searchable placeholder="Все подразделения"
-        options={departmentOptions} value={filters.departments} onChange={set("departments")} style={{ width: 200 }} />
-      <Select label="Опыт" multiple placeholder="Любой опыт"
-        options={toOptions(D.experienceOptions)} value={filters.experience} onChange={set("experience")} style={{ width: 170 }} />
-      <Select label="Регион" multiple searchable placeholder="Любой регион"
-        options={toOptions(D.cities)} value={filters.cities} onChange={set("cities")} style={{ width: 170 }} />
-      <Select label="Формат работы" multiple placeholder="Любой формат"
-        options={toOptions(D.workFormats)} value={filters.formats} onChange={set("formats")} style={{ width: 170 }} />
-      <Select label="Тип занятости" multiple placeholder="Любой тип"
-        options={toOptions(D.employmentTypes)} value={filters.employments} onChange={set("employments")} style={{ width: 170 }} />
-      <Select label="Тип перехода" multiple placeholder="Любой тип"
-        options={toOptions(D.transitionTypes)} value={filters.transitionTypes} onChange={set("transitionTypes")} style={{ width: 190 }} />
+    <div className="sk-row sk-gap-2" style={{ flexWrap: "wrap" }}>
+      <FilterChip label="Должность" searchable options={positionOptions} value={filters.positions} onChange={set("positions")} />
+      <FilterChip label="Подразделение" searchable options={departmentOptions} value={filters.departments} onChange={set("departments")} />
+      <FilterChip label="Опыт" options={toOptions(D.experienceOptions)} value={filters.experience} onChange={set("experience")} />
+      <FilterChip label="Регион" searchable options={toOptions(D.cities)} value={filters.cities} onChange={set("cities")} />
+      <FilterChip label="Формат работы" options={toOptions(D.workFormats)} value={filters.formats} onChange={set("formats")} />
+      <FilterChip label="Тип занятости" options={toOptions(D.employmentTypes)} value={filters.employments} onChange={set("employments")} />
+      <FilterChip label="Тип перехода" options={toOptions(D.transitionTypes)} value={filters.transitionTypes} onChange={set("transitionTypes")} />
     </div>
   );
 }
@@ -207,23 +261,24 @@ function Page() {
       <div className="sk-col sk-gap-3">
         <div className="sk-row sk-gap-2" style={{ alignItems: "center", flexWrap: "wrap" }}>
           <Input size="s" icon={<IconSearch size={20} />} placeholder="По названию, должности или подразделению"
-            value={q} onChange={(e) => setQ(e.target.value || "")} style={{ width: 380, flexShrink: 0 }} />
+            value={q} onChange={(e) => setQ(e.target.value || "")} style={{ width: 460, flexShrink: 0 }} />
           <Button mode="secondary" icon={<IconFilter size={16} />} onClick={() => setFiltersOpen((o) => !o)}
             style={{ background: "var(--sk-surface-page)", border: "1px solid var(--sk-stroke)" }}>
             Фильтры{activeFilterCount ? " · " + activeFilterCount : ""}
           </Button>
-          {hasActiveFilters ? <button className="sk-link-btn sk-label-4-regular" onClick={() => setFilters(emptyFilters)}>Сбросить</button> : null}
-          <a href="my-responses.html" style={{ textDecoration: "none", flexShrink: 0, marginLeft: "auto" }}>
+          <a href="my-responses.html" style={{ textDecoration: "none", flexShrink: 0 }}>
             <Button style={{ background: "var(--sk-special-secondary)", color: "var(--text-text-special)" }} icon={<IconFolderHeart size={16} />}>Мои отклики{responses.length ? " · " + responses.length : ""}</Button>
           </a>
+          {hasActiveFilters ? <button className="sk-link-btn sk-label-4-regular" onClick={() => setFilters(emptyFilters)}>Сбросить</button> : null}
         </div>
         {filtersOpen && (
           <FiltersRow filters={filters} onChange={setFilters} positionOptions={positionOptions} departmentOptions={departmentOptions} />
         )}
 
+        <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Найдено вакансий: {filtered.length}</div>
+
         <div className="sk-row" style={{ alignItems: "flex-start", gap: 24 }}>
-          <div className="sk-col sk-gap-3" style={{ flex: 1, minWidth: 0 }}>
-            <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Найдено вакансий: {filtered.length}</div>
+          <div style={{ flex: 1, minWidth: 0 }}>
             {filtered.length === 0 ? (
               <Card><div className="sk-muted" style={{ textAlign: "center", padding: "24px 0" }}>Ничего не нашлось по заданным условиям.</div></Card>
             ) : (
