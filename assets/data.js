@@ -1517,6 +1517,7 @@ window.SITE_DATA = {
       ],
     },
   ];
+  window.SITE_DATA.goalCatalog.forEach((g) => { if (g.archived === undefined) g.archived = false; });
 
   // ---- Планы сотрудников (HR): назначенные индивидуальные планы ----
   // Денормализованный список для экрана "Планы сотрудников" — имя/должность/подразделение

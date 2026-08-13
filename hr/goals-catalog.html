@@ -44,6 +44,18 @@ function IconGripVertical({ size = 16, color = "currentColor" }) {
   );
 }
 
+// Иконка архива — используется и для "В архив", и для "Восстановить" (второе — тот же
+// значок, смысл действия уточняет подпись тултипа, а не отдельная иконка).
+function IconArchive({ size = 15, color = "currentColor" }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" style={{ color, flexShrink: 0 }}>
+      <rect x="3.5" y="4.5" width="17" height="4.5" rx="1.2" stroke="currentColor" strokeWidth="1.5" />
+      <path d="M4.5 9v8.5a2 2 0 0 0 2 2h9a2 2 0 0 0 2-2V9" stroke="currentColor" strokeWidth="1.5" />
+      <path d="M9.5 13h5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 const ELEMENT_LABEL = { article: "Статья", task: "Задача", course: "Курс", file: "Файл", link: "Ссылка" };
 
 // ---------------- Полезные материалы шага — тот же UI и тот же каталог материалов,
@@ -303,12 +315,6 @@ function pluralSteps(n) {
   if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) return "шага";
   return "шагов";
 }
-function pluralDays(n) {
-  const mod10 = n % 10, mod100 = n % 100;
-  if (mod10 === 1 && mod100 !== 11) return "день";
-  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) return "дня";
-  return "дней";
-}
 function pluralTimes(n) {
   const mod10 = n % 10, mod100 = n % 100;
   if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) return "раза";
@@ -387,7 +393,7 @@ function CategoryPillsBar({ categories, catalog, active, onSelect }) {
 // горизонтального скролла — на узком экране колонки просто сжимаются, а не вылезают.
 // У ячеек ниже намеренно стоит minWidth:0 — без него grid-колонка не сжимается
 // меньше содержимого и текст/тег вылезает за границы, наезжая на соседние колонки.
-const GOAL_ROW_GRID = "28px 3fr 1fr 1.3fr 1fr 104px";
+const GOAL_ROW_GRID = "28px 3fr 1.5fr 2fr 136px";
 
 function GoalCatalogListHeader() {
   const th = { font: "var(--sk-label-3-regular)", color: "var(--sk-text-secondary)", minWidth: 0 };
@@ -397,7 +403,6 @@ function GoalCatalogListHeader() {
       <span style={th}>Цель</span>
       <span style={th}>Категория</span>
       <span style={th}>Должности</span>
-      <span style={th}>Срок выполнения</span>
       <span />
     </div>
   );
@@ -429,7 +434,7 @@ function StepPreviewRow({ index, sg }) {
 // Синий кружок с иконкой-мишенью перед названием — визуальный маркер "это цель", тот же
 // приём, что и у шагов (см. StepPreviewRow), но другим цветом (фиолетовый), чтобы цель и
 // шаг различались с первого взгляда, а не только размером текста. ----------------
-function GoalCatalogRow({ goal, expanded, onToggle, onEdit, onDuplicate, onDelete }) {
+function GoalCatalogRow({ goal, expanded, onToggle, onEdit, onDuplicate, onArchiveToggle, onDelete }) {
   const [hover, setHover] = React.useState(false);
   const stepsCount = goal.subgoals.length;
   const cellText = { color: "var(--sk-text-primary)", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" };
@@ -464,12 +469,12 @@ function GoalCatalogRow({ goal, expanded, onToggle, onEdit, onDuplicate, onDelet
         <span className="sk-label-4-regular" style={cellText}>
           {(goal.positions || []).length ? goal.positions.join(", ") : "—"}
         </span>
-        <span className="sk-label-4-regular" style={cellText}>
-          {goal.dueDays} {pluralDays(goal.dueDays)}
-        </span>
         <div className="sk-row sk-gap-1" onClick={(e) => e.stopPropagation()}>
           <Tooltip content="Редактировать"><Button size="s" mode="tertiary" onClick={onEdit}><IconEdit size={15} /></Button></Tooltip>
           <Tooltip content="Копировать"><Button size="s" mode="tertiary" onClick={onDuplicate}><IconCopyLocal2 size={15} /></Button></Tooltip>
+          <Tooltip content={goal.archived ? "Восстановить" : "В архив"}>
+            <Button size="s" mode="tertiary" onClick={onArchiveToggle}><IconArchive size={15} /></Button>
+          </Tooltip>
           <Tooltip content="Удалить"><Button size="s" mode="tertiary" onClick={onDelete}><IconTrash size={15} /></Button></Tooltip>
         </div>
       </div>
@@ -496,6 +501,7 @@ function Page() {
   const [q, setQ] = React.useState("");
   const [filters, setFilters] = React.useState(emptyFilters);
   const [filtersOpen, setFiltersOpen] = React.useState(false);
+  const [showArchived, setShowArchived] = React.useState(false);
   const [expandedIds, setExpandedIds] = React.useState({});
   const [formDrawer, setFormDrawer] = React.useState(null); // null | "create" | { edit: goal }
   const [deleteConfirm, setDeleteConfirm] = React.useState(null);
@@ -504,13 +510,15 @@ function Page() {
   function showToast(msg) { setToast(msg); window.setTimeout(() => setToast(null), 2600); }
   function toggleExpand(id) { setExpandedIds((e) => ({ ...e, [id]: !e[id] })); }
 
-  const positions = [...new Set(catalog.flatMap((g) => g.positions || []))];
+  const activeCount = catalog.filter((g) => !g.archived).length;
+  const archivedCount = catalog.filter((g) => g.archived).length;
+  const scoped = catalog.filter((g) => !!g.archived === showArchived);
+  const positions = [...new Set(scoped.flatMap((g) => g.positions || []))];
   const hasActiveFilters = !!(filters.category || filters.position || filters.level);
   const toolbarFilterCount = (filters.position ? 1 : 0) + (filters.level ? 1 : 0);
-  const totalSteps = catalog.reduce((sum, g) => sum + g.subgoals.length, 0);
 
   const needle = q.trim().toLowerCase();
-  const list = catalog.filter((g) => {
+  const list = scoped.filter((g) => {
     if (needle && !(g.title.toLowerCase().includes(needle) || (g.description || "").toLowerCase().includes(needle)
       || (g.positions || []).some((p) => p.toLowerCase().includes(needle)))) return false;
     if (filters.category && g.category !== filters.category) return false;
@@ -542,12 +550,33 @@ function Page() {
     setDeleteConfirm(null);
     showToast("Цель удалена из каталога");
   }
+  function toggleArchive(g) {
+    setCatalog((list) => list.map((x) => x.id === g.id ? { ...x, archived: !x.archived } : x));
+    showToast(g.archived ? "Цель восстановлена из архива" : "Цель перенесена в архив");
+  }
 
   return (
     <AppShell role="hr" active="hr-refs" base="..">
       <div className="sk-row" style={{ justifyContent: "space-between", alignItems: "center" }}>
         <div className="sk-title-4">Каталог целей</div>
         <Button variant="accent" icon={<IconPlusSm size={16} />} onClick={() => setFormDrawer("create")}>Добавить цель</Button>
+      </div>
+
+      <div className="sk-row sk-gap-2">
+        <button onClick={() => setShowArchived(false)} style={{
+          height: 32, padding: "0 14px", borderRadius: "var(--sk-radius-full)", cursor: "pointer",
+          border: !showArchived ? "none" : "1px solid var(--sk-stroke)",
+          background: !showArchived ? "var(--sk-surface-secondary)" : "var(--sk-surface-page)",
+          color: !showArchived ? "var(--sk-text-primary)" : "var(--sk-text-secondary)",
+          font: !showArchived ? "var(--sk-label-3)" : "var(--sk-label-3-regular)",
+        }}>Активные{activeCount ? " · " + activeCount : ""}</button>
+        <button onClick={() => setShowArchived(true)} style={{
+          height: 32, padding: "0 14px", borderRadius: "var(--sk-radius-full)", cursor: "pointer",
+          border: showArchived ? "none" : "1px solid var(--sk-stroke)",
+          background: showArchived ? "var(--sk-surface-secondary)" : "var(--sk-surface-page)",
+          color: showArchived ? "var(--sk-text-primary)" : "var(--sk-text-secondary)",
+          font: showArchived ? "var(--sk-label-3)" : "var(--sk-label-3-regular)",
+        }}>Архив{archivedCount ? " · " + archivedCount : ""}</button>
       </div>
 
       <div className="sk-col sk-gap-3">
@@ -560,7 +589,7 @@ function Page() {
           </Button>
           {(hasActiveFilters || q) && <button className="sk-link-btn sk-label-4-regular" onClick={() => { setFilters(emptyFilters); setQ(""); }}>Сбросить</button>}
         </div>
-        <CategoryPillsBar categories={D.goalCategories} catalog={catalog} active={filters.category}
+        <CategoryPillsBar categories={D.goalCategories} catalog={scoped} active={filters.category}
           onSelect={(c) => setFilters((f) => ({ ...f, category: c }))} />
         {filtersOpen && (
           <div className="sk-row sk-gap-2" style={{ flexWrap: "wrap", alignItems: "flex-end" }}>
@@ -572,16 +601,13 @@ function Page() {
         )}
       </div>
 
-      <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>
-        Найдено целей: {list.length} из {catalog.length} · Всего шагов в каталоге: {totalSteps}
-      </div>
-
       {list.length > 0 ? (
         <div>
           <GoalCatalogListHeader />
           {list.map((g) => (
             <GoalCatalogRow key={g.id} goal={g} expanded={!!expandedIds[g.id]} onToggle={() => toggleExpand(g.id)}
-              onEdit={() => setFormDrawer({ edit: g })} onDuplicate={() => duplicateGoal(g)} onDelete={() => setDeleteConfirm(g)} />
+              onEdit={() => setFormDrawer({ edit: g })} onDuplicate={() => duplicateGoal(g)}
+              onArchiveToggle={() => toggleArchive(g)} onDelete={() => setDeleteConfirm(g)} />
           ))}
         </div>
       ) : catalog.length === 0 ? (
@@ -594,6 +620,8 @@ function Page() {
             <Button variant="accent" onClick={() => setFormDrawer("create")}>+ Добавить цель</Button>
           </div>
         </Card>
+      ) : showArchived && scoped.length === 0 ? (
+        <Card><div className="sk-muted" style={{ textAlign: "center", padding: "16px 0" }}>В архиве пока нет целей.</div></Card>
       ) : (
         <Card><div className="sk-muted" style={{ textAlign: "center", padding: "16px 0" }}>Ничего не нашлось — попробуйте изменить запрос или фильтры.</div></Card>
       )}
