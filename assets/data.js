@@ -327,6 +327,7 @@ window.SITE_DATA = {
   workFormats: ["Офис", "Гибрид", "Удалённо"],
   employmentTypes: ["Полная занятость", "Частичная занятость"],
   experienceOptions: ["Без опыта", "От 1 года", "От 2 лет", "От 3 лет", "От 5 лет"],
+  transitionTypes: ["Постоянный перевод", "Временная ротация", "Проектная задача"],
   motivationPrompts: [
     "Почему вас заинтересовала именно эта роль?",
     "Какой ваш релевантный опыт лучше всего подойдёт для этой позиции?",
@@ -337,7 +338,7 @@ window.SITE_DATA = {
     {
       id: "v1", title: "Специалист поддержки клиентов", direction: "Поддержка клиентов", department: "Контактный центр",
       city: "Санкт-Петербург", format: "Офис", grade: "Junior", employment: "Полная занятость", schedule: "5/2, 09:00–18:00",
-      salaryFrom: 70000, salaryTo: 90000, experience: "Без опыта", status: "open", postedDate: "5 дней назад",
+      salaryFrom: 70000, salaryTo: 90000, experience: "Без опыта", status: "open", postedDate: "5 дней назад", transitionType: "Постоянный перевод",
       requiredSkills: ["Клиентский сервис", "Грамотная речь", "CRM", "Работа с возражениями"],
       responsibilities: ["Консультировать клиентов по телефону и в чате", "Фиксировать обращения в CRM", "Эскалировать сложные случаи ответственным специалистам"],
       requirements: ["Грамотная устная и письменная речь", "Готовность работать по графику 5/2", "Опыт в поддержке — плюс, но не обязателен"],
@@ -347,7 +348,7 @@ window.SITE_DATA = {
     {
       id: "v2", title: "Руководитель отдела продаж", direction: "Продажи", department: "Департамент продаж",
       city: "Москва", format: "Офис", grade: "Senior", employment: "Полная занятость", schedule: "5/2, 09:00–18:00",
-      salaryFrom: 220000, salaryTo: 280000, experience: "От 5 лет", status: "open", postedDate: "1 неделю назад",
+      salaryFrom: 220000, salaryTo: 280000, experience: "От 5 лет", status: "open", postedDate: "1 неделю назад", transitionType: "Постоянный перевод",
       requiredSkills: ["Управление командой", "CRM", "Постановка целей", "Воронка продаж", "Переговоры"],
       responsibilities: ["Управлять командой из 8 менеджеров по продажам", "Отвечать за выполнение плана отдела", "Развивать процессы квалификации и воронку продаж"],
       requirements: ["Опыт руководства отделом продаж от 2 лет", "Опыт работы с CRM и воронкой", "Навыки постановки целей и контроля метрик"],
@@ -357,7 +358,7 @@ window.SITE_DATA = {
     {
       id: "v3", title: "Продуктовый аналитик", direction: "Аналитика", department: "Трайб «Данные и аналитика»",
       city: "Москва", format: "Удалённо", grade: "Middle", employment: "Полная занятость", schedule: "Гибкий",
-      salaryFrom: 160000, salaryTo: 200000, experience: "От 2 лет", status: "open", postedDate: "Сегодня",
+      salaryFrom: 160000, salaryTo: 200000, experience: "От 2 лет", status: "open", postedDate: "Сегодня", transitionType: "Временная ротация",
       requiredSkills: ["SQL", "BI-инструменты", "A/B-тесты", "Продуктовые метрики", "Python"],
       responsibilities: ["Анализировать продуктовые метрики и воронки", "Готовить дашборды и отчёты для продуктовых команд", "Проводить A/B-тесты совместно с продакт-менеджерами"],
       requirements: ["SQL и опыт работы с BI-инструментами", "Понимание продуктовых метрик (retention, конверсии)", "Python — плюс"],
@@ -367,7 +368,7 @@ window.SITE_DATA = {
     {
       id: "v4", title: "HR-партнёр бизнес-подразделения", direction: "HR", department: "Дирекция по персоналу",
       city: "Москва", format: "Гибрид", grade: "Middle", employment: "Полная занятость", schedule: "5/2",
-      salaryFrom: 150000, salaryTo: 190000, experience: "От 3 лет", status: "open", postedDate: "4 дня назад",
+      salaryFrom: 150000, salaryTo: 190000, experience: "От 3 лет", status: "open", postedDate: "4 дня назад", transitionType: "Постоянный перевод",
       requiredSkills: ["HR BP", "Трудовое право", "Оценка персонала", "Коммуникация"],
       responsibilities: ["Сопровождать руководителей подразделения по кадровым вопросам", "Участвовать в оценке и развитии сотрудников", "Поддерживать процессы найма совместно с рекрутерами"],
       requirements: ["Опыт HR BP или HR-дженералиста от 2 лет", "Знание трудового законодательства", "Развитые коммуникативные навыки"],
@@ -377,7 +378,7 @@ window.SITE_DATA = {
     {
       id: "v5", title: "Маркетолог продукта", direction: "Маркетинг", department: "Департамент маркетинга",
       city: "Москва", format: "Гибрид", grade: "Middle", employment: "Полная занятость", schedule: "5/2",
-      salaryFrom: 140000, salaryTo: 180000, experience: "От 2 лет", status: "open", postedDate: "2 дня назад",
+      salaryFrom: 140000, salaryTo: 180000, experience: "От 2 лет", status: "open", postedDate: "2 дня назад", transitionType: "Проектная задача",
       requiredSkills: ["Продуктовый маркетинг", "Позиционирование", "Метрики кампаний", "B2B"],
       responsibilities: ["Готовить позиционирование и месседжинг для новых функций", "Запускать продуктовые кампании совместно с продактами", "Анализировать эффективность маркетинговых активностей"],
       requirements: ["Опыт продуктового маркетинга от 2 лет", "Умение работать с метриками кампаний", "Опыт в B2B — плюс"],
@@ -387,7 +388,7 @@ window.SITE_DATA = {
     {
       id: "v6", title: "Руководитель проектного офиса", direction: "Менеджмент", department: "Дирекция по развитию",
       city: "Москва", format: "Офис", grade: "Senior", employment: "Полная занятость", schedule: "5/2",
-      salaryFrom: 230000, salaryTo: 300000, experience: "От 5 лет", status: "open", postedDate: "1 неделю назад",
+      salaryFrom: 230000, salaryTo: 300000, experience: "От 5 лет", status: "open", postedDate: "1 неделю назад", transitionType: "Постоянный перевод",
       requiredSkills: ["Управление портфелем проектов", "Agile", "Бюджетирование", "Работа с топ-менеджментом"],
       responsibilities: ["Выстраивать процессы управления портфелем проектов", "Контролировать сроки и бюджеты ключевых инициатив", "Развивать команду проектных менеджеров"],
       requirements: ["Опыт руководства PMO или крупными проектами от 3 лет", "Знание методологий Agile и классического PM", "Опыт работы с топ-менеджментом"],
@@ -397,7 +398,7 @@ window.SITE_DATA = {
     {
       id: "v7", title: "Финансовый аналитик", direction: "Финансы", department: "Финансовый департамент",
       city: "Москва", format: "Гибрид", grade: "Middle", employment: "Полная занятость", schedule: "5/2",
-      experience: "От 2 лет", status: "open", postedDate: "6 дней назад",
+      experience: "От 2 лет", status: "open", postedDate: "6 дней назад", transitionType: "Временная ротация",
       requiredSkills: ["Excel", "Финансовое моделирование", "SQL", "Управленческая отчётность"],
       responsibilities: ["Готовить финансовые модели и прогнозы", "Анализировать unit-экономику продуктов", "Готовить отчётность для руководства"],
       requirements: ["Опыт финансового анализа от 2 лет", "Уверенный Excel, желателен SQL", "Понимание управленческой отчётности"],
@@ -407,7 +408,7 @@ window.SITE_DATA = {
     {
       id: "v8", title: "Frontend-разработчик (React)", direction: "IT и цифровой бизнес", department: "Трайб «Цифровые продукты»",
       city: "Удалённо", format: "Удалённо", grade: "Middle+", employment: "Полная занятость", schedule: "Гибкий",
-      salaryFrom: 220000, salaryTo: 280000, experience: "От 3 лет", status: "open", postedDate: "2 дня назад",
+      salaryFrom: 220000, salaryTo: 280000, experience: "От 3 лет", status: "open", postedDate: "2 дня назад", transitionType: "Проектная задача",
       requiredSkills: ["React", "TypeScript", "Дизайн-системы", "Код-ревью"],
       responsibilities: ["Разрабатывать пользовательские интерфейсы на React", "Участвовать в развитии дизайн-системы", "Проводить код-ревью и наставлять младших разработчиков"],
       requirements: ["Коммерческий опыт с React от 3 лет", "TypeScript, знание современных подходов к вёрстке", "Опыт работы с дизайн-системами — плюс"],
@@ -417,7 +418,7 @@ window.SITE_DATA = {
     {
       id: "v9", title: "Специалист по кадровому администрированию", direction: "HR", department: "Дирекция по персоналу",
       city: "Москва", format: "Офис", grade: "Junior", employment: "Полная занятость", schedule: "5/2",
-      salaryFrom: 80000, salaryTo: 100000, experience: "От 1 года", status: "closed", postedDate: "3 недели назад",
+      salaryFrom: 80000, salaryTo: 100000, experience: "От 1 года", status: "closed", postedDate: "3 недели назад", transitionType: "Постоянный перевод",
       requiredSkills: ["Кадровое делопроизводство", "1С:ЗУП", "Трудовое право"],
       responsibilities: ["Вести кадровое делопроизводство", "Готовить приказы и трудовые договоры", "Консультировать сотрудников по кадровым вопросам"],
       requirements: ["Опыт кадрового администрирования от 1 года", "Знание 1С:ЗУП", "Внимательность к деталям"],

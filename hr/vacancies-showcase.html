@@ -15,7 +15,7 @@
 <body>
 <div id="root"></div>
 <script type="text/babel">
-const { Card, Tag, Input, Button, Select, Checkbox } = window.SkillazCoreDesignSystem_bf9566;
+const { Card, Tag, Input, Button, Select } = window.SkillazCoreDesignSystem_bf9566;
 const { AppShell, Icons, directionHue } = window.Site;
 const { IconSearch, IconMapPin, IconBriefcase, IconCheck, IconFilter } = Icons;
 const D = window.SITE_DATA;
@@ -68,7 +68,7 @@ function IconThumbUp({ size = 24, color = "currentColor", style }) {
 function fmtMoney(n) { return n.toLocaleString("ru-RU"); }
 function toOptions(list) { return list.map((v) => ({ value: v, label: v })); }
 
-const emptyFilters = { positions: [], departments: [], experience: [], cities: [], formats: [], employments: [], showClosed: false };
+const emptyFilters = { positions: [], departments: [], experience: [], cities: [], formats: [], employments: [], transitionTypes: [] };
 
 // Панель направлений — справа от списка вакансий, с собственным поиском по названию
 // направления (тот же паттерн, что и CategorySidebar в hr/goals-catalog.html): так
@@ -159,22 +159,20 @@ function FiltersRow({ filters, onChange, positionOptions, departmentOptions }) {
   const set = (key) => (v) => onChange((f) => ({ ...f, [key]: v }));
   return (
     <div className="sk-row sk-gap-2" style={{ flexWrap: "wrap", alignItems: "flex-end" }}>
-      <Select label="Должность" multiple placeholder="Любая должность"
+      <Select label="Должность" multiple searchable placeholder="Любая должность"
         options={positionOptions} value={filters.positions} onChange={set("positions")} style={{ width: 200 }} />
-      <Select label="Подразделение" multiple placeholder="Все подразделения"
+      <Select label="Подразделение" multiple searchable placeholder="Все подразделения"
         options={departmentOptions} value={filters.departments} onChange={set("departments")} style={{ width: 200 }} />
       <Select label="Опыт" multiple placeholder="Любой опыт"
         options={toOptions(D.experienceOptions)} value={filters.experience} onChange={set("experience")} style={{ width: 170 }} />
-      <Select label="Регион" multiple placeholder="Любой регион"
+      <Select label="Регион" multiple searchable placeholder="Любой регион"
         options={toOptions(D.cities)} value={filters.cities} onChange={set("cities")} style={{ width: 170 }} />
       <Select label="Формат работы" multiple placeholder="Любой формат"
         options={toOptions(D.workFormats)} value={filters.formats} onChange={set("formats")} style={{ width: 170 }} />
       <Select label="Тип занятости" multiple placeholder="Любой тип"
         options={toOptions(D.employmentTypes)} value={filters.employments} onChange={set("employments")} style={{ width: 170 }} />
-      <div style={{ height: 40, display: "flex", alignItems: "center" }}>
-        <Checkbox label="Показать закрытые" checked={filters.showClosed}
-          onChange={() => onChange((f) => ({ ...f, showClosed: !f.showClosed }))} />
-      </div>
+      <Select label="Тип перехода" multiple placeholder="Любой тип"
+        options={toOptions(D.transitionTypes)} value={filters.transitionTypes} onChange={set("transitionTypes")} style={{ width: 190 }} />
     </div>
   );
 }
@@ -192,14 +190,18 @@ function Page() {
   const [filters, setFilters] = React.useState(emptyFilters);
   const [filtersOpen, setFiltersOpen] = React.useState(true); // по умолчанию сразу раскрыты
 
-  const departmentOptions = React.useMemo(
-    () => toOptions([...new Set(visibleVacancies.map((v) => v.department))].sort()),
-    [visibleVacancies]
-  );
-  const positionOptions = React.useMemo(
-    () => toOptions([...new Set(visibleVacancies.map((v) => v.title))].sort()),
-    [visibleVacancies]
-  );
+  // "Моё подразделение" / "Моя должность" закреплены первым пунктом списка — значение
+  // совпадает с реальным department/title вакансии, поэтому фильтрация ниже не требует
+  // особого случая для этого пункта, а сам пункт исключается из общего алфавитного списка,
+  // чтобы не дублироваться.
+  const departmentOptions = React.useMemo(() => {
+    const rest = [...new Set(visibleVacancies.map((v) => v.department))].filter((d) => d !== D.person.department).sort();
+    return [{ value: D.person.department, label: "Моё подразделение" }, ...toOptions(rest)];
+  }, [visibleVacancies]);
+  const positionOptions = React.useMemo(() => {
+    const rest = [...new Set(visibleVacancies.map((v) => v.title))].filter((t) => t !== D.person.position).sort();
+    return [{ value: D.person.position, label: "Моя должность" }, ...toOptions(rest)];
+  }, [visibleVacancies]);
 
   const directionCounts = React.useMemo(() => {
     const map = {};
@@ -209,7 +211,7 @@ function Page() {
 
   const needle = q.trim().toLowerCase();
   const filtered = visibleVacancies.filter((v) => {
-    if (!filters.showClosed && v.status === "closed") return false;
+    if (v.status === "closed") return false;
     if (direction && v.direction !== direction) return false;
     if (filters.positions.length && !filters.positions.includes(v.title)) return false;
     if (filters.departments.length && !filters.departments.includes(v.department)) return false;
@@ -217,12 +219,13 @@ function Page() {
     if (filters.cities.length && !filters.cities.includes(v.city)) return false;
     if (filters.formats.length && !filters.formats.includes(v.format)) return false;
     if (filters.employments.length && !filters.employments.includes(v.employment)) return false;
+    if (filters.transitionTypes.length && !filters.transitionTypes.includes(v.transitionType)) return false;
     if (needle && !v.title.toLowerCase().includes(needle) && !v.department.toLowerCase().includes(needle)) return false;
     return true;
   });
 
   const activeFilterCount = filters.positions.length + filters.departments.length + filters.experience.length + filters.cities.length
-    + filters.formats.length + filters.employments.length + (filters.showClosed ? 1 : 0);
+    + filters.formats.length + filters.employments.length + filters.transitionTypes.length;
   const hasActiveFilters = activeFilterCount > 0;
 
   return (
@@ -230,36 +233,38 @@ function Page() {
       <VacanciesModeTabs active="showcase" />
       <div className="sk-title-4" style={{ marginBottom: 12 }}>Откройте новые карьерные возможности</div>
 
-      <div className="sk-row" style={{ alignItems: "flex-start", gap: 24 }}>
-        <div className="sk-col sk-gap-3" style={{ flex: 1, minWidth: 0 }}>
-          <div className="sk-row sk-gap-2" style={{ alignItems: "center", flexWrap: "wrap" }}>
-            <Input size="s" icon={<IconSearch size={20} />} placeholder="По названию, должности или подразделению"
-              value={q} onChange={(e) => setQ(e.target.value || "")} style={{ width: 380, flexShrink: 0 }} />
-            <Button mode="secondary" icon={<IconFilter size={16} />} onClick={() => setFiltersOpen((o) => !o)}
-              style={{ background: "var(--sk-surface-page)", border: "1px solid var(--sk-stroke)" }}>
-              Фильтры{activeFilterCount ? " · " + activeFilterCount : ""}
-            </Button>
-            {hasActiveFilters ? <button className="sk-link-btn sk-label-4-regular" onClick={() => setFilters(emptyFilters)}>Сбросить</button> : null}
-            <a href="../employee/my-responses.html" style={{ textDecoration: "none", flexShrink: 0, marginLeft: "auto" }}>
-              <Button style={{ background: "var(--sk-special-secondary)", color: "var(--text-text-special)" }} icon={<IconFolderHeart size={16} />}>Мои отклики{responses.length ? " · " + responses.length : ""}</Button>
-            </a>
-          </div>
-          {filtersOpen && (
-            <FiltersRow filters={filters} onChange={setFilters} positionOptions={positionOptions} departmentOptions={departmentOptions} />
-          )}
-
-          <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Найдено вакансий: {filtered.length}</div>
-          {filtered.length === 0 ? (
-            <Card><div className="sk-muted" style={{ textAlign: "center", padding: "24px 0" }}>Ничего не нашлось по заданным условиям.</div></Card>
-          ) : (
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 16 }}>
-              {filtered.map((v) => <VacancyCard key={v.id} vacancy={v} hasResponse={respondedIds.has(v.id)} />)}
-            </div>
-          )}
+      <div className="sk-col sk-gap-3">
+        <div className="sk-row sk-gap-2" style={{ alignItems: "center", flexWrap: "wrap" }}>
+          <Input size="s" icon={<IconSearch size={20} />} placeholder="По названию, должности или подразделению"
+            value={q} onChange={(e) => setQ(e.target.value || "")} style={{ width: 380, flexShrink: 0 }} />
+          <Button mode="secondary" icon={<IconFilter size={16} />} onClick={() => setFiltersOpen((o) => !o)}
+            style={{ background: "var(--sk-surface-page)", border: "1px solid var(--sk-stroke)" }}>
+            Фильтры{activeFilterCount ? " · " + activeFilterCount : ""}
+          </Button>
+          {hasActiveFilters ? <button className="sk-link-btn sk-label-4-regular" onClick={() => setFilters(emptyFilters)}>Сбросить</button> : null}
+          <a href="../employee/my-responses.html" style={{ textDecoration: "none", flexShrink: 0, marginLeft: "auto" }}>
+            <Button style={{ background: "var(--sk-special-secondary)", color: "var(--text-text-special)" }} icon={<IconFolderHeart size={16} />}>Мои отклики{responses.length ? " · " + responses.length : ""}</Button>
+          </a>
         </div>
+        {filtersOpen && (
+          <FiltersRow filters={filters} onChange={setFilters} positionOptions={positionOptions} departmentOptions={departmentOptions} />
+        )}
 
-        <DirectionSidebar directions={D.directions} counts={directionCounts} active={direction}
-          onSelect={setDirection} total={visibleVacancies.length} />
+        <div className="sk-row" style={{ alignItems: "flex-start", gap: 24 }}>
+          <div className="sk-col sk-gap-3" style={{ flex: 1, minWidth: 0 }}>
+            <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Найдено вакансий: {filtered.length}</div>
+            {filtered.length === 0 ? (
+              <Card><div className="sk-muted" style={{ textAlign: "center", padding: "24px 0" }}>Ничего не нашлось по заданным условиям.</div></Card>
+            ) : (
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 16 }}>
+                {filtered.map((v) => <VacancyCard key={v.id} vacancy={v} hasResponse={respondedIds.has(v.id)} />)}
+              </div>
+            )}
+          </div>
+
+          <DirectionSidebar directions={D.directions} counts={directionCounts} active={direction}
+            onSelect={setDirection} total={visibleVacancies.length} />
+        </div>
       </div>
     </AppShell>
   );
