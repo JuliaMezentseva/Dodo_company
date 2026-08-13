@@ -341,6 +341,12 @@ function pluralSteps(n) {
   if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) return "шага";
   return "шагов";
 }
+function pluralDays(n) {
+  const mod10 = n % 10, mod100 = n % 100;
+  if (mod10 === 1 && mod100 !== 11) return "день";
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) return "дня";
+  return "дней";
+}
 
 // ---------------- Левая панель категорий — поиск по названию категории + список,
 // по образцу референса (Profit.co Goals Library): поиск сверху, "Все категории"
@@ -370,7 +376,7 @@ function CategorySidebar({ categories, active, onSelect }) {
 
 // Общая сетка колонок для шапки и строк списка — держит их выровненными. Без отдельной
 // колонки "Шагов" (счётчик теперь у названия цели) и без "Описания" (оно только в дровере).
-const GOAL_ROW_GRID = "28px minmax(260px,1fr) 150px 190px 220px 44px";
+const GOAL_ROW_GRID = "28px minmax(260px,1fr) 150px 190px 220px 140px 44px";
 
 function GoalCatalogListHeader() {
   const th = { font: "var(--sk-label-3-regular)", color: "var(--sk-text-secondary)" };
@@ -381,6 +387,7 @@ function GoalCatalogListHeader() {
       <span style={th}>Категория</span>
       <span style={th}>Подразделение</span>
       <span style={th}>Должности</span>
+      <span style={th}>Срок выполнения</span>
       <span />
     </div>
   );
@@ -433,6 +440,9 @@ function GoalCatalogRow({ goal, expanded, onToggle, onEdit, onDelete }) {
         <span className="sk-label-4-regular" style={{ color: "var(--sk-text-secondary)" }}>{goal.department || "—"}</span>
         <span className="sk-label-4-regular" style={{ color: "var(--sk-text-secondary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
           {(goal.positions || []).length ? goal.positions.join(", ") : "—"}
+        </span>
+        <span className="sk-label-4-regular" style={{ color: "var(--sk-text-secondary)", whiteSpace: "nowrap" }}>
+          {goal.dueDays} {pluralDays(goal.dueDays)}
         </span>
         <div onClick={(e) => e.stopPropagation()}>
           <Tooltip content="Удалить"><Button size="s" mode="tertiary" onClick={onDelete}><IconTrash size={15} /></Button></Tooltip>
@@ -534,7 +544,7 @@ function Page() {
 
           {list.length > 0 ? (
             <div className="sk-scroll" style={{ overflowX: "auto" }}>
-              <div style={{ minWidth: 640 }}>
+              <div style={{ minWidth: 780 }}>
                 <GoalCatalogListHeader />
                 {list.map((g) => (
                   <GoalCatalogRow key={g.id} goal={g} expanded={!!expandedIds[g.id]} onToggle={() => toggleExpand(g.id)}
