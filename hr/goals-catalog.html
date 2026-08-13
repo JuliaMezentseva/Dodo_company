@@ -564,7 +564,6 @@ function Page() {
   const archivedCount = catalog.filter((g) => g.archived).length;
   const scoped = catalog.filter((g) => !!g.archived === showArchived);
   const positions = [...new Set(scoped.flatMap((g) => g.positions || []))];
-  const hasActiveFilters = !!(filters.category || filters.position || filters.level);
   const toolbarFilterCount = (filters.position ? 1 : 0) + (filters.level ? 1 : 0);
 
   const needle = q.trim().toLowerCase();
@@ -617,10 +616,17 @@ function Page() {
           <Input size="s" icon={<IconSearch size={18} />} placeholder="Название, описание, должность" value={q}
             onChange={(e) => setQ(e.target.value || "")} style={{ flex: 1, minWidth: 220, maxWidth: 420 }} />
           <Button mode="secondary" icon={<IconFilter size={16} />} onClick={() => setFiltersOpen((o) => !o)}
-            style={{ background: "var(--sk-surface-page)", border: "1px solid var(--sk-stroke)" }}>
-            Фильтры{toolbarFilterCount ? " · " + toolbarFilterCount : ""}
+            style={{ background: "var(--sk-surface-page)", border: toolbarFilterCount ? "1px solid var(--sk-stroke-accent)" : "1px solid var(--sk-stroke)" }}>
+            <span className="sk-row sk-gap-1" style={{ alignItems: "center" }}>
+              Фильтры{toolbarFilterCount ? " · " + toolbarFilterCount : ""}
+              {toolbarFilterCount > 0 && (
+                <span onClick={(e) => { e.stopPropagation(); setFilters((f) => ({ ...f, position: "", level: "" })); }}
+                  style={{ display: "inline-flex", opacity: 0.6, marginLeft: 2 }}>
+                  <IconX size={14} />
+                </span>
+              )}
+            </span>
           </Button>
-          {(hasActiveFilters || q) && <button className="sk-link-btn sk-label-4-regular" onClick={() => { setFilters(emptyFilters); setQ(""); }}>Сбросить</button>}
           <div className="sk-row sk-gap-2" style={{ marginLeft: "auto" }}>
             <button onClick={() => setShowArchived(false)} style={{
               height: 28, padding: "0 12px", borderRadius: "var(--sk-radius-full)", cursor: "pointer",

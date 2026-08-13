@@ -265,13 +265,19 @@ function Page() {
           <Input size="s" icon={<IconSearch size={20} />} placeholder="По названию, должности или подразделению"
             value={q} onChange={(e) => setQ(e.target.value || "")} style={{ width: 460, flexShrink: 0 }} />
           <Button mode="secondary" icon={<IconFilter size={16} />} onClick={() => setFiltersOpen((o) => !o)}
-            style={{ background: "var(--sk-surface-page)", border: "1px solid var(--sk-stroke)" }}>
-            Фильтры{activeFilterCount ? " · " + activeFilterCount : ""}
+            style={{ background: "var(--sk-surface-page)", border: hasActiveFilters ? "1px solid var(--sk-stroke-accent)" : "1px solid var(--sk-stroke)" }}>
+            <span className="sk-row sk-gap-1" style={{ alignItems: "center" }}>
+              Фильтры{activeFilterCount ? " · " + activeFilterCount : ""}
+              {hasActiveFilters && (
+                <span onClick={(e) => { e.stopPropagation(); setFilters(emptyFilters); }} style={{ display: "inline-flex", opacity: 0.6, marginLeft: 2 }}>
+                  <IconX size={14} />
+                </span>
+              )}
+            </span>
           </Button>
           <a href="my-responses.html" style={{ textDecoration: "none", flexShrink: 0 }}>
             <Button style={{ background: "var(--sk-special-secondary)", color: "var(--text-text-special)" }} icon={<IconFolderHeart size={16} />}>Мои отклики{responses.length ? " · " + responses.length : ""}</Button>
           </a>
-          {hasActiveFilters ? <button className="sk-link-btn sk-label-4-regular" onClick={() => setFilters(emptyFilters)}>Сбросить</button> : null}
         </div>
         {filtersOpen && (
           <FiltersRow filters={filters} onChange={setFilters} positionOptions={positionOptions} departmentOptions={departmentOptions} />
