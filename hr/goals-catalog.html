@@ -17,7 +17,7 @@
 <script type="text/babel">
 const { Card, Tag, Input, Textarea, Select, Checkbox, Divider, Button, Tooltip, Modal, Drawer, Snackbar, Alert } = window.SkillazCoreDesignSystem_bf9566;
 const { AppShell, Icons } = window.Site;
-const { IconPlusSm, IconSearch, IconFilter, IconTrash, IconX, IconChevronRight, IconEdit, IconCopyLocal2 } = Icons;
+const { IconPlusSm, IconSearch, IconFilter, IconTrash, IconX, IconChevronRight, IconEdit, IconCopyLocal2, IconTarget } = Icons;
 
 // В наборе иконок ДС нет "ручки" для перетаскивания — та же локальная иконка,
 // что и в hr/template.html (IconGripVertical).
@@ -290,7 +290,7 @@ function GoalCatalogFormDrawer({ initial, onClose, onSave }) {
                 </span>
                 <span style={{
                   width: 26, height: 26, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center",
-                  background: "var(--sk-accent)", color: "var(--sk-text-contrast)", font: "var(--sk-label-4)",
+                  background: "var(--sk-special)", color: "var(--sk-text-contrast)", font: "var(--sk-label-4)",
                 }}>{i + 1}</span>
                 <div className="sk-row sk-gap-2 sk-clickable" onClick={() => setSubgoalModal({ edit: i })} style={{ flex: 1, minWidth: 0, alignItems: "center" }}>
                   <div className="sk-col sk-gap-1" style={{ flex: 1, minWidth: 0 }}>
@@ -402,7 +402,7 @@ function StepPreviewRow({ index, sg }) {
     <div className="sk-row sk-gap-2" style={{ alignItems: "center", padding: "8px 0", borderTop: "1px solid var(--sk-stroke)" }}>
       <span style={{
         width: 22, height: 22, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center",
-        background: "var(--sk-accent)", color: "var(--sk-text-contrast)", font: "var(--sk-label-4)",
+        background: "var(--sk-special)", color: "var(--sk-text-contrast)", font: "var(--sk-label-4)",
       }}>{index}</span>
       <span className="sk-label-4-regular" style={{ flex: 1, minWidth: 0 }}>{sg.title}</span>
     </div>
@@ -414,7 +414,10 @@ function StepPreviewRow({ index, sg }) {
 // главный, самый заметный элемент строки (жирным, переносится на несколько строк, не
 // обрезается многоточием); счётчик шагов — второстепенная подпись под названием, не
 // перед ним. Категория показана обычным текстом, а не цветной плашкой: Tag не сжимается
-// внутри grid-колонки и при длинном названии категории наезжал на соседние колонки. ----------------
+// внутри grid-колонки и при длинном названии категории наезжал на соседние колонки.
+// Синий кружок с иконкой-мишенью перед названием — визуальный маркер "это цель", тот же
+// приём, что и у шагов (см. StepPreviewRow), но другим цветом (фиолетовый), чтобы цель и
+// шаг различались с первого взгляда, а не только размером текста. ----------------
 function GoalCatalogRow({ goal, expanded, onToggle, onEdit, onDuplicate, onDelete }) {
   const [hover, setHover] = React.useState(false);
   const stepsCount = goal.subgoals.length;
@@ -429,11 +432,17 @@ function GoalCatalogRow({ goal, expanded, onToggle, onEdit, onDuplicate, onDelet
           width: 24, height: 24, display: "flex", alignItems: "center", justifyContent: "center", background: "none", border: "none", cursor: "pointer",
           color: "var(--sk-icon-secondary)", transform: expanded ? "rotate(90deg)" : "none", transition: "transform var(--sk-duration) var(--sk-ease)",
         }}><IconChevronRight size={16} /></button>
-        <div className="sk-col sk-gap-1" style={{ minWidth: 0 }}>
-          <span className="sk-label-3" style={{ minWidth: 0 }}>{goal.title}</span>
-          {stepsCount > 0 && (
-            <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{stepsCount} {pluralSteps(stepsCount)}</span>
-          )}
+        <div className="sk-row sk-gap-2" style={{ minWidth: 0 }}>
+          <span style={{
+            width: 26, height: 26, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center",
+            background: "var(--sk-accent-secondary)", color: "var(--sk-text-accent)",
+          }}><IconTarget size={15} /></span>
+          <div className="sk-col sk-gap-1" style={{ minWidth: 0 }}>
+            <span className="sk-label-3" style={{ minWidth: 0 }}>{goal.title}</span>
+            {stepsCount > 0 && (
+              <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{stepsCount} {pluralSteps(stepsCount)}</span>
+            )}
+          </div>
         </div>
         <span className="sk-label-4-regular" style={cellText}>{goal.category}</span>
         <span className="sk-label-4-regular" style={cellText}>
