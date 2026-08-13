@@ -516,9 +516,6 @@ function Page() {
       </div>
 
       <div className="sk-row" style={{ alignItems: "flex-start", gap: 24 }}>
-        <CategorySidebar categories={D.goalCategories} active={filters.category}
-          onSelect={(c) => setFilters((f) => ({ ...f, category: c }))} />
-
         <div className="sk-col sk-gap-4" style={{ flex: 1, minWidth: 0 }}>
           <div className="sk-row sk-gap-2" style={{ flexWrap: "wrap", alignItems: "center" }}>
             <Input icon={<IconSearch size={20} />} placeholder="Название, описание, должность, тэг" value={q}
@@ -564,6 +561,9 @@ function Page() {
             не меняет исходную запись в каталоге и наоборот.
           </Alert>
         </div>
+
+        <CategorySidebar categories={D.goalCategories} active={filters.category}
+          onSelect={(c) => setFilters((f) => ({ ...f, category: c }))} />
       </div>
 
       {(formDrawer === "create" || (formDrawer && formDrawer.edit)) && (
