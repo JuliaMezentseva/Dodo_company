@@ -247,7 +247,7 @@ function GoalCatalogFormDrawer({ initial, onClose, onSave }) {
             <span className="sk-label-3" style={{ color: "var(--sk-text-primary)" }}>Классификация</span>
             <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Помогает быстрее найти цель в каталоге — для кого и какого уровня она сформулирована</span>
           </div>
-          <Select label="Основная категория" required placeholder="Выберите категорию" value={form.category || null}
+          <Select label="Категория" required placeholder="Выберите категорию" value={form.category || null}
             options={D.goalCategories.map((c) => ({ value: c, label: c }))}
             onChange={set("category")} />
           <Select label="Уровень" placeholder="Любой" value={form.level || null}
@@ -398,11 +398,11 @@ function CategoryPillsBar({ categories, catalog, active, onSelect }) {
   // визуальный язык), белая обводка = не выбрано.
   function pillStyle(isActive) {
     return {
-      height: 28, padding: "0 10px", borderRadius: "var(--sk-radius-full)", cursor: "pointer",
+      height: 36, padding: "0 14px", borderRadius: "var(--sk-radius-full)", cursor: "pointer",
       border: isActive ? "none" : "1px solid var(--sk-stroke)",
       background: isActive ? "var(--sk-surface-secondary)" : "var(--sk-surface-page)",
       color: isActive ? "var(--sk-text-primary)" : "var(--sk-text-secondary)",
-      font: isActive ? "var(--sk-label-4)" : "var(--sk-label-4-regular)", whiteSpace: "nowrap", flexShrink: 0,
+      font: isActive ? "var(--sk-label-3)" : "var(--sk-label-3-regular)", whiteSpace: "nowrap", flexShrink: 0,
     };
   }
 
@@ -414,10 +414,10 @@ function CategoryPillsBar({ categories, catalog, active, onSelect }) {
       ))}
       <div ref={dropdownRef} style={{ position: "relative" }}>
         <button onClick={() => setDropdownOpen((o) => !o)} aria-label="Добавить направление" style={{
-          width: 28, height: 28, borderRadius: "50%", border: "none", cursor: "pointer", flexShrink: 0,
+          width: 36, height: 36, borderRadius: "50%", border: "none", cursor: "pointer", flexShrink: 0,
           background: "var(--sk-surface-secondary)", color: "var(--sk-text-secondary)",
           display: "flex", alignItems: "center", justifyContent: "center",
-        }}><IconPlusSm size={14} /></button>
+        }}><IconPlusSm size={16} /></button>
         {dropdownOpen && (
           <div style={{
             position: "absolute", top: "calc(100% + 4px)", left: 0, minWidth: 220, maxHeight: 280, overflowY: "auto",
@@ -469,7 +469,7 @@ function StepPreviewRow({ index, sg }) {
         width: 22, height: 22, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center",
         background: "var(--sk-special-secondary)", color: "var(--text-text-special)", font: "var(--sk-label-4)",
       }}>{index}</span>
-      <span className="sk-label-4-regular" style={{ flex: 1, minWidth: 0 }}>{sg.title}</span>
+      <span className="sk-label-3-regular" style={{ flex: 1, minWidth: 0 }}>{sg.title}</span>
     </div>
   );
 }
@@ -511,12 +511,12 @@ function GoalCatalogRow({ goal, expanded, onToggle, onEdit, onDuplicate, onArchi
           </div>
         </div>
         <div style={{ minWidth: 0 }}>
-          <span className="sk-label-4-regular" style={{
+          <span className="sk-label-3-regular" style={{
             display: "inline-block", maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-            background: "var(--sk-surface-secondary)", color: "var(--sk-text-primary)", borderRadius: "var(--sk-radius-full)", padding: "3px 10px",
+            background: "var(--sk-surface-secondary)", color: "var(--sk-text-primary)", borderRadius: "var(--sk-radius-full)", padding: "4px 12px",
           }}>{goal.category}</span>
         </div>
-        <span className="sk-label-4-regular" style={cellText}>
+        <span className="sk-label-3-regular" style={cellText}>
           {(goal.positions || []).length ? goal.positions.join(", ") : "—"}
         </span>
         <div className="sk-row sk-gap-1" onClick={(e) => e.stopPropagation()}>
