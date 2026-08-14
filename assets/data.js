@@ -342,7 +342,7 @@ window.SITE_DATA = {
 
   vacancies: [
     {
-      id: "v1", title: "Специалист поддержки клиентов", direction: "Поддержка клиентов", department: "Контактный центр",
+      id: "v1", source: "ats", title: "Специалист поддержки клиентов", direction: "Поддержка клиентов", department: "Контактный центр",
       city: "Санкт-Петербург", format: "Офис", grade: "Junior", employment: "Полная занятость", schedule: "5/2, 09:00–18:00",
       salaryFrom: 70000, salaryTo: 90000, experience: "Без опыта", status: "open", postedDate: "5 дней назад", transitionType: "Постоянный перевод",
       requiredSkills: ["Клиентский сервис", "Грамотная речь", "CRM", "Работа с возражениями"],
@@ -352,7 +352,7 @@ window.SITE_DATA = {
       recruiter: { name: "Мария Волкова", role: "Рекрутер, Контактный центр", email: "m.volkova@skillaz.com", phone: "+7 916 500 1122" },
     },
     {
-      id: "v2", title: "Руководитель отдела продаж", direction: "Продажи", department: "Департамент продаж",
+      id: "v2", source: "ats", title: "Руководитель отдела продаж", direction: "Продажи", department: "Департамент продаж",
       city: "Москва", format: "Офис", grade: "Senior", employment: "Полная занятость", schedule: "5/2, 09:00–18:00",
       salaryFrom: 220000, salaryTo: 280000, experience: "От 5 лет", status: "open", postedDate: "1 неделю назад", transitionType: "Постоянный перевод",
       requiredSkills: ["Управление командой", "CRM", "Постановка целей", "Воронка продаж", "Переговоры"],
@@ -362,7 +362,7 @@ window.SITE_DATA = {
       recruiter: { name: "Игорь Панов", role: "Рекрутер, Департамент продаж", email: "i.panov@skillaz.com", phone: "+7 916 500 2233" },
     },
     {
-      id: "v3", title: "Продуктовый аналитик", direction: "Аналитика", department: "Трайб «Данные и аналитика»",
+      id: "v3", source: "ats", title: "Продуктовый аналитик", direction: "Аналитика", department: "Трайб «Данные и аналитика»",
       city: "Москва", format: "Удалённо", grade: "Middle", employment: "Полная занятость", schedule: "Гибкий",
       salaryFrom: 160000, salaryTo: 200000, experience: "От 2 лет", status: "open", postedDate: "Сегодня", transitionType: "Временная ротация",
       requiredSkills: ["SQL", "BI-инструменты", "A/B-тесты", "Продуктовые метрики", "Python"],
@@ -372,7 +372,7 @@ window.SITE_DATA = {
       recruiter: { name: "Анастасия Белова", role: "Рекрутер, IT-найм", email: "a.belova@skillaz.com", phone: "+7 916 500 3344" },
     },
     {
-      id: "v4", title: "HR-партнёр бизнес-подразделения", direction: "HR", department: "Дирекция по персоналу",
+      id: "v4", source: "ats", title: "HR-партнёр бизнес-подразделения", direction: "HR", department: "Дирекция по персоналу",
       city: "Москва", format: "Гибрид", grade: "Middle", employment: "Полная занятость", schedule: "5/2",
       salaryFrom: 150000, salaryTo: 190000, experience: "От 3 лет", status: "open", postedDate: "4 дня назад", transitionType: "Постоянный перевод",
       requiredSkills: ["HR BP", "Трудовое право", "Оценка персонала", "Коммуникация"],
@@ -382,7 +382,7 @@ window.SITE_DATA = {
       recruiter: { name: "Юлия Степанова", role: "Рекрутер, Дирекция по персоналу", email: "y.stepanova@skillaz.com", phone: "+7 916 250 4455" },
     },
     {
-      id: "v5", title: "Маркетолог продукта", direction: "Маркетинг", department: "Департамент маркетинга",
+      id: "v5", source: "ats", title: "Маркетолог продукта", direction: "Маркетинг", department: "Департамент маркетинга",
       city: "Москва", format: "Гибрид", grade: "Middle", employment: "Полная занятость", schedule: "5/2",
       salaryFrom: 140000, salaryTo: 180000, experience: "От 2 лет", status: "open", postedDate: "2 дня назад", transitionType: "Проектная задача",
       requiredSkills: ["Продуктовый маркетинг", "Позиционирование", "Метрики кампаний", "B2B"],
@@ -392,7 +392,7 @@ window.SITE_DATA = {
       recruiter: { name: "Дарья Смирнова", role: "Рекрутер, Маркетинг", email: "d.smirnova@skillaz.com", phone: "+7 916 500 5566" },
     },
     {
-      id: "v6", title: "Руководитель проектного офиса", direction: "Менеджмент", department: "Дирекция по развитию",
+      id: "v6", source: "ats", title: "Руководитель проектного офиса", direction: "Менеджмент", department: "Дирекция по развитию",
       city: "Москва", format: "Офис", grade: "Senior", employment: "Полная занятость", schedule: "5/2",
       salaryFrom: 230000, salaryTo: 300000, experience: "От 5 лет", status: "open", postedDate: "1 неделю назад", transitionType: "Постоянный перевод",
       requiredSkills: ["Управление портфелем проектов", "Agile", "Бюджетирование", "Работа с топ-менеджментом"],
@@ -402,7 +402,7 @@ window.SITE_DATA = {
       recruiter: { name: "Игорь Панов", role: "Рекрутер, Дирекция по развитию", email: "i.panov@skillaz.com", phone: "+7 916 500 2233" },
     },
     {
-      id: "v7", title: "Финансовый аналитик", direction: "Финансы", department: "Финансовый департамент",
+      id: "v7", source: "ats", title: "Финансовый аналитик", direction: "Финансы", department: "Финансовый департамент",
       city: "Москва", format: "Гибрид", grade: "Middle", employment: "Полная занятость", schedule: "5/2",
       experience: "От 2 лет", status: "open", postedDate: "6 дней назад", transitionType: "Временная ротация",
       requiredSkills: ["Excel", "Финансовое моделирование", "SQL", "Управленческая отчётность"],
@@ -412,7 +412,7 @@ window.SITE_DATA = {
       recruiter: { name: "Анастасия Белова", role: "Рекрутер, Финансовый департамент", email: "a.belova@skillaz.com", phone: "+7 916 500 3344" },
     },
     {
-      id: "v8", title: "Frontend-разработчик (React)", direction: "IT и цифровой бизнес", department: "Трайб «Цифровые продукты»",
+      id: "v8", source: "ats", title: "Frontend-разработчик (React)", direction: "IT и цифровой бизнес", department: "Трайб «Цифровые продукты»",
       city: "Удалённо", format: "Удалённо", grade: "Middle+", employment: "Полная занятость", schedule: "Гибкий",
       salaryFrom: 220000, salaryTo: 280000, experience: "От 3 лет", status: "open", postedDate: "2 дня назад", transitionType: "Проектная задача",
       requiredSkills: ["React", "TypeScript", "Дизайн-системы", "Код-ревью"],
@@ -422,7 +422,7 @@ window.SITE_DATA = {
       recruiter: { name: "Дарья Смирнова", role: "Рекрутер, IT-найм", email: "d.smirnova@skillaz.com", phone: "+7 916 500 5566" },
     },
     {
-      id: "v9", title: "Специалист по кадровому администрированию", direction: "HR", department: "Дирекция по персоналу",
+      id: "v9", source: "ats", title: "Специалист по кадровому администрированию", direction: "HR", department: "Дирекция по персоналу",
       city: "Москва", format: "Офис", grade: "Junior", employment: "Полная занятость", schedule: "5/2",
       salaryFrom: 80000, salaryTo: 100000, experience: "От 1 года", status: "closed", postedDate: "3 недели назад", transitionType: "Постоянный перевод",
       requiredSkills: ["Кадровое делопроизводство", "1С:ЗУП", "Трудовое право"],
@@ -432,7 +432,7 @@ window.SITE_DATA = {
       recruiter: { name: "Юлия Степанова", role: "Рекрутер, Дирекция по персоналу", email: "y.stepanova@skillaz.com", phone: "+7 916 250 4455" },
     },
     {
-      id: "v10", title: "Логист-координатор поставок", direction: "Логистика", department: "Департамент логистики",
+      id: "v10", source: "ats", title: "Логист-координатор поставок", direction: "Логистика", department: "Департамент логистики",
       city: "Москва", format: "Офис", grade: "Middle", employment: "Полная занятость", schedule: "5/2",
       salaryFrom: 90000, salaryTo: 120000, experience: "От 1 года", status: "open", postedDate: "3 дня назад", transitionType: "Постоянный перевод",
       requiredSkills: ["Планирование поставок", "1С", "Работа с перевозчиками", "Excel"],
@@ -442,7 +442,7 @@ window.SITE_DATA = {
       recruiter: { name: "Мария Волкова", role: "Рекрутер, Департамент логистики", email: "m.volkova@skillaz.com", phone: "+7 916 500 1122" },
     },
     {
-      id: "v11", title: "Инженер по качеству", direction: "Производство", department: "Производственный департамент",
+      id: "v11", source: "ats", title: "Инженер по качеству", direction: "Производство", department: "Производственный департамент",
       city: "Казань", format: "Офис", grade: "Middle", employment: "Полная занятость", schedule: "5/2, сменный график",
       salaryFrom: 110000, salaryTo: 140000, experience: "От 2 лет", status: "open", postedDate: "1 неделю назад", transitionType: "Постоянный перевод",
       requiredSkills: ["Контроль качества", "ГОСТ и стандарты", "Анализ брака", "Документооборот"],
@@ -452,7 +452,7 @@ window.SITE_DATA = {
       recruiter: { name: "Игорь Панов", role: "Рекрутер, Производственный департамент", email: "i.panov@skillaz.com", phone: "+7 916 500 2233" },
     },
     {
-      id: "v12", title: "Юрист по коммерческим договорам", direction: "Юридический отдел", department: "Юридический департамент",
+      id: "v12", source: "ats", title: "Юрист по коммерческим договорам", direction: "Юридический отдел", department: "Юридический департамент",
       city: "Москва", format: "Гибрид", grade: "Middle", employment: "Полная занятость", schedule: "5/2",
       salaryFrom: 130000, salaryTo: 170000, experience: "От 3 лет", status: "open", postedDate: "5 дней назад", transitionType: "Постоянный перевод",
       requiredSkills: ["Договорное право", "Согласование договоров", "Претензионная работа", "Гражданский кодекс"],
@@ -462,7 +462,7 @@ window.SITE_DATA = {
       recruiter: { name: "Анастасия Белова", role: "Рекрутер, Юридический департамент", email: "a.belova@skillaz.com", phone: "+7 916 500 3344" },
     },
     {
-      id: "v13", title: "Менеджер по закупкам", direction: "Закупки", department: "Департамент закупок",
+      id: "v13", source: "ats", title: "Менеджер по закупкам", direction: "Закупки", department: "Департамент закупок",
       city: "Санкт-Петербург", format: "Офис", grade: "Middle", employment: "Полная занятость", schedule: "5/2",
       salaryFrom: 100000, salaryTo: 130000, experience: "От 2 лет", status: "open", postedDate: "2 дня назад", transitionType: "Временная ротация",
       requiredSkills: ["Тендеры", "Переговоры с поставщиками", "Бюджетирование закупок", "1С"],
@@ -472,7 +472,7 @@ window.SITE_DATA = {
       recruiter: { name: "Дарья Смирнова", role: "Рекрутер, Департамент закупок", email: "d.smirnova@skillaz.com", phone: "+7 916 500 5566" },
     },
     {
-      id: "v14", title: "UX/UI-дизайнер", direction: "Дизайн", department: "Трайб «Цифровые продукты»",
+      id: "v14", source: "ats", title: "UX/UI-дизайнер", direction: "Дизайн", department: "Трайб «Цифровые продукты»",
       city: "Удалённо", format: "Удалённо", grade: "Middle", employment: "Полная занятость", schedule: "Гибкий",
       salaryFrom: 150000, salaryTo: 190000, experience: "От 2 лет", status: "open", postedDate: "Сегодня", transitionType: "Проектная задача",
       requiredSkills: ["Figma", "Дизайн-системы", "Прототипирование", "UX-исследования"],
@@ -482,7 +482,7 @@ window.SITE_DATA = {
       recruiter: { name: "Дарья Смирнова", role: "Рекрутер, IT-найм", email: "d.smirnova@skillaz.com", phone: "+7 916 500 5566" },
     },
     {
-      id: "v15", title: "Аналитик стратегического развития", direction: "Стратегия и развитие", department: "Дирекция по развитию",
+      id: "v15", source: "ats", title: "Аналитик стратегического развития", direction: "Стратегия и развитие", department: "Дирекция по развитию",
       city: "Москва", format: "Гибрид", grade: "Middle", employment: "Полная занятость", schedule: "5/2",
       salaryFrom: 160000, salaryTo: 200000, experience: "От 2 лет", status: "open", postedDate: "4 дня назад", transitionType: "Проектная задача",
       requiredSkills: ["Стратегический анализ", "Финансовое моделирование", "Презентации", "Excel"],
@@ -492,7 +492,7 @@ window.SITE_DATA = {
       recruiter: { name: "Игорь Панов", role: "Рекрутер, Дирекция по развитию", email: "i.panov@skillaz.com", phone: "+7 916 500 2233" },
     },
     {
-      id: "v16", title: "Специалист по информационной безопасности", direction: "Информационная безопасность", department: "Департамент ИТ-инфраструктуры",
+      id: "v16", source: "ats", title: "Специалист по информационной безопасности", direction: "Информационная безопасность", department: "Департамент ИТ-инфраструктуры",
       city: "Москва", format: "Гибрид", grade: "Middle", employment: "Полная занятость", schedule: "5/2",
       salaryFrom: 170000, salaryTo: 210000, experience: "От 3 лет", status: "open", postedDate: "1 неделю назад", transitionType: "Постоянный перевод",
       requiredSkills: ["Информационная безопасность", "Аудит доступов", "SIEM-системы", "Реагирование на инциденты"],
@@ -502,7 +502,7 @@ window.SITE_DATA = {
       recruiter: { name: "Анастасия Белова", role: "Рекрутер, IT-найм", email: "a.belova@skillaz.com", phone: "+7 916 500 3344" },
     },
     {
-      id: "v17", title: "Менеджер по работе с ключевыми клиентами", direction: "Клиентский успех", department: "Департамент по работе с клиентами",
+      id: "v17", source: "ats", title: "Менеджер по работе с ключевыми клиентами", direction: "Клиентский успех", department: "Департамент по работе с клиентами",
       city: "Москва", format: "Гибрид", grade: "Middle", employment: "Полная занятость", schedule: "5/2",
       salaryFrom: 120000, salaryTo: 150000, experience: "От 2 лет", status: "open", postedDate: "3 дня назад", transitionType: "Временная ротация",
       requiredSkills: ["Управление отношениями с клиентами", "CRM", "Удержание клиентов", "Переговоры"],

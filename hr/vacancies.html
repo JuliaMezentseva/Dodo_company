@@ -17,7 +17,7 @@
 <script type="text/babel">
 const { Card, Tag, Table, Switch, Input, Select, Textarea, Button, Tooltip, Modal, Snackbar, Alert } = window.SkillazCoreDesignSystem_bf9566;
 const { AppShell, Icons } = window.Site;
-const { IconPlusSm, IconUpload, IconSearch, IconEdit, IconMapPin, IconBriefcase, IconFileText } = Icons;
+const { IconPlusSm, IconUpload, IconSearch, IconEdit, IconFileText } = Icons;
 
 const D = window.SITE_DATA;
 
@@ -56,6 +56,17 @@ function IconFolderHeart({ size = 24, color = "currentColor", style }) {
   );
 }
 function fmtMoney(n) { return n.toLocaleString("ru-RU"); }
+// "5 дней назад" / "1 неделю назад" / "Сегодня" -> число дней назад, чтобы сортировка по
+// дате публикации была настоящей хронологией, а не лексикографическим сравнением строк.
+function daysAgo(v) {
+  if (v.createdAt === "сегодня") return 0;
+  const s = (v.postedDate || "").toLowerCase();
+  if (!s || s === "сегодня") return 0;
+  const num = parseInt(s, 10) || 1;
+  if (s.includes("недел")) return num * 7;
+  if (s.includes("месяц")) return num * 30;
+  return num;
+}
 function splitLines(text) { return text.split("\n").map((s) => s.trim()).filter(Boolean); }
 function splitCsv(text) { return text.split(",").map((s) => s.trim()).filter(Boolean); }
 
@@ -109,7 +120,7 @@ function Page() {
   const [showClosed, setShowClosed] = React.useState(false);
   const [sortBy, setSortBy] = React.useState(null); // null | { key, dir: "asc" | "desc" }
   const [filtersOpen, setFiltersOpen] = React.useState(false);
-  const [filters, setFilters] = React.useState({ direction: "", department: "", city: "", format: "", employment: "" });
+  const [filters, setFilters] = React.useState({ direction: "", department: "", city: "", format: "", employment: "", source: "", visibility: "" });
 
   function showToast(msg) { setToast(msg); window.setTimeout(() => setToast(null), 2600); }
 
@@ -155,14 +166,17 @@ function Page() {
     if (filters.city) list = list.filter((v) => v.city === filters.city);
     if (filters.format) list = list.filter((v) => v.format === filters.format);
     if (filters.employment) list = list.filter((v) => v.employment === filters.employment);
+    if (filters.source) list = list.filter((v) => (v.source || "ats") === filters.source);
+    if (filters.visibility) list = list.filter((v) => (filters.visibility === "visible") === !!v.visibleToEmployees);
     if (sortBy) {
       const dir = sortBy.dir === "asc" ? 1 : -1;
       list = [...list].sort((a, b) => {
         let av, bv;
         if (sortBy.key === "title") { av = a.title; bv = b.title; }
         else if (sortBy.key === "department") { av = a.department; bv = b.department; }
+        else if (sortBy.key === "city") { av = a.city; bv = b.city; }
         else if (sortBy.key === "responses") { av = a.responsesCount || 0; bv = b.responsesCount || 0; }
-        else if (sortBy.key === "date") { av = a.createdAt === "сегодня" ? "9999" : (a.postedDate || ""); bv = b.createdAt === "сегодня" ? "9999" : (b.postedDate || ""); }
+        else if (sortBy.key === "date") { av = daysAgo(a); bv = daysAgo(b); }
         if (typeof av === "number" && typeof bv === "number") return (av - bv) * dir;
         return String(av).localeCompare(String(bv), "ru") * dir;
       });
@@ -199,16 +213,18 @@ function Page() {
 
   const columns = [
     { key: "title", title: <SortableHeader label="Вакансия" sortKey="title" />, render: (v) => (
-      <div className="sk-col" style={{ gap: 2 }}>
-        <span className="sk-label-3">{v.title}</span>
-        <span className="sk-row sk-gap-2 sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>
-          <IconMapPin size={13} />{v.city} <IconBriefcase size={13} style={{ marginLeft: 6 }} />{v.department}
-        </span>
-      </div>
+      <span className="sk-label-3">{v.title}</span>
+    ) },
+    { key: "source", title: "Источник", render: (v) => (
+      <Tag size="s" hue={v.source === "manual" ? "accent" : "neutral"}>{v.source === "manual" ? "Создана вручную" : "АТС"}</Tag>
     ) },
     { key: "direction", title: "Направление", render: (v) => <Tag size="s" hue="neutral">{v.direction}</Tag> },
     { key: "department", title: <SortableHeader label="Подразделение" sortKey="department" />, render: (v) => <span className="sk-label-3-regular">{v.department}</span> },
+    { key: "city", title: <SortableHeader label="Регион" sortKey="city" />, render: (v) => <span className="sk-label-3-regular">{v.city}</span> },
     { key: "status", title: "Статус", render: (v) => <Tag size="s" hue={v.status === "open" ? "positive" : "neutral"}>{v.status === "open" ? "Идёт поиск" : "Закрыта"}</Tag> },
+    { key: "date", title: <SortableHeader label="Дата публикации" sortKey="date" />, render: (v) => (
+      <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{v.createdAt === "сегодня" ? "Сегодня" : (v.postedDate || "—")}</span>
+    ) },
     { key: "responses", title: <SortableHeader label="Отклики" sortKey="responses" />, render: (v) => (
       v.responsesCount > 0 ? (
         <a href="#" onClick={(e) => e.preventDefault()} style={{ color: "var(--sk-text-accent)", font: "var(--sk-label-3)" }}>{v.responsesCount}</a>
@@ -216,7 +232,7 @@ function Page() {
         <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>0</span>
       )
     ) },
-    { key: "visible", title: "Публикация", render: (v) => (
+    { key: "visible", title: "Публикация сотрудникам", render: (v) => (
       <div className="sk-row sk-gap-2" onClick={(e) => e.stopPropagation()}>
         <Switch checked={!!v.visibleToEmployees} onChange={() => togglePublish(v)} />
         <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{v.visibleToEmployees ? "Видна сотрудникам" : "Скрыта"}</span>
@@ -286,8 +302,14 @@ function Page() {
             <Select label="Тип занятости" value={filters.employment} placeholder="Любой тип"
               options={D.employmentTypes.map((e) => ({ value: e, label: e }))}
               onChange={(v) => setFilters((f) => ({ ...f, employment: v }))} style={{ minWidth: 180 }} />
+            <Select label="Источник" value={filters.source} placeholder="Любой источник"
+              options={[{ value: "ats", label: "АТС" }, { value: "manual", label: "Создана вручную" }]}
+              onChange={(v) => setFilters((f) => ({ ...f, source: v }))} style={{ minWidth: 180 }} />
+            <Select label="Публикация сотрудникам" value={filters.visibility} placeholder="Любой статус"
+              options={[{ value: "visible", label: "Опубликована" }, { value: "hidden", label: "Скрыта" }]}
+              onChange={(v) => setFilters((f) => ({ ...f, visibility: v }))} style={{ minWidth: 200 }} />
             {hasActiveFilters && (
-              <Button mode="tertiary" onClick={() => setFilters({ direction: "", department: "", city: "", format: "", employment: "" })}>Сбросить</Button>
+              <Button mode="tertiary" onClick={() => setFilters({ direction: "", department: "", city: "", format: "", employment: "", source: "", visibility: "" })}>Сбросить</Button>
             )}
           </div>
         </Card>
