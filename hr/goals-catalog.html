@@ -15,9 +15,9 @@
 <body>
 <div id="root"></div>
 <script type="text/babel">
-const { Card, Input, Textarea, Select, Checkbox, Divider, Button, Tooltip, Modal, Drawer, Snackbar } = window.SkillazCoreDesignSystem_bf9566;
+const { Card, Input, Textarea, Select, Checkbox, Divider, Button, Tooltip, Modal, Drawer, Snackbar, Tabs } = window.SkillazCoreDesignSystem_bf9566;
 const { AppShell, Icons } = window.Site;
-const { IconPlusSm, IconSearch, IconLink2, IconTrash, IconX, IconChevronRight, IconChevronDown, IconEdit, IconCopyLocal2 } = Icons;
+const { IconPlusSm, IconSearch, IconFilter, IconTrash, IconX, IconChevronRight, IconChevronDown, IconEdit, IconCopyLocal2 } = Icons;
 
 // Иконка цели — мишень со стрелой (target-arrow), по макету из вложения.
 function IconGoalRing({ size = 16, color = "currentColor" }) {
@@ -395,29 +395,31 @@ function CategoryPillsBar({ categories, catalog, active, onSelect }) {
   const remaining = sorted.filter((c) => !shown.includes(c));
 
   // Серый = выбрано (тот же тег, что и в столбце "Категория" таблицы — одинаковый
-  // визуальный язык), белая обводка = не выбрано.
+  // визуальный язык), белая обводка = не выбрано. Размер — как у Tag size="s" (высота 20,
+  // padding 0 6px, sk-label-4) — единообразно с пилюлями по всему прототипу, например
+  // столбцом "Тип плана" в "Очереди назначения".
   function pillStyle(isActive) {
     return {
-      height: 36, padding: "0 14px", borderRadius: "var(--sk-radius-full)", cursor: "pointer",
+      height: 20, padding: "0 6px", borderRadius: "var(--sk-radius-full)", cursor: "pointer",
       border: isActive ? "none" : "1px solid var(--sk-stroke)",
       background: isActive ? "var(--sk-surface-secondary)" : "var(--sk-surface-page)",
       color: isActive ? "var(--sk-text-primary)" : "var(--sk-text-secondary)",
-      font: isActive ? "var(--sk-label-3)" : "var(--sk-label-3-regular)", whiteSpace: "nowrap", flexShrink: 0,
+      font: isActive ? "var(--sk-label-4)" : "var(--sk-label-4-regular)", whiteSpace: "nowrap", flexShrink: 0,
     };
   }
 
   return (
-    <div className="sk-row sk-gap-2" style={{ flexWrap: "wrap" }}>
+    <div className="sk-row sk-gap-2" style={{ flexWrap: "wrap", alignItems: "center" }}>
       <button style={pillStyle(!active)} onClick={() => onSelect("")}>Все категории</button>
       {shown.map((c) => (
         <button key={c} style={pillStyle(active === c)} onClick={() => onSelect(active === c ? "" : c)}>{c}</button>
       ))}
       <div ref={dropdownRef} style={{ position: "relative" }}>
         <button onClick={() => setDropdownOpen((o) => !o)} aria-label="Добавить направление" style={{
-          width: 36, height: 36, borderRadius: "50%", border: "none", cursor: "pointer", flexShrink: 0,
+          width: 20, height: 20, borderRadius: "50%", border: "none", cursor: "pointer", flexShrink: 0,
           background: "var(--sk-surface-secondary)", color: "var(--sk-text-secondary)",
           display: "flex", alignItems: "center", justifyContent: "center",
-        }}><IconPlusSm size={16} /></button>
+        }}><IconPlusSm size={12} /></button>
         {dropdownOpen && (
           <div style={{
             position: "absolute", top: "calc(100% + 4px)", left: 0, minWidth: 220, maxHeight: 280, overflowY: "auto",
@@ -511,9 +513,10 @@ function GoalCatalogRow({ goal, expanded, onToggle, onEdit, onDuplicate, onArchi
           </div>
         </div>
         <div style={{ minWidth: 0 }}>
-          <span className="sk-label-3-regular" style={{
-            display: "inline-block", maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-            background: "var(--sk-surface-secondary)", color: "var(--sk-text-primary)", borderRadius: "var(--sk-radius-full)", padding: "4px 12px",
+          <span style={{
+            display: "inline-flex", alignItems: "center", height: 20, maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+            background: "var(--sk-surface-secondary)", color: "var(--sk-text-primary)", borderRadius: "var(--sk-radius-full)", padding: "0 6px",
+            font: "var(--sk-label-4)", letterSpacing: "0.01em",
           }}>{goal.category}</span>
         </div>
         <span className="sk-label-3-regular" style={cellText}>
@@ -611,11 +614,16 @@ function Page() {
         <Button variant="accent" icon={<IconPlusSm size={16} />} onClick={() => setFormDrawer("create")}>Добавить цель</Button>
       </div>
 
+      <Tabs items={[
+        { id: "active", label: "Опубликованные", count: activeCount },
+        { id: "archived", label: "В архиве", count: archivedCount },
+      ]} active={showArchived ? "archived" : "active"} onChange={(id) => setShowArchived(id === "archived")} />
+
       <div className="sk-col sk-gap-3">
         <div className="sk-row sk-gap-2" style={{ flexWrap: "wrap", alignItems: "center", minHeight: 40 }}>
           <Input size="s" icon={<IconSearch size={18} />} placeholder="Название, описание, должность" value={q}
             onChange={(e) => setQ(e.target.value || "")} style={{ flex: 1, minWidth: 220, maxWidth: 420 }} />
-          <Button mode="secondary" icon={<IconLink2 size={16} color="var(--sk-icon-primary)" />} onClick={() => setFiltersOpen((o) => !o)}
+          <Button mode="secondary" icon={<IconFilter size={16} />} onClick={() => setFiltersOpen((o) => !o)}
             style={{ background: "var(--sk-surface-page)", border: toolbarFilterCount ? "1px solid var(--sk-stroke-accent)" : "1px solid var(--sk-stroke)" }}>
             <span className="sk-row sk-gap-1" style={{ alignItems: "center" }}>
               Фильтры{toolbarFilterCount ? " · " + toolbarFilterCount : ""}
@@ -627,22 +635,6 @@ function Page() {
               )}
             </span>
           </Button>
-          <div className="sk-row sk-gap-2" style={{ marginLeft: "auto" }}>
-            <button onClick={() => setShowArchived(false)} style={{
-              height: 28, padding: "0 12px", borderRadius: "var(--sk-radius-full)", cursor: "pointer",
-              border: !showArchived ? "none" : "1px solid var(--sk-stroke)",
-              background: !showArchived ? "var(--sk-surface-secondary)" : "var(--sk-surface-page)",
-              color: !showArchived ? "var(--sk-text-primary)" : "var(--sk-text-secondary)",
-              font: !showArchived ? "var(--sk-label-4)" : "var(--sk-label-4-regular)",
-            }}>Активные{activeCount ? " · " + activeCount : ""}</button>
-            <button onClick={() => setShowArchived(true)} style={{
-              height: 28, padding: "0 12px", borderRadius: "var(--sk-radius-full)", cursor: "pointer",
-              border: showArchived ? "none" : "1px solid var(--sk-stroke)",
-              background: showArchived ? "var(--sk-surface-secondary)" : "var(--sk-surface-page)",
-              color: showArchived ? "var(--sk-text-primary)" : "var(--sk-text-secondary)",
-              font: showArchived ? "var(--sk-label-4)" : "var(--sk-label-4-regular)",
-            }}>Архив{archivedCount ? " · " + archivedCount : ""}</button>
-          </div>
         </div>
         <CategoryPillsBar categories={D.goalCategories} catalog={scoped} active={filters.category}
           onSelect={(c) => setFilters((f) => ({ ...f, category: c }))} />
