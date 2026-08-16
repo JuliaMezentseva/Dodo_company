@@ -17,7 +17,7 @@
 <script type="text/babel">
 const {
   Card, ProgressCircle, ProgressBar, Tag, Avatar, Divider, Tabs, SegmentedControl, Modal, Drawer, Checkbox, Radio,
-  Textarea, Input, Select, DatePicker, Button, Snackbar, Alert,
+  Textarea, Input, Select, DatePicker, Button, Snackbar, Alert, Tooltip,
 } = window.SkillazCoreDesignSystem_bf9566;
 const { AppShell, StatusTag, Icons, personPhoto } = window.Site;
 const {
@@ -40,9 +40,12 @@ function employeeIdFromUrl() {
   const m = D.team.find(t => t.id === id && t.planId);
   return m ? m.id : "yulia";
 }
-function initialTabFromUrl() {
+// По умолчанию открываем "План адаптации" (а не чек-лист базовых действий) — это основной
+// рабочий экран и для руководителя, и для сотрудника. ?tab= в URL всегда имеет приоритет.
+function initialTabFromUrl(hasGoals) {
   const t = new URLSearchParams(window.location.search).get("tab");
-  return t === "max" ? "max" : "min";
+  if (t === "max" || t === "min") return t;
+  return hasGoals ? "max" : "min";
 }
 
 const MONTHS = ["янв", "фев", "мар", "апр", "май", "июн", "июл", "авг", "сен", "окт", "ноя", "дек"];
@@ -91,6 +94,17 @@ function goalProgress(goal) {
   const done = goal.subgoals.filter(s => s.status === "done").length;
   return { done, total, pct: total ? Math.round((done / total) * 100) : 0 };
 }
+// Статус цели не хранится и не выставляется вручную — он всегда считается по статусам
+// подцелей (сотрудник берёт в работу подцели, не цели целиком): не начата, пока ни одна
+// подцель не сдвинулась с места; выполнена, когда все (не отменённые) подцели выполнены;
+// во всех промежуточных случаях (есть подцели в работе, на подтверждении или уже
+// выполненные, но не все) — в работе.
+function deriveGoalStatus(goal) {
+  const active = (goal.subgoals || []).filter(sg => sg.status !== "cancelled");
+  if (!active.length || active.every(sg => sg.status === "not_started")) return "not_started";
+  if (active.every(sg => sg.status === "done")) return "done";
+  return "in_progress";
+}
 function findChecklistItem(plan, id) {
   for (const s of plan.stages) {
     const it = s.items.find(i => i.id === id);
@@ -110,7 +124,7 @@ function Page() {
   const member = D.team.find(t => t.id === employeeId);
   const basePlan = D.plans[member.planId];
   const [plan, setPlan] = useDeepState(basePlan);
-  const [tab, setTab] = React.useState(initialTabFromUrl);
+  const [tab, setTab] = React.useState(() => initialTabFromUrl(basePlan.hasGoals));
   const [toast, setToast] = React.useState(null);
 
   const [goalDrawer, setGoalDrawer] = React.useState(null); // { mode: "new" } | { mode: "edit", goalId }
@@ -139,7 +153,7 @@ function Page() {
     const subgoals = (draft.subgoals || []).map((sg, i) => ({
       id: "sg" + Date.now() + "_" + i, title: sg.title, description: sg.description,
       dueLabel: fmtDate(sg.dueDate), reviewer: sg.reviewer, status: "not_started",
-      checklistRefs: sg.checklistRefs || [], comments: [], assessmentChecklist: sg.assessmentChecklist || null,
+      checklistRefs: sg.checklistRefs || [], comments: [], assessmentChecklist: sg.assessmentChecklist || null, assessmentHistory: [],
     }));
     setPlan(prev => ({ ...prev, goals: [...prev.goals, {
       id, title: draft.title, description: draft.description, dueLabel: fmtDate(draft.dueDate),
@@ -161,7 +175,7 @@ function Page() {
       ...g, subgoals: [...g.subgoals, {
         id, title: draft.title, description: draft.description, dueLabel: fmtDate(draft.dueDate),
         reviewer: draft.reviewer, status: "not_started", checklistRefs: draft.checklistRefs || [], comments: [],
-        assessmentChecklist: draft.assessmentChecklist || null,
+        assessmentChecklist: draft.assessmentChecklist || null, assessmentHistory: [],
       }],
     }) }));
     return id;
@@ -213,6 +227,21 @@ function Page() {
     setNotDoneConfirm(null);
     setSubgoalDrawer(null);
   }
+  // Решение по оценочному листу: подцель может уходить на доработку и оцениваться заново
+  // несколько раз, поэтому каждое решение — новая запись в assessmentHistory, а не
+  // перезапись текущего состояния подцели (см. AssessmentModal).
+  function submitAssessmentDecision(goalId, subgoalId, decision, { criteria, note }) {
+    const statusByDecision = { done: "done", returned: "in_progress", not_done: "not_done" };
+    const historyEntry = { date: "Сегодня", reviewer: D.manager.name, decision, criteria, note };
+    setPlan(prev => ({ ...prev, goals: prev.goals.map(g => g.id !== goalId ? g : {
+      ...g, subgoals: g.subgoals.map(sg => sg.id !== subgoalId ? sg : {
+        ...sg, status: statusByDecision[decision], assessmentHistory: [...(sg.assessmentHistory || []), historyEntry],
+      }),
+    }) }));
+    const toastByDecision = { done: "Подцель подтверждена", returned: "Подцель возвращена в работу", not_done: "Подцель отмечена невыполненной" };
+    showToast(toastByDecision[decision]);
+    setSubgoalDrawer(null);
+  }
   function publishGoals() {
     setPlan(prev => ({ ...prev, goalsPublished: true }));
     setPublishConfirm(false);
@@ -226,6 +255,12 @@ function Page() {
   function addCheckpointComment(cpId, text) {
     setPlan(prev => ({ ...prev, checkpoints: { ...prev.checkpoints, [cpId]: { ...prev.checkpoints[cpId], comments: [...(prev.checkpoints[cpId].comments || []), { author: D.manager.name, date: "Сегодня", text }] } } }));
   }
+  // Пока контрольная точка ещё не наступила, руководитель может донастроить её —
+  // срок, проверяющего и повестку (см. ManagerCheckpointDrawer).
+  function updateCheckpoint(cpId, patch) {
+    setPlan(prev => ({ ...prev, checkpoints: { ...prev.checkpoints, [cpId]: { ...prev.checkpoints[cpId], ...patch } } }));
+    showToast("Контрольная точка обновлена");
+  }
 
   const totalChecklist = plan.stages.flatMap(s => s.items.filter(i => i.kind !== "checkpoint"));
   const doneChecklist = totalChecklist.filter(i => i.done).length;
@@ -238,6 +273,13 @@ function Page() {
   const activeGoal = goalDrawer && goalDrawer.goalId ? plan.goals.find(g => g.id === goalDrawer.goalId) : null;
   const activeSubgoalGoal = subgoalDrawer && plan.goals.find(g => g.id === subgoalDrawer.goalId);
   const activeSubgoal = activeSubgoalGoal && activeSubgoalGoal.subgoals.find(s => s.id === subgoalDrawer.subgoalId);
+
+  // Контрольные точки идут по порядку — та, что позже первой ещё не пройденной, своего
+  // срока ещё не достигла. Только для таких можно поменять срок/проверяющего/повестку
+  // (см. ManagerCheckpointDrawer): точку, которая уже активна или пройдена, не трогаем.
+  const cpOrderIds = Object.keys(plan.checkpoints).filter(id => plan.checkpoints[id]);
+  const cpFirstPendingIndex = cpOrderIds.findIndex(id => plan.checkpoints[id].status !== "done");
+  const cpModalIsUpcoming = cpModal != null && cpFirstPendingIndex >= 0 && cpOrderIds.indexOf(cpModal) > cpFirstPendingIndex;
 
   const tabItems = [
     { id: "min", label: <span className="sk-row sk-gap-1"><IconClipboard size={16} />Базовые действия</span> },
@@ -255,7 +297,7 @@ function Page() {
         <div className="sk-col sk-gap-6" style={{ flex: 1, minWidth: 0 }}>
           {tab === "min" && (
             <React.Fragment>
-              <Alert hue="neutral" style={{ background: "var(--sk-surface-page)", boxShadow: "inset 0 0 0 1px var(--sk-stroke)" }}>{MIN_TAB_NOTE}</Alert>
+              <Alert hue="neutral" style={{ background: "var(--sk-surface-secondary)" }}>{MIN_TAB_NOTE}</Alert>
               <div className="sk-title-5">Чек-лист {doneChecklist} из {totalChecklist.length}</div>
               <div className="sk-col sk-gap-4">
                 {plan.stages.map((s, i) => (
@@ -269,7 +311,7 @@ function Page() {
 
           {tab === "max" && plan.hasGoals && (
             <React.Fragment>
-              <Alert hue="neutral" style={{ background: "var(--sk-surface-page)", boxShadow: "inset 0 0 0 1px var(--sk-stroke)" }}>{MAX_TAB_NOTE}</Alert>
+              <Alert hue="neutral" style={{ background: "var(--sk-surface-secondary)" }}>{MAX_TAB_NOTE}</Alert>
 
               {plan.goals.length === 0 && (
                 <Card>
@@ -374,7 +416,8 @@ function Page() {
           onAddComment={(text) => addComment(subgoalDrawer.goalId, subgoalDrawer.subgoalId, text)}
           onConfirm={() => confirmSubgoal(subgoalDrawer.goalId, subgoalDrawer.subgoalId)}
           onReturn={() => setReturnModal(subgoalDrawer)}
-          onNotDone={() => markNotDone(subgoalDrawer.goalId, subgoalDrawer.subgoalId)} />
+          onNotDone={() => markNotDone(subgoalDrawer.goalId, subgoalDrawer.subgoalId)}
+          onAssessmentDecision={(decision, payload) => submitAssessmentDecision(subgoalDrawer.goalId, subgoalDrawer.subgoalId, decision, payload)} />
       )}
 
       {checklistPicker && (
@@ -426,9 +469,11 @@ function Page() {
       {cpModal && (
         <ManagerCheckpointDrawer checkpoint={plan.checkpoints[cpModal]} viewerName={D.manager.name} employee={member}
           canEdit={plan.checkpoints[cpModal].reviewer === D.manager.name}
+          isUpcoming={cpModalIsUpcoming}
           onClose={() => setCpModal(null)}
           onFinish={(patch) => finishCheckpoint(cpModal, patch)}
-          onAddComment={(text) => addCheckpointComment(cpModal, text)} />
+          onAddComment={(text) => addCheckpointComment(cpModal, text)}
+          onUpdate={(patch) => updateCheckpoint(cpModal, patch)} />
       )}
 
       {toast && (
@@ -443,10 +488,10 @@ function Page() {
 // ---------------- Строка цели в основном списке ----------------
 function ManagerGoalRow({ goal, plan, onOpenGoal, onOpenSubgoal, onOpenMaterials, onDeleteGoal }) {
   const { done, total, pct } = goalProgress(goal);
-  const statusVal = goal.status === "done" ? "done" : goal.status === "in_progress" ? "in_progress" : "not_started";
-  const isDone = goal.status === "done";
+  const statusVal = deriveGoalStatus(goal);
+  const isDone = statusVal === "done";
   return (
-    <div className="sk-col sk-gap-3 sk-clickable" onClick={onOpenGoal} style={{ padding: 14, border: "1px solid var(--sk-stroke)", borderRadius: "var(--sk-radius-3)", background: "var(--sk-surface-page)" }}>
+    <div className="sk-col sk-gap-3" onClick={onOpenGoal} style={{ cursor: "pointer", padding: 14, border: "1px solid var(--sk-stroke)", borderRadius: "var(--sk-radius-3)", background: "var(--sk-surface-page)" }}>
       <div className="sk-row sk-gap-3" style={{ justifyContent: "space-between", alignItems: "flex-start" }}>
         <div className="sk-col sk-gap-1" style={{ flex: 1, minWidth: 0 }}>
           <div className="sk-title-5" style={{ color: isDone ? "var(--sk-text-secondary)" : "var(--sk-text-primary)" }}>{goal.title || "Без названия"}</div>
@@ -502,7 +547,7 @@ function ManagerSubgoalRow({ subgoal, goalDueLabel, plan, onOpen, onOpenMaterial
   const ownDue = stripDuePrefix(subgoal.dueLabel);
   const showOwnDue = !isDone && ownDue && ownDue !== stripDuePrefix(goalDueLabel);
   return (
-    <div className="sk-row sk-gap-3 sk-clickable" onClick={onOpen} style={{ justifyContent: "space-between", alignItems: "center", padding: 10, border: "1px solid var(--sk-stroke)", borderRadius: "var(--sk-radius-3)", background: "var(--sk-surface-page)" }}>
+    <div className="sk-row sk-gap-3" onClick={onOpen} style={{ cursor: "pointer", justifyContent: "space-between", alignItems: "center", padding: 10, border: "1px solid var(--sk-stroke)", borderRadius: "var(--sk-radius-3)", background: "var(--sk-surface-page)" }}>
       <div className="sk-row sk-gap-2" style={{ flex: 1, minWidth: 0, alignItems: "center" }}>
         {cfg && <span style={{ width: 18, height: 18, borderRadius: "50%", flexShrink: 0, background: cfg.bg, color: cfg.fg, display: "flex", alignItems: "center", justifyContent: "center" }}><cfg.icon size={11} /></span>}
         <div className="sk-col sk-gap-1" style={{ minWidth: 0 }}>
@@ -640,7 +685,7 @@ function GoalDrawer({ goal, plan, editable, onClose, onChange, onAddSubgoal, onO
           </React.Fragment>
         ) : (
           <React.Fragment>
-            <div className="sk-title-5">{goal.title}</div>
+            <div className="sk-label-2" style={{ color: "var(--sk-text-primary)" }}>{goal.title}</div>
             {goal.description && <div className="sk-label-3-regular">{goal.description}</div>}
             <CollapsibleSection title="Параметры">
               <div className="sk-col">
@@ -648,7 +693,10 @@ function GoalDrawer({ goal, plan, editable, onClose, onChange, onAddSubgoal, onO
                   <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Прогресс</span>
                   <div className="sk-row sk-gap-2" style={{ width: 140 }}><ProgressBar value={pct} style={{ flex: 1 }} /><span className="sk-label-4">{pct}%</span></div>
                 </div>
-                <Divider />
+                <div className="sk-row" style={{ justifyContent: "space-between", padding: "8px 0" }}>
+                  <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Статус</span>
+                  <StatusTag status={deriveGoalStatus(goal)} />
+                </div>
                 <div className="sk-row" style={{ justifyContent: "space-between", padding: "8px 0" }}>
                   <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Дата завершения</span>
                   <span className="sk-label-4">{goal.dueLabel}</span>
@@ -664,7 +712,7 @@ function GoalDrawer({ goal, plan, editable, onClose, onChange, onAddSubgoal, onO
             const cfg = SUBGOAL_ICON[sg.status];
             return (
               <div key={sg.id} className="sk-row sk-gap-3" style={{ justifyContent: "space-between", padding: 10, border: "1px solid var(--sk-stroke)", borderRadius: "var(--sk-radius-2)" }}>
-                <div className="sk-row sk-gap-3 sk-clickable" style={{ flex: 1, alignItems: "center" }} onClick={() => onOpenSubgoal(sg.id)}>
+                <div className="sk-row sk-gap-3" style={{ flex: 1, alignItems: "center", cursor: "pointer" }} onClick={() => onOpenSubgoal(sg.id)}>
                   {cfg ? <span style={{ width: 18, height: 18, borderRadius: "50%", background: cfg.bg, color: cfg.fg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><cfg.icon size={11} /></span> : <span style={{ width: 18, flexShrink: 0 }} />}
                   <div className="sk-col sk-gap-1">
                     <div className="sk-label-4">{sg.title || "Без названия"}</div>
@@ -794,10 +842,11 @@ function SubgoalCreateModal({ plan, onClose, onCreate }) {
 
   function handleCreate() {
     const template = templateId ? (D.assessmentTemplates || []).find(t => t.id === templateId) : null;
+    // Шаблон хранит только название критериев — ответы ("checked") и комментарий живут не
+    // здесь, а в отдельных записях assessmentHistory, по одной на каждый раунд оценки.
     const assessmentChecklist = template ? {
-      title: template.title, hint: template.hint, submitted: false,
-      criteria: template.criteria.map(c => ({ ...c, checked: null })),
-      note: "",
+      title: template.title, hint: template.hint,
+      criteria: template.criteria.map(c => ({ id: c.id, label: c.label })),
     } : null;
     onCreate({ title, description, dueDate, reviewer, checklistRefs, assessmentChecklist });
   }
@@ -827,9 +876,11 @@ function SubgoalCreateModal({ plan, onClose, onCreate }) {
 }
 
 // ---------------- Дровер подцели (редактирование / просмотр / подтверждение-возврат) ----------------
-// ---------------- Оценочный лист: критерии практического навыка, которые проверяющий
-// заполняет перед решением по подцели. Показывается в отдельной модалке (AssessmentModal),
-// не в самом дровере — чтобы не перегружать дровер деталями оценки. ----------------
+// ---------------- Оценочный лист: критерии практического навыка. Шаг может уходить на
+// доработку и оцениваться заново несколько раз — поэтому у подцели есть неизменный шаблон
+// критериев (assessmentChecklist) и история решений по нему (assessmentHistory), а не одно
+// перезаписываемое состояние. Заполнение критериев и решение происходят в отдельной модалке
+// (AssessmentModal), просмотр шаблона и истории — во вкладке "Оценочный лист" дровера. ----------------
 function AssessmentChecklistCard({ checklist, onChange, readOnly }) {
   const criteria = checklist.criteria || [];
 
@@ -846,7 +897,9 @@ function AssessmentChecklistCard({ checklist, onChange, readOnly }) {
         }}>
           <span className="sk-label-4" style={{ flex: 1 }}>{c.label}</span>
           {readOnly ? (
-            <Tag size="s" hue={c.checked ? "positive" : "negative"}>{c.checked ? "Да" : "Нет"}</Tag>
+            c.checked === null || c.checked === undefined
+              ? <Tag size="s" hue="neutral">—</Tag>
+              : <Tag size="s" hue={c.checked ? "positive" : "negative"}>{c.checked ? "Да" : "Нет"}</Tag>
           ) : (
             <div className="sk-row sk-gap-2">
               <Button size="s" mode={c.checked === true ? "primary" : "secondary"} variant={c.checked === true ? "positive" : "neutral"}
@@ -857,42 +910,135 @@ function AssessmentChecklistCard({ checklist, onChange, readOnly }) {
           )}
         </div>
       ))}
+      {readOnly && checklist.note && (
+        <div className="sk-col sk-gap-1" style={{ padding: 10, background: "var(--sk-surface-secondary)", borderRadius: "var(--sk-radius-3)" }}>
+          <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Комментарий</span>
+          <span className="sk-label-4-regular">{checklist.note}</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Короткая общая подсказка про оценочный лист — без имён и без "вы/сотрудник" —
+// её читают и сотрудник, и руководитель с одного и того же места (вкладка в дровере шага).
+const ASSESSMENT_HINT_FALLBACK = "Критерии, по которым оценивают выполнение этого шага. Их отмечает проверяющий после того, как шаг отправлен на подтверждение.";
+function AssessmentHintTooltip({ hint }) {
+  return (
+    <Tooltip placement="bottom" content={
+      <div style={{ whiteSpace: "normal", maxWidth: 220 }}>{hint || ASSESSMENT_HINT_FALLBACK}</div>
+    }>
+      <span style={{ display: "inline-flex" }} onClick={(e) => e.stopPropagation()}>
+        <IconHelpCircle size={14} color="var(--sk-icon-secondary)" />
+      </span>
+    </Tooltip>
+  );
+}
+
+// ---------------- Вкладки внутри дровера подцели (Комментарии / Оценочный лист) — тот же
+// визуальный паттерн подчёркнутого заголовка, что раньше был "зашит" прямо в CommentsPanel. ----------------
+function DrawerTabs({ items, active, onChange }) {
+  return (
+    <div className="sk-row sk-gap-4" style={{ borderBottom: "1px solid var(--sk-stroke)" }}>
+      {items.map(it => (
+        <div key={it.id} className="sk-clickable" onClick={() => onChange(it.id)}
+          style={{ paddingBottom: 10, borderBottom: "2px solid " + (active === it.id ? "var(--sk-text-primary)" : "transparent") }}>
+          {it.label}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+const ASSESSMENT_DECISION_LABEL = { done: "Выполнено", returned: "На доработку", not_done: "Не выполнено" };
+const ASSESSMENT_DECISION_HUE = { done: "positive", returned: "warning", not_done: "negative" };
+
+// ---------------- Содержимое вкладки "Оценочный лист": сначала сам шаблон (что будут
+// оценивать — видно ещё до первой проверки), затем история решений по нему, от новых к старым. ----------------
+function AssessmentTabContent({ checklist, history }) {
+  const rounds = (history || []).slice().reverse();
+  return (
+    <div className="sk-col sk-gap-4">
+      <div className="sk-col sk-gap-2">
+        <div className="sk-row sk-gap-1" style={{ alignItems: "center" }}>
+          <span className="sk-label-3">{checklist.title}</span>
+          <AssessmentHintTooltip hint={checklist.hint} />
+        </div>
+        <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Критерии, по которым оценивают выполнение этого шага.</div>
+        <div className="sk-col sk-gap-1" style={{ padding: 12, background: "var(--sk-surface-secondary)", borderRadius: "var(--sk-radius-3)" }}>
+          {(checklist.criteria || []).map(c => (
+            <div key={c.id} className="sk-row sk-gap-2" style={{ alignItems: "flex-start", padding: "4px 0" }}>
+              <span style={{ width: 4, height: 4, borderRadius: "50%", background: "var(--sk-icon-secondary)", marginTop: 8, flexShrink: 0 }} />
+              <span className="sk-label-4-regular">{c.label}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {rounds.length > 0 ? (
+        <div className="sk-col sk-gap-3">
+          <div className="sk-label-3">История оценок</div>
+          {rounds.map((h, i) => (
+            <div key={i} className="sk-col sk-gap-2" style={{ padding: 12, border: "1px solid var(--sk-stroke)", borderRadius: "var(--sk-radius-3)" }}>
+              <div className="sk-row sk-gap-2" style={{ justifyContent: "space-between", alignItems: "center" }}>
+                <Tag size="s" hue={ASSESSMENT_DECISION_HUE[h.decision]}>{ASSESSMENT_DECISION_LABEL[h.decision]}</Tag>
+                <span className="sk-row sk-gap-2" style={{ alignItems: "center" }}>
+                  {h.reviewer && <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{h.reviewer}</span>}
+                  <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{h.date}</span>
+                </span>
+              </div>
+              <AssessmentChecklistCard checklist={h} readOnly />
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Пока нет оценок — они появятся здесь после проверки шага.</div>
+      )}
     </div>
   );
 }
 
 // ---------------- Модалка оценочного листа — отдельное окно поверх дровера подцели.
-// Здесь и заполнение критериев, и итоговое решение (3 кнопки), чтобы не дублировать
-// решение в двух местах и не перегружать сам дровер подцели.
+// Заполнение критериев и итоговое решение (3 кнопки) — в одном месте, чтобы не дублировать
+// решение в двух местах. Критерии и комментарий здесь — черновик текущего раунда оценки:
+// живут только в модалке (не пишутся в подцель), пока не принято решение; решение сразу
+// уходит записью в историю (см. onDecision), а не перезаписывает общее состояние подцели.
 // "Шаг выполнен" и "Не выполнен" — финальные, необратимые решения, поэтому перед
-// применением показываем защиту от дурака (см. AssessmentConfirmStep). "Вернуть на
+// применением показываем защиту от дурака (см. FinalDecisionConfirm). "Вернуть на
 // доработку" не финально — статус можно будет пересмотреть позже, подтверждение не нужно. ----------------
-function AssessmentModal({ subgoal, onClose, onChange, onConfirm, onReturn, onNotDone }) {
-  const checklist = subgoal.assessmentChecklist;
-  const criteria = checklist.criteria || [];
+function AssessmentModal({ subgoal, onClose, onDecision }) {
+  const template = subgoal.assessmentChecklist;
+  const [criteria, setCriteria] = React.useState(() => (template.criteria || []).map(c => ({ id: c.id, label: c.label, checked: null })));
+  const [note, setNote] = React.useState("");
   const answeredCount = criteria.filter(c => c.checked !== null).length;
   const [pendingAction, setPendingAction] = React.useState(null); // "done" | "not_done"
+
+  function submit(decision) {
+    onDecision(decision, { criteria, note });
+  }
 
   if (pendingAction) {
     return (
       <FinalDecisionConfirm action={pendingAction} onBack={() => setPendingAction(null)}
-        onConfirm={() => { const a = pendingAction; setPendingAction(null); a === "done" ? onConfirm() : onNotDone(); }} />
+        onConfirm={() => { const a = pendingAction; setPendingAction(null); submit(a); }} />
     );
   }
 
   return (
-    <Modal open title={checklist.title || "Оценочный лист"} onClose={onClose} size="m">
+    <Modal open title={template.title || "Оценочный лист"} onClose={onClose} size="m">
       <div className="sk-col sk-gap-4">
-        <AssessmentChecklistCard checklist={checklist} readOnly={false} onChange={onChange} />
+        <AssessmentChecklistCard checklist={{ criteria }} readOnly={false} onChange={(next) => setCriteria(next.criteria)} />
         {answeredCount < criteria.length && (
           <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>
             Отмечено {answeredCount} из {criteria.length} — критерии необязательны, но помогают принять решение осознаннее.
           </div>
         )}
+        <Textarea label="Комментарий" placeholder="Необязательно: поясните решение или дайте обратную связь сотруднику"
+          rows={3} maxLength={1000} showCount value={note} onChange={(e) => setNote(e.target.value || "")} />
         <Divider />
         <div className="sk-row sk-gap-2" style={{ flexWrap: "wrap" }}>
           <Button variant="positive" onClick={() => setPendingAction("done")}>Подтвердить выполнение шага</Button>
-          <Button mode="secondary" variant="gray" onClick={onReturn}>На доработку</Button>
+          <Button mode="secondary" variant="gray" onClick={() => submit("returned")}>На доработку</Button>
           <Button variant="negative" mode="secondary" onClick={() => setPendingAction("not_done")}>Шаг не выполнен</Button>
         </div>
       </div>
@@ -920,20 +1066,14 @@ function FinalDecisionConfirm({ action, onBack, onConfirm }) {
   );
 }
 
-// ---------------- Комментарии подцели — оформлены как вкладка (не просто список),
-// по референсу: заголовок "Комментарии N" с подчёркиванием, карточка ввода с рамкой
-// и скрепкой для вложений, список сообщений ниже. Простая Textarea вместо полноценного
-// rich-text редактора — в прототипе это визуальный паттерн, не текстовый движок. ----------------
+// ---------------- Комментарии подцели — карточка ввода с рамкой и скрепкой для вложений,
+// список сообщений ниже. Простая Textarea вместо полноценного rich-text редактора — в
+// прототипе это визуальный паттерн, не текстовый движок. Заголовок вкладки рисует DrawerTabs,
+// здесь — только содержимое вкладки. ----------------
 function CommentsPanel({ comments, comment, setComment, onAdd, disabled }) {
   const list = comments || [];
   return (
     <div className="sk-col sk-gap-3">
-      <div className="sk-row sk-gap-4" style={{ borderBottom: "1px solid var(--sk-stroke)" }}>
-        <div className="sk-col sk-gap-2" style={{ paddingBottom: 10, borderBottom: "2px solid var(--sk-text-primary)" }}>
-          <span className="sk-label-3">Комментарии <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{list.length}</span></span>
-        </div>
-      </div>
-
       {!disabled && (
         <div className="sk-col sk-gap-2">
           <Textarea placeholder="Написать комментарий" rows={2} value={comment} onChange={(e) => setComment(e.target.value || "")} />
@@ -975,8 +1115,9 @@ function CommentsPanel({ comments, comment, setComment, onAdd, disabled }) {
   );
 }
 
-function SubgoalDrawer({ plan, goal, subgoal, onClose, onChange, onOpenChecklistPicker, onUnlinkChecklist, onAddComment, onConfirm, onReturn, onNotDone }) {
+function SubgoalDrawer({ plan, goal, subgoal, onClose, onChange, onOpenChecklistPicker, onUnlinkChecklist, onAddComment, onConfirm, onReturn, onNotDone, onAssessmentDecision }) {
   const [comment, setComment] = React.useState("");
+  const [drawerTab, setDrawerTab] = React.useState("comments");
   const editable = !plan.employeeStarted;
   // "Подтвердить/вернуть" — действие проверяющего (по умолчанию руководитель, если явно не
   // назначен другой — например, помощник). "Отметить не выполненной" остаётся у руководителя
@@ -987,17 +1128,32 @@ function SubgoalDrawer({ plan, goal, subgoal, onClose, onChange, onOpenChecklist
   const links = (subgoal.checklistRefs || []).map(id => findChecklistItem(plan, id)).filter(Boolean);
   // Оценочный лист — если он есть у подцели, решение (подтвердить/вернуть/не выполнена)
   // принимается только через него: сначала заполняем критерии, затем сразу решение —
-  // и то, и другое в одной модалке (AssessmentModal), не в самом дровере.
+  // и то, и другое в одной модалке (AssessmentModal), не в самом дровере. Сам лист (шаблон
+  // критериев + история прошлых раундов оценки) смотрят во вкладке "Оценочный лист".
   const needsAssessment = !!subgoal.assessmentChecklist;
   const [assessmentOpen, setAssessmentOpen] = React.useState(false);
   const [pendingAction, setPendingAction] = React.useState(null); // "done" | "not_done" — защита от дурака без оценочного листа
+  const commentsCount = (subgoal.comments || []).length;
+  const drawerTabItems = [
+    {
+      id: "comments",
+      label: <span className="sk-label-3">Комментарии <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{commentsCount}</span></span>,
+    },
+    ...(needsAssessment ? [{
+      id: "assessment",
+      label: (
+        <span className="sk-row sk-gap-1" style={{ alignItems: "center" }}>
+          <span className="sk-label-3">Оценочный лист</span>
+          {isReview && <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--sk-warning)" }} />}
+        </span>
+      ),
+    }] : []),
+  ];
 
   return (
     <React.Fragment>
     <Drawer open title={editable ? undefined : goal.title} onClose={onClose} size="s">
       <div className="sk-col sk-gap-4">
-        {!editable && (!needsAssessment || !isReview) && <StatusTag status={subgoal.status} style={{ alignSelf: "flex-start" }} />}
-
         {editable ? (
           <React.Fragment>
             <Input label="Название" required value={subgoal.title} onChange={(e) => onChange({ title: e.target.value || "" })} />
@@ -1009,9 +1165,10 @@ function SubgoalDrawer({ plan, goal, subgoal, onClose, onChange, onOpenChecklist
           </React.Fragment>
         ) : (
           <React.Fragment>
-            <div className="sk-title-5">{subgoal.title}</div>
+            <div className="sk-label-2" style={{ color: "var(--sk-text-primary)" }}>{subgoal.title}</div>
             {subgoal.description && <div className="sk-label-3-regular">{subgoal.description}</div>}
 
+            {/* Быстрое действие проверяющего — сразу под названием, под рукой, а не в самом низу. */}
             {needsAssessment && isReview && (
               <div className="sk-row sk-gap-3" style={{
                 alignItems: "center", justifyContent: "space-between", padding: "12px 14px",
@@ -1024,9 +1181,26 @@ function SubgoalDrawer({ plan, goal, subgoal, onClose, onChange, onOpenChecklist
                 <Button onClick={() => setAssessmentOpen(true)} style={{ background: "var(--sk-accent)", color: "var(--sk-text-contrast)", flexShrink: 0 }}>Оценить</Button>
               </div>
             )}
+            {isReview && !needsAssessment && (
+              <div className="sk-row sk-gap-2" style={{ flexWrap: "wrap" }}>
+                <Button variant="positive" onClick={() => setPendingAction("done")}>Подтвердить выполнение шага</Button>
+                <Button mode="secondary" variant="gray" onClick={onReturn}>На доработку</Button>
+                <Button variant="negative" mode="secondary" onClick={() => setPendingAction("not_done")}>Шаг не выполнен</Button>
+              </div>
+            )}
+            {!isReview && canMarkNotDone && (
+              <div className="sk-col sk-gap-2">
+                <Alert hue="neutral">Ожидает подтверждения от {subgoal.reviewer}.</Alert>
+                <Button variant="negative" mode="secondary" onClick={() => setPendingAction("not_done")} style={{ alignSelf: "flex-start" }}>Не выполнен</Button>
+              </div>
+            )}
 
             <CollapsibleSection title="Параметры">
               <div className="sk-col">
+                <div className="sk-row" style={{ justifyContent: "space-between", padding: "8px 0" }}>
+                  <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Статус</span>
+                  <StatusTag status={subgoal.status} />
+                </div>
                 <div className="sk-row" style={{ justifyContent: "space-between", padding: "8px 0" }}>
                   <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Дата завершения</span>
                   <span className="sk-label-4">{subgoal.dueLabel}</span>
@@ -1061,41 +1235,18 @@ function SubgoalDrawer({ plan, goal, subgoal, onClose, onChange, onOpenChecklist
           </div>
         </CollapsibleSection>
 
-        {subgoal.assessmentChecklist && subgoal.status === "done" && (
-          <CollapsibleSection title="Оценочный лист" defaultOpen={false}>
-            <AssessmentChecklistCard checklist={subgoal.assessmentChecklist} readOnly />
-          </CollapsibleSection>
+        <DrawerTabs items={drawerTabItems} active={drawerTab} onChange={setDrawerTab} />
+        {drawerTab === "comments" && (
+          <CommentsPanel comments={subgoal.comments} comment={comment} setComment={setComment} onAdd={onAddComment} disabled={false} />
         )}
-
-        <CommentsPanel comments={subgoal.comments} comment={comment} setComment={setComment} onAdd={onAddComment} disabled={false} />
-
-        {isReview && !needsAssessment && (
-          <div className="sk-col sk-gap-2" style={{ position: "sticky", bottom: 0, background: "var(--sk-surface-page)", paddingTop: 8 }}>
-            <Divider />
-            <div className="sk-row sk-gap-2" style={{ flexWrap: "wrap" }}>
-              <Button variant="positive" onClick={() => setPendingAction("done")}>Подтвердить выполнение шага</Button>
-              <Button mode="secondary" variant="gray" onClick={onReturn}>На доработку</Button>
-              <Button variant="negative" mode="secondary" onClick={() => setPendingAction("not_done")}>Шаг не выполнен</Button>
-            </div>
-          </div>
-        )}
-        {!isReview && canMarkNotDone && (
-          <div className="sk-col sk-gap-2" style={{ position: "sticky", bottom: 0, background: "var(--sk-surface-page)", paddingTop: 8 }}>
-            <Divider />
-            <Alert hue="neutral">Ожидает подтверждения от {subgoal.reviewer}.</Alert>
-            <div className="sk-row sk-gap-2">
-              <Button variant="negative" mode="secondary" onClick={() => setPendingAction("not_done")}>Не выполнен</Button>
-            </div>
-          </div>
+        {drawerTab === "assessment" && needsAssessment && (
+          <AssessmentTabContent checklist={subgoal.assessmentChecklist} history={subgoal.assessmentHistory} />
         )}
       </div>
     </Drawer>
     {assessmentOpen && (
       <AssessmentModal subgoal={subgoal} onClose={() => setAssessmentOpen(false)}
-        onChange={(next) => onChange({ assessmentChecklist: next })}
-        onConfirm={() => { setAssessmentOpen(false); onConfirm(); }}
-        onReturn={() => { setAssessmentOpen(false); onReturn(); }}
-        onNotDone={() => { setAssessmentOpen(false); onNotDone(); }} />
+        onDecision={(decision, payload) => { setAssessmentOpen(false); onAssessmentDecision(decision, payload); }} />
     )}
     {pendingAction && (
       <FinalDecisionConfirm action={pendingAction} onBack={() => setPendingAction(null)}
@@ -1252,22 +1403,42 @@ function CheckpointStatusBanner({ done, surveyReady, reportReady }) {
   );
 }
 
-function ManagerCheckpointDrawer({ checkpoint, viewerName, employee, canEdit, onFinish, onAddComment, onClose }) {
+function ManagerCheckpointDrawer({ checkpoint, viewerName, employee, canEdit, isUpcoming, onFinish, onAddComment, onUpdate, onClose }) {
   const [employeeSummary, setEmployeeSummary] = React.useState(checkpoint.employeeSummary || "");
   const [internalReport, setInternalReport] = React.useState(checkpoint.internalReport || "");
   const [riskLevel, setRiskLevel] = React.useState(checkpoint.riskLevel || "");
   const [comment, setComment] = React.useState("");
+  // Пока точка ещё не наступила, руководитель может донастроить срок/проверяющего/повестку —
+  // все три поля редактируются вместе, одним переключением в режим редактирования.
+  const [editing, setEditing] = React.useState(false);
+  const [dateDraft, setDateDraft] = React.useState(checkpoint.dateLabel || checkpoint.date || "");
+  const [reviewerDraft, setReviewerDraft] = React.useState(checkpoint.reviewer);
+  const [agendaDraft, setAgendaDraft] = React.useState(checkpoint.agenda || []);
   const done = checkpoint.status === "done";
   const surveyReady = checkpoint.surveySubmitted || done;
   const reportReady = !!(employeeSummary.trim() && internalReport.trim() && riskLevel);
   const canFinish = canEdit && !done && surveyReady && reportReady;
   const fieldsDisabled = !surveyReady || !canEdit;
+  const canSaveEdit = dateDraft.trim() && reviewerDraft && agendaDraft.some(a => a.trim());
+
+  function startEditing() {
+    setDateDraft(checkpoint.dateLabel || checkpoint.date || "");
+    setReviewerDraft(checkpoint.reviewer);
+    setAgendaDraft(checkpoint.agenda || []);
+    setEditing(true);
+  }
+  function saveEditing() {
+    onUpdate({ dateLabel: dateDraft.trim(), reviewer: reviewerDraft, agenda: agendaDraft.map(a => a.trim()).filter(Boolean) });
+    setEditing(false);
+  }
 
   return (
     <Drawer open title={done ? "Промежуточные итоги сотрудника" : (employee ? "Как проходит адаптация — " + employee.name.split(" ")[0] : checkpoint.title)}
       onClose={onClose} size="m"
-      primary={!done && canEdit ? <Button disabled={!canFinish} onClick={() => onFinish({ employeeSummary: employeeSummary.trim(), internalReport: internalReport.trim(), riskLevel })} style={{ width: "100%" }}>Завершить контрольную точку</Button> : null}
-      secondary={<Button mode="secondary" onClick={onClose}>Закрыть</Button>}>
+      primary={editing
+        ? <Button disabled={!canSaveEdit} onClick={saveEditing} style={{ width: "100%" }}>Сохранить изменения</Button>
+        : (!done && canEdit ? <Button disabled={!canFinish} onClick={() => onFinish({ employeeSummary: employeeSummary.trim(), internalReport: internalReport.trim(), riskLevel })} style={{ width: "100%" }}>Завершить контрольную точку</Button> : null)}
+      secondary={editing ? <Button mode="secondary" onClick={() => setEditing(false)}>Отменить</Button> : <Button mode="secondary" onClick={onClose}>Закрыть</Button>}>
       <div className="sk-col sk-gap-5">
         <div className="sk-row" style={{ justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 12 }}>
           {employee ? (
@@ -1281,7 +1452,9 @@ function ManagerCheckpointDrawer({ checkpoint, viewerName, employee, canEdit, on
           ) : (
             <Tag size="s" hue="neutral">{checkpoint.title}</Tag>
           )}
-          {!done && (checkpoint.daysLeftLabel || checkpoint.dueLabel) ? (
+          {isUpcoming ? (
+            <Tag size="s" hue="neutral">Ещё не началась</Tag>
+          ) : !done && (checkpoint.daysLeftLabel || checkpoint.dueLabel) ? (
             <div className="sk-col" style={{ gap: 0, alignItems: "flex-end" }}>
               {checkpoint.daysLeftLabel && <div className="sk-label-3">{checkpoint.daysLeftLabel}</div>}
               {checkpoint.dueLabel && <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{checkpoint.dueLabel}</div>}
@@ -1293,19 +1466,65 @@ function ManagerCheckpointDrawer({ checkpoint, viewerName, employee, canEdit, on
 
         {done && <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Срок: {checkpoint.dateLabel || checkpoint.date}</div>}
 
+        {/* Срок ещё не подошёл — руководитель может донастроить точку целиком (срок, */}
+        {/* проверяющего, повестку), одна кнопка входит в общий режим редактирования. */}
+        {isUpcoming && !editing && (
+          <button className="sk-link-btn sk-label-3-regular" onClick={startEditing}
+            style={{ alignSelf: "flex-start", color: "var(--sk-text-accent)" }}>
+            <span className="sk-row sk-gap-1" style={{ alignItems: "center" }}><IconEdit size={14} />Редактировать срок, проверяющего и повестку</span>
+          </button>
+        )}
+
+        {isUpcoming && (
+          <CollapsibleSection title="Параметры">
+            {editing ? (
+              <div className="sk-col sk-gap-3">
+                <Input label="Дата проведения" value={dateDraft} onChange={(e) => setDateDraft(e.target.value || "")} />
+                <Select label="Проверяющий" value={reviewerDraft} options={REVIEWER_OPTIONS} onChange={setReviewerDraft} />
+              </div>
+            ) : (
+              <div className="sk-col">
+                <div className="sk-row" style={{ justifyContent: "space-between", padding: "8px 0" }}>
+                  <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Дата проведения</span>
+                  <span className="sk-label-4">{checkpoint.dateLabel || checkpoint.date}</span>
+                </div>
+                <div className="sk-row" style={{ justifyContent: "space-between", padding: "8px 0" }}>
+                  <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Проверяющий</span>
+                  <div className="sk-row sk-gap-2"><Avatar src={personPhoto(checkpoint.reviewer)} name={checkpoint.reviewer} size={22} /><span className="sk-label-4">{checkpoint.reviewer}</span></div>
+                </div>
+              </div>
+            )}
+          </CollapsibleSection>
+        )}
+
         <div className="sk-col sk-gap-2" style={{ padding: 16, background: "var(--sk-surface-secondary)", borderRadius: "var(--sk-radius-3)" }}>
           <div className="sk-label-3">Повестка</div>
-          <div className="sk-col sk-gap-2">
-            {checkpoint.agenda.map((a, i) => (
-              <div key={i} className="sk-row sk-gap-2" style={{ alignItems: "flex-start" }}>
-                <span style={{
-                  width: 20, height: 20, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center",
-                  background: "var(--sk-surface-dark)", color: "var(--sk-text-contrast)", font: "var(--sk-label-4)",
-                }}>{i + 1}</span>
-                <div className="sk-label-3-regular">{a}</div>
-              </div>
-            ))}
-          </div>
+          {editing ? (
+            <div className="sk-col sk-gap-2">
+              {agendaDraft.map((a, i) => (
+                <div key={i} className="sk-row sk-gap-2" style={{ alignItems: "center" }}>
+                  <Input value={a} onChange={(e) => setAgendaDraft(prev => prev.map((x, ix) => ix === i ? (e.target.value || "") : x))} style={{ flex: 1 }} />
+                  <button className="sk-link-btn" onClick={() => setAgendaDraft(prev => prev.filter((_, ix) => ix !== i))}><IconX size={15} color="var(--sk-icon-secondary)" /></button>
+                </div>
+              ))}
+              <button className="sk-link-btn sk-label-3-regular" onClick={() => setAgendaDraft(prev => [...prev, ""])}
+                style={{ alignSelf: "flex-start", color: "var(--sk-text-accent)" }}>
+                <span className="sk-row sk-gap-1"><IconPlusSm size={16} />Добавить пункт</span>
+              </button>
+            </div>
+          ) : (
+            <div className="sk-col sk-gap-2">
+              {checkpoint.agenda.map((a, i) => (
+                <div key={i} className="sk-row sk-gap-2" style={{ alignItems: "flex-start" }}>
+                  <span style={{
+                    width: 20, height: 20, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center",
+                    background: "var(--sk-surface-dark)", color: "var(--sk-text-contrast)", font: "var(--sk-label-4)",
+                  }}>{i + 1}</span>
+                  <div className="sk-label-3-regular">{a}</div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {!surveyReady ? (
