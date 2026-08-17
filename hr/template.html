@@ -286,17 +286,25 @@ function TemplateCheckpointsSection({ checkpoints, onAdd, onEdit, onDelete }) {
   );
 }
 
-// ---------------- Нумерованный заголовок шага сценария "Администратор" (см. GoalsSection) —
-// не отдельный мастер с Далее/Назад, а лёгкая нумерация на одном экране: 1) создать цели,
-// 2) решить, нужна ли проверка руководителем перед тем, как их увидит сотрудник. ----------------
-function StepHeader({ index, title }) {
+// ---------------- Шаг сценария "Администратор" (см. GoalsSection) — нумерованный кружок
+// слева соединён вертикальной линией со следующим шагом (рейл тянется на всю высоту контента
+// через flex "stretch", а не фиксированной длиной — контент шага 1 разной высоты в зависимости
+// от количества целей). Не отдельный мастер с Далее/Назад: оба шага открыты и редактируемы
+// одновременно, линия только показывает порядок — 1) создать цели, 2) решить про проверку. ----------------
+function StepBlock({ index, title, isLast, children }) {
   return (
-    <div className="sk-row sk-gap-2" style={{ alignItems: "center" }}>
-      <span style={{
-        width: 22, height: 22, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center",
-        background: "var(--sk-accent-secondary)", color: "var(--sk-text-accent)", font: "var(--sk-label-4)",
-      }}>{index}</span>
-      <span className="sk-label-3">{title}</span>
+    <div className="sk-row sk-gap-3" style={{ alignItems: "stretch" }}>
+      <div className="sk-col" style={{ alignItems: "center", flexShrink: 0 }}>
+        <span style={{
+          width: 22, height: 22, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center",
+          background: "var(--sk-accent-secondary)", color: "var(--sk-text-accent)", font: "var(--sk-label-4)",
+        }}>{index}</span>
+        {!isLast && <div style={{ width: 1, flex: 1, minHeight: 24, background: "var(--sk-stroke-divider)", margin: "4px 0" }} />}
+      </div>
+      <div className="sk-col sk-gap-3" style={{ flex: 1, minWidth: 0, paddingBottom: isLast ? 0 : 20 }}>
+        <span className="sk-label-3">{title}</span>
+        {children}
+      </div>
     </div>
   );
 }
@@ -798,10 +806,8 @@ function GoalsSection({ owner, deadlineDays, reviewRequired, reviewDeadlineDays,
             style={{ width: 88 }} />
         </div>
       ) : (
-        <div className="sk-col sk-gap-5">
-          <div className="sk-col sk-gap-3">
-            <StepHeader index={1} title="Создайте цели" />
-
+        <div className="sk-col">
+          <StepBlock index={1} title="Создайте цели">
             {goals.length === 0 ? (
               <Card>
                 <div className="sk-col sk-gap-3" style={{ alignItems: "center", textAlign: "center", padding: "24px 16px" }}>
@@ -833,10 +839,9 @@ function GoalsSection({ owner, deadlineDays, reviewRequired, reviewDeadlineDays,
                 </div>
               </div>
             )}
-          </div>
+          </StepBlock>
 
-          <div className="sk-col sk-gap-3">
-            <StepHeader index={2} title="Нужна ли проверка руководителем?" />
+          <StepBlock index={2} title="Нужна ли проверка руководителем?" isLast>
             <Alert hue="accent">
               Если включить — руководитель сможет доработать цели и опубликовать их сотруднику сам. Если оставить выключенным — цели публикует администратор.
             </Alert>
@@ -855,7 +860,7 @@ function GoalsSection({ owner, deadlineDays, reviewRequired, reviewDeadlineDays,
                 </div>
               )}
             </div>
-          </div>
+          </StepBlock>
         </div>
       )}
 
