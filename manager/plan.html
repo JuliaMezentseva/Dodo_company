@@ -68,8 +68,11 @@ function fmtDate(date) { return date.getDate() + " " + MONTHS[date.getMonth()] +
 const ELEMENT_ICON = { article: IconFileText, task: IconCheck, course: IconFileText, survey: IconHelpCircle, file: IconFileText, link: IconLink2, checkpoint: IconTarget };
 const ELEMENT_LABEL = { article: "Статья", task: "Задача", course: "Курс", survey: "Опрос", file: "Файл", link: "Ссылка", checkpoint: "Контрольная точка" };
 // Кружок с номером шага теперь всегда нейтральный, независимо от статуса — см. STATUS_ICON.
+// Заливка светло-серая, а не прозрачная — на прозрачной заливке тонкое кольцо кружка
+// того же веса и цвета, что и обводка карточки-шага, визуально сливалось с её краем
+// вместо того, чтобы читаться как отдельный элемент внутри неё.
 const NUMBER_BADGE = {
-  not_started: { bg: "transparent", fg: "var(--sk-text-tertiary)", border: "1.5px solid var(--sk-stroke)" },
+  not_started: { bg: "var(--sk-surface-secondary)", fg: "var(--sk-text-tertiary)", border: "1.5px solid var(--sk-stroke)" },
 };
 const SUBGOAL_STATUS_LABEL = {
   done: "Выполнено", not_done: "Не выполнено", pending_review: "На проверке",
@@ -1119,7 +1122,7 @@ function AIDraftStep({ member, plan, draft, setDraft }) {
             );
           })}
         </div>
-        <button className="sk-link-btn sk-label-3-regular" onClick={addStep} style={{ alignSelf: "flex-start", color: "var(--sk-text-special)" }}>
+        <button className="sk-link-btn sk-label-3-regular" onClick={addStep} style={{ alignSelf: "flex-start", color: "var(--sk-text-secondary)" }}>
           <span className="sk-row sk-gap-1"><IconPlusSm size={16} />Добавить шаг</span>
         </button>
       </div>
