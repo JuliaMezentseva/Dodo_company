@@ -761,10 +761,13 @@ function AIFlowStepper({ activeIndex }) {
       {AI_FLOW_STEPS.map((label, i) => (
         <React.Fragment key={i}>
           <div className="sk-row sk-gap-2" style={{ alignItems: "center", flexShrink: 0 }}>
+            {/* Мягкая фиолетовая заливка, не сплошная чёрная — степпер держится в одной
+                цветовой семье с баннером AI ниже, вместо двух разных языков цвета рядом. */}
             <span style={{
               width: 24, height: 24, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center",
-              background: i <= activeIndex ? "var(--sk-surface-dark)" : "var(--sk-surface-secondary)",
-              color: i <= activeIndex ? "var(--sk-text-contrast)" : "var(--sk-text-tertiary)", font: "var(--sk-label-4)",
+              background: i <= activeIndex ? "var(--sk-special-secondary)" : "var(--sk-surface-secondary)",
+              boxShadow: i <= activeIndex ? "inset 0 0 0 1.5px var(--sk-stroke-special)" : "none",
+              color: i <= activeIndex ? "var(--sk-text-special)" : "var(--sk-text-tertiary)", font: "var(--sk-label-4)",
             }}>{i < activeIndex ? <IconCheck size={13} /> : i + 1}</span>
             <span className="sk-muted" style={{ font: "var(--sk-label-3-regular)", color: i === activeIndex ? "var(--sk-text-secondary)" : "var(--sk-text-tertiary)" }}>{label}</span>
           </div>
@@ -792,8 +795,8 @@ function parseRuShortDate(str) {
 
 // Компактная иконка-переключатель дополнительного способа ввода (голос/файл/изображение) —
 // не отдельный большой сценарий, просто демонстрационное состояние по клику (см. ТЗ п.6, 24).
-// Сама иконка голубая (обычный цвет интерактивных элементов) на нейтральном сером кружке —
-// закрашенный синим кружок целиком выглядел слишком плотно рядом друг с другом. Тёмная
+// Нейтральная серая иконка — голубой здесь смотрелся третьим случайным цветом рядом
+// с фиолетовым баннером и чёрными кнопками (см. отзыв "выглядит не впопад"). Тёмная
 // заливка при включении вместо смены оттенка — состояние "включено" видно и без цвета,
 // плюс чип с вложением ниже.
 function InputSourceIcon({ icon: Icon, active, label, onClick, size = 32 }) {
@@ -804,7 +807,7 @@ function InputSourceIcon({ icon: Icon, active, label, onClick, size = 32 }) {
         background: active ? "var(--sk-surface-dark)" : "var(--sk-surface-secondary)",
         display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
       }}>
-        <Icon size={Math.round(size * 0.47)} color={active ? "var(--sk-text-contrast)" : "var(--sk-icon-accent)"} />
+        <Icon size={Math.round(size * 0.47)} color={active ? "var(--sk-text-contrast)" : "var(--sk-icon-secondary)"} />
       </button>
     </Tooltip>
   );
