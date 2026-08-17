@@ -286,6 +286,21 @@ function TemplateCheckpointsSection({ checkpoints, onAdd, onEdit, onDelete }) {
   );
 }
 
+// ---------------- Нумерованный заголовок шага сценария "Администратор" (см. GoalsSection) —
+// не отдельный мастер с Далее/Назад, а лёгкая нумерация на одном экране: 1) создать цели,
+// 2) решить, нужна ли проверка руководителем перед тем, как их увидит сотрудник. ----------------
+function StepHeader({ index, title }) {
+  return (
+    <div className="sk-row sk-gap-2" style={{ alignItems: "center" }}>
+      <span style={{
+        width: 22, height: 22, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center",
+        background: "var(--sk-accent-secondary)", color: "var(--sk-text-accent)", font: "var(--sk-label-4)",
+      }}>{index}</span>
+      <span className="sk-label-3">{title}</span>
+    </div>
+  );
+}
+
 // ---------------- Виджет "Кто создает цели?" — фиксированный вариант (SegmentedControl) +
 // подпись с описанием выбранного варианта, вместо отдельного мастера или карточек сценариев. ----------------
 const GOALS_OWNER_OPTIONS = [
@@ -784,63 +799,70 @@ function GoalsSection({ owner, deadlineDays, reviewRequired, reviewDeadlineDays,
         </div>
       ) : (
         <div className="sk-col sk-gap-4">
-          <Alert hue="accent" title="Требуется проверка целей руководителем?">
-            Если да — включите проверку ниже: руководитель сможет доработать их и опубликовать сотруднику сам.
-          </Alert>
+          <div className="sk-col sk-gap-3">
+            <StepHeader index={1} title="Создайте цели" />
 
-          <div className="sk-col sk-gap-2" style={{ padding: 14, borderRadius: "var(--sk-radius-3)", border: "1px solid var(--sk-stroke)" }}>
-            <div className="sk-row" style={{ justifyContent: "space-between", alignItems: "center" }}>
-              <span className="sk-label-3">Руководитель должен проверить и опубликовать цели</span>
-              <Switch checked={reviewRequired} onChange={onReviewRequiredChange} />
-            </div>
-            <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>
-              {reviewRequired
-                ? "Администратор готовит основу, а руководитель может изменить цели, добавить новые и опубликовать сотруднику."
-                : "Администратор полностью готовит цели в шаблоне."}
-            </span>
-            {reviewRequired && (
-              <div className="sk-row" style={{ justifyContent: "space-between", alignItems: "center", paddingTop: 4 }}>
-                <span className="sk-label-3-regular">Срок доработки и публикации целей руководителем (дней)</span>
-                <Input type="number" min={1} max={30} value={reviewDeadlineDays}
-                  onChange={(e) => onReviewDeadlineChange(Math.max(1, Math.min(30, Number(e.target.value) || 1)))}
-                  style={{ width: 88 }} />
+            {goals.length === 0 ? (
+              <Card>
+                <div className="sk-col sk-gap-3" style={{ alignItems: "center", textAlign: "center", padding: "24px 16px" }}>
+                  <div className="sk-title-5">Сформируйте цели и шаги для их достижения</div>
+                  <div className="sk-muted" style={{ maxWidth: 440 }}>Цель — это ожидаемый измеримый результат, с которым сотрудник должен окончить план адаптации</div>
+                  <Button variant="accent" onClick={() => setMethodModal(true)}>+ Добавить цель</Button>
+                </div>
+              </Card>
+            ) : (
+              <div className="sk-col sk-gap-3">
+                <div className="sk-row sk-gap-2">
+                  <Button variant="neutral" size="s" icon={<IconPlusSm size={16} />} onClick={() => setMethodModal(true)}>Добавить цель</Button>
+                </div>
+
+                <div className="sk-col sk-gap-2">
+                  {goals.map((g) => (
+                    <TemplateGoalRow key={g.id} goal={g} onOpen={() => setOpenGoalId(g.id)} onDelete={() => onDeleteGoal(g.id)}
+                      onOpenSubgoal={(id) => setOpenRowSubgoalId(id)}
+                      onReorderSubgoals={(from, to) => {
+                        if (from === null || from === to) return;
+                        onUpdateGoal(g.id, (goal) => {
+                          const list = goal.subgoals.slice();
+                          const [item] = list.splice(from, 1);
+                          list.splice(to, 0, item);
+                          return { ...goal, subgoals: list };
+                        });
+                      }} />
+                  ))}
+                </div>
               </div>
             )}
           </div>
 
           <Divider />
 
-          {goals.length === 0 ? (
-            <Card>
-              <div className="sk-col sk-gap-3" style={{ alignItems: "center", textAlign: "center", padding: "24px 16px" }}>
-                <div className="sk-title-5">Сформируйте цели и шаги для их достижения</div>
-                <div className="sk-muted" style={{ maxWidth: 440 }}>Цель — это ожидаемый измеримый результат, с которым сотрудник должен окончить план адаптации</div>
-                <Button variant="accent" onClick={() => setMethodModal(true)}>+ Добавить цель</Button>
-              </div>
-            </Card>
-          ) : (
-            <div className="sk-col sk-gap-3">
-              <div className="sk-row sk-gap-2">
-                <Button variant="neutral" size="s" icon={<IconPlusSm size={16} />} onClick={() => setMethodModal(true)}>Добавить цель</Button>
-              </div>
+          <div className="sk-col sk-gap-3">
+            <StepHeader index={2} title="Нужна ли проверка руководителем?" />
+            <Alert hue="accent">
+              Если да — включите проверку ниже: руководитель сможет доработать их и опубликовать сотруднику сам.
+            </Alert>
 
-              <div className="sk-col sk-gap-2">
-                {goals.map((g) => (
-                  <TemplateGoalRow key={g.id} goal={g} onOpen={() => setOpenGoalId(g.id)} onDelete={() => onDeleteGoal(g.id)}
-                    onOpenSubgoal={(id) => setOpenRowSubgoalId(id)}
-                    onReorderSubgoals={(from, to) => {
-                      if (from === null || from === to) return;
-                      onUpdateGoal(g.id, (goal) => {
-                        const list = goal.subgoals.slice();
-                        const [item] = list.splice(from, 1);
-                        list.splice(to, 0, item);
-                        return { ...goal, subgoals: list };
-                      });
-                    }} />
-                ))}
+            <div className="sk-col sk-gap-2" style={{ padding: 14, borderRadius: "var(--sk-radius-3)", border: "1px solid var(--sk-stroke)" }}>
+              <div className="sk-row" style={{ justifyContent: "space-between", alignItems: "center" }}>
+                <span className="sk-label-3">Руководитель должен проверить и опубликовать цели</span>
+                <Switch checked={reviewRequired} onChange={onReviewRequiredChange} />
               </div>
+              <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>
+                {reviewRequired
+                  ? "Администратор готовит основу, а руководитель может изменить цели, добавить новые и опубликовать сотруднику."
+                  : "Администратор полностью готовит цели в шаблоне."}
+              </span>
+              {reviewRequired && (
+                <div className="sk-row" style={{ justifyContent: "space-between", alignItems: "center", paddingTop: 4 }}>
+                  <span className="sk-label-3-regular">Срок доработки и публикации целей руководителем (дней)</span>
+                  <Input type="number" min={1} max={30} value={reviewDeadlineDays}
+                    onChange={(e) => onReviewDeadlineChange(Math.max(1, Math.min(30, Number(e.target.value) || 1)))}
+                    style={{ width: 88 }} />
+                </div>
+              )}
             </div>
-          )}
+          </div>
         </div>
       )}
 
