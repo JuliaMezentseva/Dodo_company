@@ -295,31 +295,6 @@ function TemplateCheckpointsSection({ checkpoints, onAdd, onEdit, onDelete }) {
   );
 }
 
-// ---------------- Шаг сценария "Администратор" (см. GoalsSection) — нумерованный кружок
-// слева соединён вертикальной линией со следующим шагом (рейл тянется на всю высоту контента
-// через flex "stretch", а не фиксированной длиной — контент шага 1 разной высоты в зависимости
-// от количества целей). Не отдельный мастер с Далее/Назад: оба шага открыты и редактируемы
-// одновременно, линия только показывает порядок — 1) создать цели, 2) решить про проверку. ----------------
-function StepBlock({ index, title, isLast, children }) {
-  return (
-    <div className="sk-row sk-gap-3" style={{ alignItems: "stretch" }}>
-      <div className="sk-col" style={{ alignItems: "center", flexShrink: 0 }}>
-        <span style={{
-          width: 28, height: 28, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center",
-          background: "var(--sk-accent-secondary)", color: "var(--sk-text-accent)", font: "var(--sk-label-3)",
-        }}>{index}</span>
-        {!isLast && <div style={{ width: 1, flex: 1, minHeight: 24, background: "var(--sk-stroke-divider)", margin: "4px 0" }} />}
-      </div>
-      <div className="sk-col sk-gap-3" style={{ flex: 1, minWidth: 0, paddingBottom: isLast ? 0 : 20 }}>
-        <div style={{ minHeight: 28, display: "flex", alignItems: "center" }}>
-          <span className="sk-title-5">{title}</span>
-        </div>
-        {children}
-      </div>
-    </div>
-  );
-}
-
 // ---------------- Виджет "Кто создает цели?" — фиксированный вариант (SegmentedControl) +
 // подпись с описанием выбранного варианта, вместо отдельного мастера или карточек сценариев. ----------------
 const GOALS_OWNER_OPTIONS = [
@@ -903,8 +878,8 @@ function GoalsSection({ owner, deadlineDays, reviewRequired, reviewDeadlineDays,
             style={{ width: 88 }} />
         </div>
       ) : (
-        <div className="sk-col">
-          <StepBlock index={1} title="Создайте цели">
+        <div className="sk-col sk-gap-5">
+          <div className="sk-col sk-gap-3">
             {goals.length === 0 ? (
               <Card>
                 <div className="sk-col sk-gap-3" style={{ alignItems: "center", textAlign: "center", padding: "24px 16px" }}>
@@ -936,9 +911,10 @@ function GoalsSection({ owner, deadlineDays, reviewRequired, reviewDeadlineDays,
                 </div>
               </div>
             )}
-          </StepBlock>
+          </div>
 
-          <StepBlock index={2} title="Нужна ли проверка руководителем?" isLast>
+          <div className="sk-col sk-gap-3" style={{ padding: 16, borderRadius: "var(--sk-radius-3)", background: "var(--sk-surface-secondary)" }}>
+            <span className="sk-title-5">Нужна ли проверка руководителем?</span>
             <div className="sk-row" style={{ justifyContent: "space-between", alignItems: "center" }}>
               <span className="sk-label-3">Руководитель должен проверить и опубликовать цели</span>
               <Switch checked={reviewRequired} onChange={onReviewRequiredChange} />
@@ -954,7 +930,7 @@ function GoalsSection({ owner, deadlineDays, reviewRequired, reviewDeadlineDays,
             <Alert hue="accent">
               Если включить — руководитель сможет доработать цели и опубликовать их сотруднику сам. Если оставить выключенным — цели публикует администратор.
             </Alert>
-          </StepBlock>
+          </div>
         </div>
       )}
 
