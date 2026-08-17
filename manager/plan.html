@@ -796,15 +796,15 @@ function parseRuShortDate(str) {
 // закрашенный синим кружок целиком выглядел слишком плотно рядом друг с другом. Тёмная
 // заливка при включении вместо смены оттенка — состояние "включено" видно и без цвета,
 // плюс чип с вложением ниже.
-function InputSourceIcon({ icon: Icon, active, label, onClick }) {
+function InputSourceIcon({ icon: Icon, active, label, onClick, size = 32 }) {
   return (
     <Tooltip content={label}>
       <button type="button" onClick={onClick} className="sk-clickable" style={{
-        width: 32, height: 32, borderRadius: "50%", border: "none",
+        width: size, height: size, borderRadius: "50%", border: "none",
         background: active ? "var(--sk-surface-dark)" : "var(--sk-surface-secondary)",
         display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
       }}>
-        <Icon size={15} color={active ? "var(--sk-text-contrast)" : "var(--sk-icon-accent)"} />
+        <Icon size={Math.round(size * 0.47)} color={active ? "var(--sk-text-contrast)" : "var(--sk-icon-accent)"} />
       </button>
     </Tooltip>
   );
@@ -878,18 +878,17 @@ function AIExpectationsStep({ member, plan, text, setText, demo, toggleDemo, pic
           .ai-expect-textarea textarea::placeholder { color: var(--sk-text-tertiary); }
           .ai-expect-textarea > label > span:first-of-type:focus-within { box-shadow: inset 0 0 0 2px var(--sk-text-primary) !important; }
         `}</style>
-        {/* Иконки способов ввода — справа от поля, по образцу мессенджер-композера, а не
-            отдельной строкой под ним. */}
-        <div className="sk-row sk-gap-3" style={{ alignItems: "flex-start" }}>
-          <div className="ai-expect-textarea" onClick={fillOnFirstClick} style={{ flex: 1 }}>
-            <Textarea rows={3} value={text}
-              onChange={(e) => setText(e.target.value || "")}
-              placeholder="Например: хочу, чтобы к концу адаптации сотрудник сам вёл клиентов, проводил встречи без моей помощи и правильно фиксировал результаты в CRM." />
-          </div>
-          <div className="sk-col sk-gap-2" style={{ paddingTop: 2, flexShrink: 0 }}>
-            <InputSourceIcon icon={IconMic} label="Голосовой ввод" active={demo.voice} onClick={() => toggleDemo("voice")} />
-            <InputSourceIcon icon={IconPaperclip} label="Прикрепить файл" active={demo.file} onClick={() => toggleDemo("file")} />
-            <InputSourceIcon icon={IconImage} label="Добавить изображение" active={demo.image} onClick={() => toggleDemo("image")} />
+        {/* Иконки способов ввода — внутри поля, у правого нижнего края, как в привычных
+            AI-чатах (ChatGPT, Telegram и т.п.), а не отдельной колонкой сбоку от поля. */}
+        <div className="ai-expect-textarea" onClick={fillOnFirstClick} style={{ position: "relative" }}>
+          <Textarea rows={3} value={text}
+            onChange={(e) => setText(e.target.value || "")}
+            textareaStyle={{ paddingRight: 8, paddingBottom: 38 }}
+            placeholder="Например: хочу, чтобы к концу адаптации сотрудник сам вёл клиентов, проводил встречи без моей помощи и правильно фиксировал результаты в CRM." />
+          <div className="sk-row sk-gap-1" style={{ position: "absolute", right: 10, bottom: 10 }} onClick={(e) => e.stopPropagation()}>
+            <InputSourceIcon size={28} icon={IconMic} label="Голосовой ввод" active={demo.voice} onClick={() => toggleDemo("voice")} />
+            <InputSourceIcon size={28} icon={IconPaperclip} label="Прикрепить файл" active={demo.file} onClick={() => toggleDemo("file")} />
+            <InputSourceIcon size={28} icon={IconImage} label="Добавить изображение" active={demo.image} onClick={() => toggleDemo("image")} />
           </div>
         </div>
 
@@ -979,21 +978,23 @@ function AIDraftStep({ member, plan, draft, setDraft }) {
       <div className="sk-col sk-gap-2">
         <div className="sk-label-3">Шаги для достижения цели</div>
         <div className="sk-col sk-gap-2">
-          {draft.steps.map((s, i) => (
-            <div key={i} className="sk-row sk-gap-2" style={{ alignItems: "center" }}>
-              {/* Полупрозрачная фиолетовая заливка — те же токены, что у баннеров AI выше:
-                  шаги сгенерированы AI, поэтому маркированы его цветом, а не голубым
-                  (голубой оставлен за обычными интерактивными элементами вроде кнопки ниже). */}
-              <span style={{
-                width: 22, height: 22, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center",
-                background: "var(--sk-special-secondary)", color: "var(--sk-text-special)", font: "var(--sk-label-4)",
-              }}>{i + 1}</span>
-              <Input value={s} onChange={(e) => updateStep(i, e.target.value || "")} style={{ flex: 1 }} />
-              <button className="sk-link-btn" onClick={() => removeStep(i)}><IconTrash size={15} color="var(--sk-icon-secondary)" /></button>
-            </div>
-          ))}
+          {draft.steps.map((s, i) => {
+            // Тот же нейтральный кружок-номер, что и в дровере цели (см. NUMBER_BADGE) —
+            // единый паттерн нумерации шагов по всему прототипу, а не отдельный AI-стиль.
+            const badge = NUMBER_BADGE.not_started;
+            return (
+              <div key={i} className="sk-row sk-gap-2" style={{ alignItems: "center" }}>
+                <span style={{
+                  width: 20, height: 20, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center",
+                  background: badge.bg, color: badge.fg, border: badge.border, font: "var(--sk-label-4)",
+                }}>{i + 1}</span>
+                <Input value={s} onChange={(e) => updateStep(i, e.target.value || "")} style={{ flex: 1 }} />
+                <button className="sk-link-btn" onClick={() => removeStep(i)}><IconTrash size={15} color="var(--sk-icon-secondary)" /></button>
+              </div>
+            );
+          })}
         </div>
-        <button className="sk-link-btn sk-label-3-regular" onClick={addStep} style={{ alignSelf: "flex-start", color: "var(--sk-text-accent)" }}>
+        <button className="sk-link-btn sk-label-3-regular" onClick={addStep} style={{ alignSelf: "flex-start", color: "var(--sk-text-special)" }}>
           <span className="sk-row sk-gap-1"><IconPlusSm size={16} />Добавить шаг</span>
         </button>
       </div>
@@ -1049,7 +1050,15 @@ function AIGoalAssistantModal({ member, plan, onClose, onCreate }) {
           <Button mode="secondary" icon={<IconRepeat size={15} />} onClick={() => setStep("loading")}>Сформировать заново</Button>
         </div>
       ),
-      primary: <Button variant="accent" disabled={!draftValid} onClick={() => { onCreate(draft); setStep("success"); }}>Добавить в план</Button>,
+      // Фиолетовая, а не голубая — принимаем результат именно AI-черновика, поэтому кнопка
+      // завершает фирменный фиолетовый акцент этого экрана (см. AIBanner / нумерация шагов).
+      // Override только пока кнопка активна — иначе перекроет и серый disabled-стиль ДС.
+      primary: (
+        <Button variant="accent" disabled={!draftValid} onClick={() => { onCreate(draft); setStep("success"); }}
+          style={draftValid ? { background: "var(--sk-special-strong)", color: "var(--sk-text-contrast)" } : undefined}>
+          Добавить в план
+        </Button>
+      ),
     };
   } else if (step === "success") {
     footerProps = { primary: <Button onClick={onClose} style={{ width: "100%" }}>Вернуться к плану адаптации</Button> };
