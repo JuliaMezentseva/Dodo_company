@@ -15,7 +15,7 @@
 <body>
 <div id="root"></div>
 <script type="text/babel">
-const { Card, Tag, Switch, Input, Textarea, Select, Checkbox, SegmentedControl, Tabs, Tooltip, Divider, Button, IconButton, Modal, Drawer } = window.SkillazCoreDesignSystem_bf9566;
+const { Card, Tag, Switch, Input, Textarea, Select, Checkbox, SegmentedControl, Tabs, Tooltip, Divider, Button, IconButton, Modal, Drawer, Alert } = window.SkillazCoreDesignSystem_bf9566;
 const { AppShell, Icons } = window.Site;
 const {
   IconInfo, IconTarget, IconCheck, IconClipboard, IconSettings,
@@ -784,18 +784,13 @@ function GoalsSection({ owner, deadlineDays, reviewRequired, reviewDeadlineDays,
         </div>
       ) : (
         <div className="sk-col sk-gap-4">
-          <div className="sk-col sk-gap-2">
+          <Alert hue="accent" title="Нужна ли проверка руководителем?">
+            Если да — включите проверку ниже: руководитель сможет доработать цели и опубликовать их сотруднику сам.
+          </Alert>
+
+          <div className="sk-col sk-gap-2" style={{ padding: 14, borderRadius: "var(--sk-radius-3)", border: "1px solid var(--sk-stroke)" }}>
             <div className="sk-row" style={{ justifyContent: "space-between", alignItems: "center" }}>
-              <div className="sk-row sk-gap-1" style={{ color: "var(--sk-text-primary)" }}>
-                <span className="sk-label-3">Руководитель должен проверить и опубликовать цели</span>
-                <Tooltip content={<div style={{ maxWidth: 260, whiteSpace: "normal" }}>
-                  {reviewRequired
-                    ? "Цели попадут в индивидуальный план как черновик. Сотрудник увидит их после публикации руководителем."
-                    : "Цели будут перенесены в индивидуальный план и станут доступны сотруднику без дополнительной публикации руководителем."}
-                </div>}>
-                  <IconHelpCircle size={16} color="var(--sk-icon-secondary)" />
-                </Tooltip>
-              </div>
+              <span className="sk-label-3">Руководитель должен проверить и опубликовать цели</span>
               <Switch checked={reviewRequired} onChange={onReviewRequiredChange} />
             </div>
             <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>
@@ -812,6 +807,8 @@ function GoalsSection({ owner, deadlineDays, reviewRequired, reviewDeadlineDays,
               </div>
             )}
           </div>
+
+          <Divider />
 
           {goals.length === 0 ? (
             <Card>
