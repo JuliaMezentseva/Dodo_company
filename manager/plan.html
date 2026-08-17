@@ -24,7 +24,7 @@ const {
   IconArrowLeft, IconCheck, IconLock, IconClock, IconFileText, IconLink2, IconMessageCircle,
   IconHelpCircle, IconTarget, IconMapPin, IconPhone, IconMail, IconSend,
   IconChevronUp, IconChevronDown, IconX, IconAlertCircle, IconTrash, IconSearch, IconClipboard, IconPlusSm,
-  IconEdit, IconLayers, IconSparkles, IconBookOpen, IconMic, IconImage, IconPaperclip, IconRepeat,
+  IconEdit, IconLayers, IconSparkles, IconBookOpen, IconMic, IconImage, IconPaperclip, IconRepeat, IconBriefcase,
 } = Icons;
 const D = window.SITE_DATA;
 function stripDuePrefix(label) {
@@ -719,20 +719,56 @@ const AI_LOADING_STAGES = ["Анализируем ваши ожидания", "
 // ширины вместо flex:1 на всю ширину окна) — это навигационная подсказка, а не контент, и не
 // должна конкурировать с заголовком вопроса ниже (см. отзыв о балансе экрана).
 const AI_FLOW_STEPS = ["Ожидания", "Формулировка цели", "Результат"];
+// Подсказки, что ещё можно приложить, чтобы AI точнее сформулировал цель — короткий
+// список, не более трёх пунктов, чтобы не перегружать экран (см. отзыв про перегруженность).
+const AI_UPLOAD_SUGGESTIONS = [
+  { key: "vacancy", icon: IconBriefcase, label: "Описание вакансии", fileName: "описание_вакансии.pdf", hint: "требования и обязанности роли" },
+  { key: "competencies", icon: IconClipboard, label: "Профиль компетенций", fileName: "профиль_компетенций.pdf", hint: "критерии оценки для позиции" },
+  { key: "regulation", icon: IconFileText, label: "Регламент процесса", fileName: "регламент_процесса.pdf", hint: "если задача завязана на процесс" },
+];
+
+// Залитая (не контурная) звёздочка — только для фирменной "метки AI" в шапке окна, где
+// нужен более плотный, узнаваемый значок; та же геометрия, что у обычной IconSparkles.
+function IconSparklesSolid({ size = 16, color = "currentColor" }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" style={{ color, flexShrink: 0 }}>
+      <path d="M12 3.5 13.5 9 19 10.5 13.5 12 12 17.5 10.5 12 5 10.5 10.5 9Z" fill="currentColor" />
+      <path d="M18.5 15.5l.7 2 2 .7-2 .7-.7 2-.7-2-2-.7 2-.7Z" fill="currentColor" />
+    </svg>
+  );
+}
+
+// Единая "плашка от AI" — бледно-фиолетовая подложка (--sk-special-secondary) с иконкой в
+// белом кружке; текст обычного, не цветного, начертания — цвет только на самой иконке.
+// Используется и на шаге ожиданий, и на шаге черновика, чтобы оба AI-сообщения выглядели
+// одинаково. Фиолетовый — фирменный цвет именно "голоса" AI-помощника, отдельно от голубого,
+// который остаётся цветом обычных интерактивных элементов (кнопки, ссылки, фокус полей) —
+// так их не путать друг с другом.
+function AIBanner({ icon, children }) {
+  return (
+    <div className="sk-row sk-gap-3" style={{ padding: 14, background: "var(--sk-special-secondary)", borderRadius: "var(--sk-radius-3)", alignItems: "flex-start" }}>
+      <span style={{
+        width: 28, height: 28, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center",
+        background: "var(--sk-surface-page)",
+      }}>{icon}</span>
+      <div style={{ paddingTop: 3 }}>{children}</div>
+    </div>
+  );
+}
 function AIFlowStepper({ activeIndex }) {
   return (
-    <div className="sk-row sk-gap-1" style={{ alignItems: "center" }}>
+    <div className="sk-row sk-gap-2" style={{ alignItems: "center" }}>
       {AI_FLOW_STEPS.map((label, i) => (
         <React.Fragment key={i}>
-          <div className="sk-row sk-gap-1" style={{ alignItems: "center", flexShrink: 0 }}>
+          <div className="sk-row sk-gap-2" style={{ alignItems: "center", flexShrink: 0 }}>
             <span style={{
-              width: 15, height: 15, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center",
-              background: i <= activeIndex ? "var(--violet-violet-35)" : "var(--sk-surface-secondary)",
-              color: i <= activeIndex ? "var(--sk-text-contrast)" : "var(--sk-text-tertiary)", font: "var(--sk-label-4-regular)", fontSize: 9,
-            }}>{i < activeIndex ? <IconCheck size={9} /> : i + 1}</span>
-            <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)", color: i === activeIndex ? "var(--sk-text-secondary)" : "var(--sk-text-tertiary)" }}>{label}</span>
+              width: 24, height: 24, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center",
+              background: i <= activeIndex ? "var(--sk-special-strong)" : "var(--sk-surface-secondary)",
+              color: i <= activeIndex ? "var(--sk-text-contrast)" : "var(--sk-text-tertiary)", font: "var(--sk-label-4)",
+            }}>{i < activeIndex ? <IconCheck size={13} /> : i + 1}</span>
+            <span className="sk-muted" style={{ font: "var(--sk-label-3-regular)", color: i === activeIndex ? "var(--sk-text-secondary)" : "var(--sk-text-tertiary)" }}>{label}</span>
           </div>
-          {i < AI_FLOW_STEPS.length - 1 && <div style={{ width: 24, height: 1, background: "var(--sk-stroke)", flexShrink: 0 }} />}
+          {i < AI_FLOW_STEPS.length - 1 && <div style={{ width: 40, height: 2, background: "var(--sk-stroke)", flexShrink: 0 }} />}
         </React.Fragment>
       ))}
     </div>
@@ -756,9 +792,10 @@ function parseRuShortDate(str) {
 
 // Компактная иконка-переключатель дополнительного способа ввода (голос/файл/изображение) —
 // не отдельный большой сценарий, просто демонстрационное состояние по клику (см. ТЗ п.6, 24).
-// Серые — это утилитарные способы ввода, а не голос AI, акцентный голубой оставляем только
-// за собственно AI-элементами (баннер, бейдж, "AI учёл"). Тёмная заливка при включении вместо
-// смены оттенка — состояние "включено" видно и без цвета, плюс чип с вложением ниже.
+// Сама иконка голубая (обычный цвет интерактивных элементов) на нейтральном сером кружке —
+// закрашенный синим кружок целиком выглядел слишком плотно рядом друг с другом. Тёмная
+// заливка при включении вместо смены оттенка — состояние "включено" видно и без цвета,
+// плюс чип с вложением ниже.
 function InputSourceIcon({ icon: Icon, active, label, onClick }) {
   return (
     <Tooltip content={label}>
@@ -767,7 +804,7 @@ function InputSourceIcon({ icon: Icon, active, label, onClick }) {
         background: active ? "var(--sk-surface-dark)" : "var(--sk-surface-secondary)",
         display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
       }}>
-        <Icon size={15} color={active ? "var(--sk-text-contrast)" : "var(--sk-icon-secondary)"} />
+        <Icon size={15} color={active ? "var(--sk-text-contrast)" : "var(--sk-icon-accent)"} />
       </button>
     </Tooltip>
   );
@@ -796,30 +833,30 @@ function DemoAttachmentChip({ icon: Icon, label, sub, onRemove }) {
 
 // ---------------- Состояние 1: рассказ руководителя своими словами ----------------
 // Три коротких блока вместо стены текста: (1) чем поможет AI — одной фразой от его лица,
-// (2) что он уже знает о сотруднике без участия руководителя, (3) что нужно рассказать самому
-// (один вопрос + серая подсказка под ним, без дублирующего заголовка рядом). Голубой —
-// основной акцент по ДС, единый на всё окно.
-function AIExpectationsStep({ member, plan, text, setText, demo, toggleDemo }) {
+// (2) что он уже знает о сотруднике без участия руководителя — фон, а не заголовок,
+// это справочная информация, а не следующий шаг руководителя, (3) что нужно рассказать
+// самому — единственный по-настоящему крупный заголовок на экране: это единственное
+// действие, которое от руководителя требуется здесь.
+function AIExpectationsStep({ member, plan, text, setText, demo, toggleDemo, pickFileSuggestion }) {
   function fillOnFirstClick() {
     if (!text.trim()) setText(AI_EXPECTATIONS_DEMO_TEXT);
   }
   return (
     <div className="sk-col sk-gap-4">
-      <div style={{ padding: 14, background: "var(--sk-accent-secondary)", borderRadius: "var(--sk-radius-3)" }}>
-        <div className="sk-label-3-regular" style={{ color: "var(--sk-text-accent)" }}>
+      <AIBanner icon={<IconSparklesSolid size={14} color="var(--sk-icon-special)" />}>
+        <div className="sk-label-3-regular" style={{ color: "var(--sk-text-primary)" }}>
           Я помогу сформулировать цель, описание и шаги. Просто расскажите о своих ожиданиях — остальное сделаю сам.
         </div>
-      </div>
+      </AIBanner>
 
       <div className="sk-col sk-gap-2">
-        <div className="sk-label-2">Уже знаю о сотруднике</div>
-        <div className="sk-row sk-gap-3" style={{ padding: 12, background: "var(--sk-surface-secondary)", borderRadius: "var(--sk-radius-3)", alignItems: "center" }}>
-          <Avatar src={personPhoto(member.name)} name={member.name} size={36} />
-          <div className="sk-col" style={{ gap: 0 }}>
-            <div className="sk-label-3">{member.name}</div>
-            <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{member.position} · {member.department}</div>
-            <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Период адаптации до {plan.dateEnd}</div>
-          </div>
+        <div className="sk-label-3">Уже знаю о сотруднике</div>
+        {/* Без аватара — руководитель открывает это окно уже из плана конкретного сотрудника,
+            фото тут не несёт новой информации, только два факта, которые реально нужны AI. */}
+        <div className="sk-col sk-gap-1" style={{ padding: 12, background: "var(--sk-surface-secondary)", borderRadius: "var(--sk-radius-3)" }}>
+          <div className="sk-label-3">{member.name}</div>
+          <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{member.position} · {member.department}</div>
+          <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Период адаптации до {plan.dateEnd}</div>
         </div>
       </div>
 
@@ -831,25 +868,64 @@ function AIExpectationsStep({ member, plan, text, setText, demo, toggleDemo }) {
             освоить или какого результата достичь.
           </div>
         </div>
-        {/* ::placeholder — единственный способ сделать плейсхолдер светлее и мельче основного
-            текста поля, стилизуется только через CSS-псевдоэлемент, inline-style сюда не дотянуться. */}
-        <style>{".ai-expect-textarea textarea::placeholder { color: var(--sk-text-tertiary); font-size: 13px; }"}</style>
-        <div className="ai-expect-textarea" onClick={fillOnFirstClick}>
-          <Textarea rows={3} value={text}
-            onChange={(e) => setText(e.target.value || "")}
-            placeholder="Например: хочу, чтобы к концу адаптации сотрудник сам вёл клиентов, проводил встречи без моей помощи и правильно фиксировал результаты в CRM." />
-        </div>
-        <div className="sk-row sk-gap-2">
-          <InputSourceIcon icon={IconMic} label="Голосовой ввод" active={demo.voice} onClick={() => toggleDemo("voice")} />
-          <InputSourceIcon icon={IconPaperclip} label="Прикрепить файл" active={demo.file} onClick={() => toggleDemo("file")} />
-          <InputSourceIcon icon={IconImage} label="Добавить изображение" active={demo.image} onClick={() => toggleDemo("image")} />
+        {/* ::placeholder — единственный способ сделать плейсхолдер светлее основного текста поля,
+            стилизуется только через CSS-псевдоэлемент, inline-style сюда не дотянуться.
+            focus-within с !important — единственный способ перебить инлайновую голубую
+            обводку поля из ДС именно для этого textarea: руководитель жаловался, что синяя
+            подсветка при клике в поле сливается с остальным синим в окне — здесь оставляем
+            нейтральную тёмную обводку вместо акцентной. */}
+        <style>{`
+          .ai-expect-textarea textarea::placeholder { color: var(--sk-text-tertiary); }
+          .ai-expect-textarea > label > span:first-of-type:focus-within { box-shadow: inset 0 0 0 2px var(--sk-text-primary) !important; }
+        `}</style>
+        {/* Иконки способов ввода — справа от поля, по образцу мессенджер-композера, а не
+            отдельной строкой под ним. */}
+        <div className="sk-row sk-gap-3" style={{ alignItems: "flex-start" }}>
+          <div className="ai-expect-textarea" onClick={fillOnFirstClick} style={{ flex: 1 }}>
+            <Textarea rows={3} value={text}
+              onChange={(e) => setText(e.target.value || "")}
+              placeholder="Например: хочу, чтобы к концу адаптации сотрудник сам вёл клиентов, проводил встречи без моей помощи и правильно фиксировал результаты в CRM." />
+          </div>
+          <div className="sk-col sk-gap-2" style={{ paddingTop: 2, flexShrink: 0 }}>
+            <InputSourceIcon icon={IconMic} label="Голосовой ввод" active={demo.voice} onClick={() => toggleDemo("voice")} />
+            <InputSourceIcon icon={IconPaperclip} label="Прикрепить файл" active={demo.file} onClick={() => toggleDemo("file")} />
+            <InputSourceIcon icon={IconImage} label="Добавить изображение" active={demo.image} onClick={() => toggleDemo("image")} />
+          </div>
         </div>
 
         {(demo.voice || demo.file || demo.image) && (
           <div className="sk-row sk-gap-2" style={{ flexWrap: "wrap" }}>
             {demo.voice && <DemoAttachmentChip icon={IconMic} label="Голосовое сообщение записано" sub="0:18 · демо" onRemove={() => toggleDemo("voice")} />}
-            {demo.file && <DemoAttachmentChip icon={IconFileText} label="ожидания_по адаптации.pdf" sub="240 КБ · демо" onRemove={() => toggleDemo("file")} />}
+            {demo.file && (
+              <DemoAttachmentChip
+                icon={demo.fileMeta ? demo.fileMeta.icon : IconFileText}
+                label={demo.fileMeta ? demo.fileMeta.fileName : "ожидания_по адаптации.pdf"}
+                sub={(demo.fileMeta ? demo.fileMeta.hint : "240 КБ") + " · демо"}
+                onRemove={() => toggleDemo("file")} />
+            )}
             {demo.image && <DemoAttachmentChip icon={IconImage} label="скриншот_CRM.png" sub="1,1 МБ · демо" onRemove={() => toggleDemo("image")} />}
+          </div>
+        )}
+
+        {/* Подсказки, что ещё можно приложить, чтобы AI точнее понял ожидания — не более
+            трёх пунктов и скрываются, как только файл уже прикреплён, чтобы не перегружать
+            экран (см. отзыв про перегруженность). */}
+        {!demo.file && (
+          <div className="sk-col sk-gap-2">
+            <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Также можно приложить:</span>
+            <div className="sk-row sk-gap-2" style={{ flexWrap: "wrap" }}>
+              {AI_UPLOAD_SUGGESTIONS.map((s) => (
+                <Tooltip key={s.key} content={"Например: " + s.hint}>
+                  <button type="button" onClick={() => pickFileSuggestion(s)} className="sk-clickable" style={{
+                    display: "flex", alignItems: "center", gap: 6, padding: "6px 12px 6px 8px",
+                    borderRadius: "var(--sk-radius-full)", border: "1px solid var(--sk-stroke)",
+                    background: "var(--sk-surface-page)", font: "var(--sk-label-4-regular)", color: "var(--sk-text-secondary)",
+                  }}>
+                    <s.icon size={13} color="var(--sk-icon-secondary)" />{s.label}
+                  </button>
+                </Tooltip>
+              ))}
+            </div>
           </div>
         )}
       </div>
@@ -867,14 +943,14 @@ function AIGeneratingStep({ onDone }) {
   }, [stageIdx]);
   return (
     <div className="sk-col sk-gap-4" style={{ alignItems: "center", textAlign: "center", padding: "40px 16px" }}>
-      <Loader size={40} />
+      <Loader size={40} color="var(--sk-icon-special)" />
       <div className="sk-col sk-gap-1">
         <div className="sk-label-2">AI формирует цель…</div>
         <div className="sk-muted">{AI_LOADING_STAGES[stageIdx]}</div>
       </div>
       <div className="sk-row sk-gap-2">
         {AI_LOADING_STAGES.map((s, i) => (
-          <span key={i} style={{ width: 6, height: 6, borderRadius: "50%", background: i <= stageIdx ? "var(--sk-accent)" : "var(--sk-stroke)" }} />
+          <span key={i} style={{ width: 6, height: 6, borderRadius: "50%", background: i <= stageIdx ? "var(--sk-icon-special)" : "var(--sk-stroke)" }} />
         ))}
       </div>
     </div>
@@ -883,7 +959,7 @@ function AIGeneratingStep({ onDone }) {
 
 // ---------------- Состояние 2: черновик цели — редактируется прямо в карточке, без
 // перехода в отдельный редактор (см. ТЗ п.19) ----------------
-function AIDraftStep({ member, plan, draft, setDraft, considered }) {
+function AIDraftStep({ member, plan, draft, setDraft }) {
   function updateStep(i, val) { setDraft((d) => ({ ...d, steps: d.steps.map((s, ix) => (ix === i ? val : s)) })); }
   function removeStep(i) { setDraft((d) => ({ ...d, steps: d.steps.filter((_, ix) => ix !== i) })); }
   function addStep() { setDraft((d) => ({ ...d, steps: [...d.steps, ""] })); }
@@ -891,17 +967,10 @@ function AIDraftStep({ member, plan, draft, setDraft, considered }) {
     <div className="sk-col sk-gap-5">
       {/* Тёплое подтверждение вместо сухого "AI структурировал..." — сразу сообщает главное:
           результат готов и его можно смело редактировать (см. отзыв про эмоциональность).
-          Голубой — единый акцент всего окна (кроме полосы шагов сверху — она намеренно
-          осталась фиолетовой, см. AIFlowStepper). */}
-      <div className="sk-row sk-gap-3" style={{ padding: 14, background: "var(--sk-accent-secondary)", borderRadius: "var(--sk-radius-3)", alignItems: "flex-start" }}>
-        <span style={{
-          width: 32, height: 32, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center",
-          background: "var(--sk-surface-page)",
-        }}><IconCheck size={16} color="var(--sk-icon-accent)" /></span>
-        <div className="sk-col sk-gap-1">
-          <div className="sk-label-3">Готово! Проверьте результат и скорректируйте перед добавлением в план</div>
-        </div>
-      </div>
+          Та же AIBanner, что и на шаге ожиданий — оба AI-сообщения в окне выглядят одинаково. */}
+      <AIBanner icon={<IconCheck size={16} color="var(--sk-icon-special)" />}>
+        <div className="sk-label-3">Готово! Проверьте результат и скорректируйте перед добавлением в план</div>
+      </AIBanner>
 
       <Input label="Цель" required value={draft.title} onChange={(e) => setDraft((d) => ({ ...d, title: e.target.value || "" }))} />
       <Textarea label="Описание цели" rows={3} maxLength={1000} showCount value={draft.description}
@@ -912,11 +981,12 @@ function AIDraftStep({ member, plan, draft, setDraft, considered }) {
         <div className="sk-col sk-gap-2">
           {draft.steps.map((s, i) => (
             <div key={i} className="sk-row sk-gap-2" style={{ alignItems: "center" }}>
-              {/* Полупрозрачная заливка (secondary-токен) вместо сплошной — те же токены,
-                  что у пилюль/тегов по всему прототипу, вместо плотного цвета с белой цифрой. */}
+              {/* Полупрозрачная фиолетовая заливка — те же токены, что у баннеров AI выше:
+                  шаги сгенерированы AI, поэтому маркированы его цветом, а не голубым
+                  (голубой оставлен за обычными интерактивными элементами вроде кнопки ниже). */}
               <span style={{
                 width: 22, height: 22, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center",
-                background: "var(--sk-accent-secondary)", color: "var(--sk-text-accent)", font: "var(--sk-label-4)",
+                background: "var(--sk-special-secondary)", color: "var(--sk-text-special)", font: "var(--sk-label-4)",
               }}>{i + 1}</span>
               <Input value={s} onChange={(e) => updateStep(i, e.target.value || "")} style={{ flex: 1 }} />
               <button className="sk-link-btn" onClick={() => removeStep(i)}><IconTrash size={15} color="var(--sk-icon-secondary)" /></button>
@@ -931,16 +1001,6 @@ function AIDraftStep({ member, plan, draft, setDraft, considered }) {
       <DatePicker label="Срок" required value={draft.dueDate}
         onChange={(date) => setDraft((d) => ({ ...d, dueDate: date }))}
         helper="По умолчанию — срок окончания плана адаптации." />
-
-      <div className="sk-col sk-gap-2" style={{ padding: 14, background: "var(--sk-surface-secondary)", borderRadius: "var(--sk-radius-3)" }}>
-        <div className="sk-row sk-gap-2" style={{ alignItems: "center" }}>
-          <IconSparkles size={15} color="var(--sk-icon-accent)" />
-          <span className="sk-label-4">При формировании цели AI учёл:</span>
-        </div>
-        <div className="sk-col sk-gap-1" style={{ paddingLeft: 22 }}>
-          {considered.map((c, i) => <div key={i} className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>· {c}</div>)}
-        </div>
-      </div>
     </div>
   );
 }
@@ -949,25 +1009,27 @@ function AIDraftStep({ member, plan, draft, setDraft, considered }) {
 function AIGoalAssistantModal({ member, plan, onClose, onCreate }) {
   const [step, setStep] = React.useState("input"); // input | loading | draft | success
   const [text, setText] = React.useState("");
-  const [demo, setDemo] = React.useState({ voice: false, file: false, image: false });
+  const [demo, setDemo] = React.useState({ voice: false, file: false, image: false, fileMeta: null });
   const [draft, setDraft] = React.useState(null);
 
-  function toggleDemo(key) { setDemo((d) => ({ ...d, [key]: !d[key] })); }
+  function toggleDemo(key) {
+    setDemo((d) => (key === "file" ? { ...d, file: !d.file, fileMeta: null } : { ...d, [key]: !d[key] }));
+  }
+  // Клик по подсказке ("Описание вакансии" и т.п.) прикрепляет демо-файл с этим названием;
+  // повторный клик по уже выбранной подсказке снимает вложение (см. AI_UPLOAD_SUGGESTIONS).
+  function pickFileSuggestion(s) {
+    setDemo((d) => (d.file && d.fileMeta && d.fileMeta.key === s.key)
+      ? { ...d, file: false, fileMeta: null }
+      : { ...d, file: true, fileMeta: s });
+  }
 
   function buildDraft() {
     return { title: AI_DRAFT_RESULT.title, description: AI_DRAFT_RESULT.description, steps: [...AI_DRAFT_RESULT.steps], dueDate: parseRuShortDate(plan.dateEnd) };
   }
 
   const hasSource = text.trim().length > 0 || demo.voice || demo.file || demo.image;
-  const considered = [
-    "информацию о сотруднике — " + member.name,
-    "должность и функцию — " + member.position,
-    "период адаптации — до " + plan.dateEnd,
-    "ваши ожидания из описания выше",
-    ...(demo.voice || demo.file || demo.image ? ["приложенные материалы"] : []),
-  ];
 
-  const AI_TITLE = <span className="sk-row sk-gap-2" style={{ alignItems: "center" }}><IconSparkles size={17} color="var(--sk-icon-accent)" />Сформируем цель с AI</span>;
+  const AI_TITLE = <span className="sk-row sk-gap-2" style={{ alignItems: "center" }}><IconSparklesSolid size={17} color="var(--sk-icon-special)" />Сформируем цель с AI</span>;
   const TITLE_BY_STEP = { input: AI_TITLE, loading: AI_TITLE, draft: "Черновик цели", success: null };
 
   let footerProps = {};
@@ -1000,10 +1062,10 @@ function AIGoalAssistantModal({ member, plan, onClose, onCreate }) {
       <div className="sk-col sk-gap-4">
         {step !== "success" && <AIFlowStepper activeIndex={flowIndex} />}
         {step === "input" && (
-          <AIExpectationsStep member={member} plan={plan} text={text} setText={setText} demo={demo} toggleDemo={toggleDemo} />
+          <AIExpectationsStep member={member} plan={plan} text={text} setText={setText} demo={demo} toggleDemo={toggleDemo} pickFileSuggestion={pickFileSuggestion} />
         )}
         {step === "loading" && <AIGeneratingStep onDone={() => { setDraft(buildDraft()); setStep("draft"); }} />}
-        {step === "draft" && draft && <AIDraftStep member={member} plan={plan} draft={draft} setDraft={setDraft} considered={considered} />}
+        {step === "draft" && draft && <AIDraftStep member={member} plan={plan} draft={draft} setDraft={setDraft} />}
         {step === "success" && (
           <div className="sk-col sk-gap-2" style={{ alignItems: "center", textAlign: "center", padding: "24px 0" }}>
             <div style={{ width: 44, height: 44, borderRadius: "50%", background: "var(--sk-positive-secondary)", display: "flex", alignItems: "center", justifyContent: "center" }}>

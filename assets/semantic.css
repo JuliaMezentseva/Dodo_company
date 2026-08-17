@@ -46,6 +46,10 @@
   --sk-warning-secondary: var(--bg-bg-warning-secondary);
   --sk-special: var(--bg-bg-special);
   --sk-special-secondary: var(--bg-bg-special-secondary);
+  --sk-special-strong: var(--violet-violet-35);
+  --sk-text-special: var(--text-text-special);
+  --sk-icon-special: var(--icon-icon-special);
+  --sk-stroke-special: var(--stroke-stroke-special);
   --sk-neutral: var(--bg-bg-neutral);
 
   --sk-hover-nav: var(--bg-bg-state-bg-nav-item-hover);          /* rgba(220,227,235,.5) */
