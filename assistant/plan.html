@@ -37,7 +37,7 @@ function useDeepState(initial) {
 function employeeIdFromUrl() {
   const id = new URLSearchParams(window.location.search).get("employee");
   const m = D.team.find(t => t.id === id && t.planId);
-  return m ? m.id : "yulia";
+  return m ? m.id : "nikita";
 }
 
 const MONTHS = ["янв", "фев", "мар", "апр", "май", "июн", "июл", "авг", "сен", "окт", "ноя", "дек"];
