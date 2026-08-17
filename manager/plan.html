@@ -23,12 +23,19 @@ const { AppShell, StatusTag, Icons, personPhoto } = window.Site;
 const {
   IconArrowLeft, IconCheck, IconLock, IconClock, IconFileText, IconLink2, IconMessageCircle,
   IconHelpCircle, IconTarget, IconMapPin, IconPhone, IconMail, IconSend,
-  IconChevronUp, IconChevronDown, IconX, IconAlertCircle, IconTrash, IconSearch, IconClipboard, IconPlusSm,
+  IconChevronUp, IconChevronDown, IconChevronRight, IconX, IconAlertCircle, IconTrash, IconSearch, IconClipboard, IconPlusSm,
   IconEdit, IconLayers, IconSparkles, IconBookOpen, IconMic, IconImage, IconPaperclip, IconRepeat, IconBriefcase,
 } = Icons;
 const D = window.SITE_DATA;
 function stripDuePrefix(label) {
   return (label || "").replace(/^до\s+/i, "");
+}
+// Склонение "шаг/шага/шагов" для счётчика шагов у цели каталога (см. hr/goals-catalog.html).
+function pluralSteps(n) {
+  const mod10 = n % 10, mod100 = n % 100;
+  if (mod10 === 1 && mod100 !== 11) return "шаг";
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) return "шага";
+  return "шагов";
 }
 // Название шаблона оценочного листа часто начинается с "Оценочный лист: ..." — этот
 // префикс дублирует заголовок секции "Оценочный лист" в дровере, поэтому в подзаголовке
@@ -147,8 +154,10 @@ function Page() {
 
   const [goalDrawer, setGoalDrawer] = React.useState(null); // { mode: "new" } | { mode: "edit", goalId }
   const [newGoalDraft, setNewGoalDraft] = React.useState({ title: "", description: "", dueDate: new Date(2026, 0, 20), subgoals: [] });
+  const [draftFromCatalog, setDraftFromCatalog] = React.useState(false); // черновик пришёл из каталога — показать бейдж в дровере
   const [goalMethodModal, setGoalMethodModal] = React.useState(false); // выбор способа создания цели
   const [aiGoalModal, setAiGoalModal] = React.useState(false); // создание цели с AI-помощником
+  const [goalCatalogModal, setGoalCatalogModal] = React.useState(false); // выбор цели из каталога
   const [highlightGoalId, setHighlightGoalId] = React.useState(null); // подсветка только что добавленной AI цели в списке
   const [subgoalMethodModal, setSubgoalMethodModal] = React.useState(null); // { context: "draft" } | { context: "goal", goalId } — выбор способа добавления шага
   const [subgoalModal, setSubgoalModal] = React.useState(null); // { context: "draft" } | { context: "goal", goalId }
@@ -394,9 +403,23 @@ function Page() {
           onManual={() => {
             setGoalMethodModal(false);
             setNewGoalDraft({ title: "", description: "", dueDate: new Date(2026, 0, 20), subgoals: [] });
+            setDraftFromCatalog(false);
             setGoalDrawer({ mode: "new" });
           }}
+          onCatalog={() => { setGoalMethodModal(false); setGoalCatalogModal(true); }}
           onAI={() => { setGoalMethodModal(false); setAiGoalModal(true); }} />
+      )}
+
+      {/* ---- Модалка выбора цели из каталога ---- */}
+      {goalCatalogModal && (
+        <GoalCatalogPickerModal member={member}
+          onClose={() => setGoalCatalogModal(false)}
+          onPick={(goal) => {
+            setGoalCatalogModal(false);
+            setNewGoalDraft(goalDraftFromCatalog(goal, plan));
+            setDraftFromCatalog(true);
+            setGoalDrawer({ mode: "new" });
+          }} />
       )}
 
       {/* ---- Окно AI-помощника создания цели ---- */}
@@ -408,7 +431,7 @@ function Page() {
 
       {/* ---- Дровер цели (создание/просмотр) ---- */}
       {goalDrawer && goalDrawer.mode === "new" && (
-        <GoalCreateDrawer draft={newGoalDraft} setDraft={setNewGoalDraft}
+        <GoalCreateDrawer draft={newGoalDraft} setDraft={setNewGoalDraft} fromCatalog={draftFromCatalog}
           onClose={() => setGoalDrawer(null)}
           onAddSubgoal={() => setSubgoalMethodModal({ context: "draft" })}
           onCreate={() => { addGoal(newGoalDraft); setGoalDrawer(null); showToast("Цель создана"); }} />
@@ -635,9 +658,9 @@ function ManagerSubgoalRow({ subgoal, index, goalDueLabel, plan, onOpen, onOpenM
 // подложка плитки, тёмно-фиолетовая иконка — визуально выделяет AI-сценарий среди прочих
 // способов. disabled НЕ приглушает плитку через opacity — она полностью видима и читаема,
 // просто не кликабельна (это не "скоро будет", а осознанно нереализованный в этой итерации
-// способ). "С AI-помощником" в модалке создания цели теперь кликабелен (см.
-// AIGoalAssistantModal); в модалке добавления шага и "Из каталога целей" — по-прежнему нет,
-// это отдельный, не затронутый этой итерацией сценарий.
+// способ). В модалке создания цели все три способа теперь кликабельны (см.
+// AIGoalAssistantModal и GoalCatalogPickerModal); в модалке добавления шага "С AI-помощником"
+// по-прежнему нет — это отдельный, не затронутый этой итерацией сценарий.
 function MethodTile({ icon: Icon, title, variant, disabled, onClick }) {
   const special = variant === "special";
   return (
@@ -676,16 +699,94 @@ function MethodTile({ icon: Icon, title, variant, disabled, onClick }) {
 }
 
 // ---------------- Модалка: выбор способа создания цели ----------------
-function GoalMethodModal({ onClose, onManual, onAI }) {
+function GoalMethodModal({ onClose, onManual, onCatalog, onAI }) {
   return (
     <Modal open title="Как создать цель?" onClose={onClose} size="l"
       secondary={<Button mode="secondary" onClick={onClose}>Отменить</Button>}>
       <div className="sk-row sk-gap-3" style={{ alignItems: "stretch" }}>
         <MethodTile icon={IconEdit} title="Вручную" onClick={onManual} />
-        <MethodTile icon={IconLayers} title="Из каталога целей" disabled />
+        <MethodTile icon={IconLayers} title="Из каталога целей" onClick={onCatalog} />
         <MethodTile icon={IconSparkles} title="С AI-помощником" variant="special" onClick={onAI} />
       </div>
     </Modal>
+  );
+}
+
+// ---------------- Модалка: выбор цели из каталога ----------------
+// Список HR-каталога целей (см. hr/goals-catalog.html) с поиском и фильтром по категории.
+// Клик по цели не создаёт её сразу — вместо этого открывается тот же дровер, что и у
+// способа "Вручную" (GoalCreateDrawer), но уже заполненный данными из каталога: руководитель
+// может поправить срок, описание и шаги под конкретного сотрудника, прежде чем реально
+// создать цель, а не соглашаться с шаблоном вслепую.
+function GoalCatalogPickerModal({ member, onClose, onPick }) {
+  const [q, setQ] = React.useState("");
+  const [category, setCategory] = React.useState("");
+  const needle = q.trim().toLowerCase();
+  const list = (D.goalCatalog || [])
+    .filter(g => !g.archived)
+    .filter(g => {
+      if (needle && !(g.title.toLowerCase().includes(needle)
+        || (g.positions || []).some(p => p.toLowerCase().includes(needle)))) return false;
+      if (category && g.category !== category) return false;
+      return true;
+    })
+    // Цели под должность сотрудника, чей план сейчас открыт, — выше остальных: их
+    // руководителю нужно найти быстрее всего, а порядок внутри каждой группы не важен.
+    .sort((a, b) => ((a.positions || []).includes(member.position) ? 0 : 1) - ((b.positions || []).includes(member.position) ? 0 : 1));
+
+  return (
+    <Modal open title="Выберите цель из каталога" onClose={onClose} size="l" maxHeight="calc(100vh - 64px)"
+      secondary={<Button mode="secondary" onClick={onClose}>Отменить</Button>}>
+      <div className="sk-col sk-gap-3">
+        <Input size="s" icon={<IconSearch size={18} />} placeholder="Название или должность"
+          value={q} onChange={(e) => setQ(e.target.value || "")} />
+        <div className="sk-row sk-gap-2" style={{ flexWrap: "wrap" }}>
+          <CatalogCategoryPill label="Все категории" active={!category} onClick={() => setCategory("")} />
+          {(D.goalCategories || []).map(c => (
+            <CatalogCategoryPill key={c} label={c} active={category === c} onClick={() => setCategory(category === c ? "" : c)} />
+          ))}
+        </div>
+        <div className="sk-col sk-gap-2">
+          {list.length ? list.map(g => (
+            <CatalogGoalRow key={g.id} goal={g} onClick={() => onPick(g)} />
+          )) : (
+            <div className="sk-muted" style={{ textAlign: "center", padding: "24px 0" }}>Ничего не нашлось — попробуйте изменить запрос или категорию.</div>
+          )}
+        </div>
+      </div>
+    </Modal>
+  );
+}
+function CatalogCategoryPill({ label, active, onClick }) {
+  return (
+    <button onClick={onClick} className="sk-clickable" style={{
+      height: 30, padding: "0 12px", borderRadius: "var(--sk-radius-full)", flexShrink: 0,
+      border: active ? "none" : "1px solid var(--sk-stroke)",
+      background: active ? "var(--sk-surface-secondary)" : "var(--sk-surface-page)",
+      color: "var(--sk-text-primary)", font: active ? "var(--sk-label-4)" : "var(--sk-label-4-regular)", whiteSpace: "nowrap",
+    }}>{label}</button>
+  );
+}
+function CatalogGoalRow({ goal, onClick }) {
+  const stepsCount = (goal.subgoals || []).length;
+  return (
+    <div className="sk-clickable" onClick={onClick} style={{
+      display: "flex", gap: 12, alignItems: "center", padding: "12px 14px",
+      border: "1px solid var(--sk-stroke)", borderRadius: "var(--sk-radius-3)",
+    }}>
+      <span style={{
+        width: 32, height: 32, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center",
+        background: "var(--sk-accent-secondary)", color: "var(--sk-text-accent)",
+      }}><IconTarget size={16} /></span>
+      <div className="sk-col sk-gap-1" style={{ flex: 1, minWidth: 0 }}>
+        <span className="sk-label-3">{goal.title}</span>
+        <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>
+          {goal.category}{goal.level ? " · " + goal.level : ""} · {stepsCount} {pluralSteps(stepsCount)}
+          {(goal.positions || []).length ? " · " + goal.positions.join(", ") : ""}
+        </span>
+      </div>
+      <IconChevronRight size={16} color="var(--sk-icon-secondary)" />
+    </div>
   );
 }
 
@@ -790,22 +891,51 @@ function parseRuShortDate(str) {
   if (!m) return new Date();
   return new Date(2000 + parseInt(m[3], 10), parseInt(m[2], 10) - 1, parseInt(m[1], 10));
 }
+function addDays(date, days) {
+  const d = new Date(date);
+  d.setDate(d.getDate() + days);
+  return d;
+}
+function minDate(a, b) { return a.getTime() < b.getTime() ? a : b; }
+// Черновик из каталога целей — та же форма, что и у ручного создания (см. GoalCreateDrawer),
+// просто уже заполненная. dueDays в каталоге — это смещение в днях от даты старта адаптации
+// (а не от сегодня и не от даты предыдущего шага), поэтому шаги сохраняют относительный
+// порядок сроков, заданный в каталоге; на выходе всё ограничено датой окончания плана —
+// у каталожных целей свой типовой срок, который не обязан совпадать с длительностью
+// адаптации конкретного сотрудника. Проверяющего "Наставник" сопоставляем с первым
+// помощником сотрудника (если он назначен), а "Руководитель" и всё остальное — с текущим
+// руководителем; дальше это можно поправить в дровере подцели, как и любого проверяющего.
+function goalDraftFromCatalog(goal, plan) {
+  const start = parseRuShortDate(plan.dateStart);
+  const planEnd = parseRuShortDate(plan.dateEnd);
+  const dueDate = minDate(addDays(start, goal.dueDays || 30), planEnd);
+  return {
+    title: goal.title,
+    description: goal.description || "",
+    dueDate,
+    subgoals: (goal.subgoals || []).map(sg => ({
+      title: sg.title,
+      description: sg.description || "",
+      dueDate: minDate(addDays(start, sg.dueDays || goal.dueDays || 30), dueDate),
+      reviewer: sg.reviewer === "Наставник" && D.assistants.length ? D.assistants[0].name : D.manager.name,
+      checklistRefs: [],
+      assessmentChecklist: null,
+    })),
+  };
+}
 
 // Компактная иконка-переключатель дополнительного способа ввода (голос/файл/изображение) —
 // не отдельный большой сценарий, просто демонстрационное состояние по клику (см. ТЗ п.6, 24).
-// Нейтральная серая иконка — голубой здесь смотрелся третьим случайным цветом рядом
-// с фиолетовым баннером и чёрными кнопками (см. отзыв "выглядит не впопад"). Тёмная
-// заливка при включении вместо смены оттенка — состояние "включено" видно и без цвета,
-// плюс чип с вложением ниже.
+// Просто чёрная иконка без подложки — без кружка-фона легче, а состояние "включено" и так
+// видно по чипу с вложением ниже.
 function InputSourceIcon({ icon: Icon, active, label, onClick, size = 32 }) {
   return (
     <Tooltip content={label}>
       <button type="button" onClick={onClick} className="sk-clickable" style={{
-        width: size, height: size, borderRadius: "50%", border: "none",
-        background: active ? "var(--sk-surface-dark)" : "var(--sk-surface-secondary)",
+        width: size, height: size, border: "none", background: "transparent",
         display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
       }}>
-        <Icon size={Math.round(size * 0.47)} color={active ? "var(--sk-text-contrast)" : "var(--sk-icon-secondary)"} />
+        <Icon size={Math.round(size * 0.47)} color="var(--sk-icon-primary)" />
       </button>
     </Tooltip>
   );
@@ -847,12 +977,11 @@ function AIExpectationsStep({ member, plan, text, setText, demo, toggleDemo, pic
       {/* Факты о сотруднике — прямо в реплике AI, а не отдельной карточкой ниже: один блок
           вместо двух (вариант "слитный" из сравнения макетов). */}
       <AIBanner icon={<IconSparklesSolid size={18} color="var(--sk-icon-special)" />}>
-        {/* Имя — в именительном падеже и в начале фразы, а не после предлога: member.name
-            хранится без склонения, а "для {member.name}" даёт грамматически неверное
-            "для Никита Гаврилов" вместо "для Никиты Гаврилова". */}
+        {/* "для сотрудника:" вместо "для {member.name}" — member.name хранится без склонения,
+            а обобщённое существительное после предлога снимает вопрос падежа для любого имени. */}
         <div className="sk-label-3-regular" style={{ color: "var(--sk-text-primary)" }}>
-          <span style={{ fontWeight: 500 }}>{member.name}</span>, {member.position} · до {plan.dateEnd}.
-          Сформулирую цель — просто расскажите о своих ожиданиях, остальное сделаю сам.
+          Сформулирую цель для сотрудника: <span style={{ fontWeight: 500 }}>{member.name}</span>, {member.position}.
+          Просто расскажите о своих ожиданиях, остальное сделаю сам.
         </div>
       </AIBanner>
 
@@ -1080,13 +1209,16 @@ function AIGoalAssistantModal({ member, plan, onClose, onCreate }) {
 }
 
 // ---------------- Дровер: создание цели ----------------
-function GoalCreateDrawer({ draft, setDraft, onClose, onCreate, onAddSubgoal }) {
+function GoalCreateDrawer({ draft, setDraft, fromCatalog, onClose, onCreate, onAddSubgoal }) {
   const canCreate = draft.title.trim().length > 0;
   return (
     <Drawer open title="Создание цели адаптации" onClose={onClose} size="s"
       primary={<Button disabled={!canCreate} onClick={onCreate}>Создать</Button>}
       secondary={<Button mode="secondary" onClick={onClose}>Отменить</Button>}>
       <div className="sk-col sk-gap-4">
+        {fromCatalog && (
+          <Tag size="s" hue="accent" style={{ alignSelf: "flex-start" }}>Из каталога целей</Tag>
+        )}
         <Input label="Название" required placeholder="Что сотрудник должен выполнить к окончанию периода адаптации"
           value={draft.title} onChange={(e) => setDraft(d => ({ ...d, title: e.target.value || "" }))} />
         <Textarea label="Описание" rows={4} maxLength={1000} showCount
