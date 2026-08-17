@@ -937,10 +937,13 @@ function AIFlowStepper({ activeIndex }) {
         <React.Fragment key={i}>
           <div className="sk-row sk-gap-2" style={{ alignItems: "center", flexShrink: 0 }}>
             {/* Мягкая фиолетовая заливка, не сплошная чёрная — степпер держится в одной
-                цветовой семье с баннером AI ниже, вместо двух разных языков цвета рядом. */}
+                цветовой семье с баннером AI ниже, вместо двух разных языков цвета рядом.
+                У ещё не пройденных шагов — surface-tertiary, не surface-secondary: в шапке
+                на белом фоне secondary почти не видна, кружок читался как пустой номер
+                без заливки вовсе. */}
             <span style={{
               width: 24, height: 24, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center",
-              background: i <= activeIndex ? "var(--sk-special-secondary)" : "var(--sk-surface-secondary)",
+              background: i <= activeIndex ? "var(--sk-special-secondary)" : "var(--sk-surface-tertiary)",
               boxShadow: i <= activeIndex ? "inset 0 0 0 1.5px var(--sk-stroke-special)" : "none",
               color: i <= activeIndex ? "var(--sk-text-special)" : "var(--sk-text-tertiary)", font: "var(--sk-label-4)",
             }}>{i < activeIndex ? <IconCheck size={13} /> : i + 1}</span>
