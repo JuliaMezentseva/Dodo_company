@@ -397,13 +397,15 @@ function CategoryPillsBar({ categories, catalog, active, onSelect }) {
   // Серый = выбрано (тот же тег, что и в столбце "Категория" таблицы — одинаковый
   // визуальный язык), белая обводка = не выбрано. Размер — как у Tag size="s" (высота 20,
   // padding 0 6px, sk-label-4) — единообразно с пилюлями по всему прототипу, например
-  // столбцом "Тип плана" в "Очереди назначения".
+  // столбцом "Тип плана" в "Очереди назначения". Текст всегда основной чёрный (не серый) —
+  // тот же принцип, что у EventPill в hr/queue.html: цвет фона несёт состояние "выбрано",
+  // а не приглушённый текст.
   function pillStyle(isActive) {
     return {
       height: 20, padding: "0 6px", borderRadius: "var(--sk-radius-full)", cursor: "pointer",
       border: isActive ? "none" : "1px solid var(--sk-stroke)",
       background: isActive ? "var(--sk-surface-secondary)" : "var(--sk-surface-page)",
-      color: isActive ? "var(--sk-text-primary)" : "var(--sk-text-secondary)",
+      color: "var(--sk-text-primary)",
       font: isActive ? "var(--sk-label-4)" : "var(--sk-label-4-regular)", whiteSpace: "nowrap", flexShrink: 0,
     };
   }
