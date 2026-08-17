@@ -290,7 +290,7 @@ function TemplateCheckpointsSection({ checkpoints, onAdd, onEdit, onDelete }) {
 // подпись с описанием выбранного варианта, вместо отдельного мастера или карточек сценариев. ----------------
 const GOALS_OWNER_OPTIONS = [
   { id: "manager", label: "Руководитель", description: "Руководитель создаёт цели в плане сотрудника после назначения" },
-  { id: "hr", label: "Администратор", description: "Администратор готовит цели в шаблоне или индивидуальном плане" },
+  { id: "hr", label: "Администратор" },
 ];
 
 function GoalsOwnerPicker({ owner, onChange }) {
@@ -301,7 +301,7 @@ function GoalsOwnerPicker({ owner, onChange }) {
       <SegmentedControl size="m"
         items={GOALS_OWNER_OPTIONS.map((o) => ({ id: o.id, label: o.label }))}
         active={owner} onChange={onChange} style={{ alignSelf: "flex-start" }} />
-      {active && <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{active.description}</span>}
+      {active && active.description && <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{active.description}</span>}
     </div>
   );
 }
@@ -784,8 +784,8 @@ function GoalsSection({ owner, deadlineDays, reviewRequired, reviewDeadlineDays,
         </div>
       ) : (
         <div className="sk-col sk-gap-4">
-          <Alert hue="accent" title="Нужна ли проверка руководителем?">
-            Если да — включите проверку ниже: руководитель сможет доработать цели и опубликовать их сотруднику сам.
+          <Alert hue="accent" title="Требуется проверка целей руководителем?">
+            Если да — включите проверку ниже: руководитель сможет доработать их и опубликовать сотруднику сам.
           </Alert>
 
           <div className="sk-col sk-gap-2" style={{ padding: 14, borderRadius: "var(--sk-radius-3)", border: "1px solid var(--sk-stroke)" }}>
