@@ -37,6 +37,7 @@ function pluralSteps(n) {
   if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) return "шага";
   return "шагов";
 }
+// Склонение "цель/цели/целей" — для счётчика в свёрнутом списке каталога.
 // Название шаблона оценочного листа часто начинается с "Оценочный лист: ..." — этот
 // префикс дублирует заголовок секции "Оценочный лист" в дровере, поэтому в подзаголовке
 // показываем только суть названия (например, "Первая консультация покупателя").
@@ -725,27 +726,32 @@ function GoalMethodModal({ onClose, onManual, onCatalog, onAI }) {
 // способа "Вручную" (GoalCreateDrawer), но уже заполненный данными из каталога: руководитель
 // может поправить срок, описание и шаги под конкретного сотрудника, прежде чем реально
 // создать цель, а не соглашаться с шаблоном вслепую.
+// Вместо отдельного заголовка-группировки "Подходит для «должность»" — фильтр "Должность"
+// заранее выставлен на должность сотрудника, чей план сейчас открыт, а панель фильтров сразу
+// раскрыта, так что это read as применённый фильтр, а не браузинг двух списков. Категория —
+// такой же чип внутри фильтров, а не отдельная строка пилюль (см. отзыв о навигации по каталогу).
 function GoalCatalogPickerModal({ member, onClose, onPick }) {
   const [q, setQ] = React.useState("");
-  const [category, setCategory] = React.useState("");
-  const [filters, setFilters] = React.useState({ position: "", level: "" });
-  const [filtersOpen, setFiltersOpen] = React.useState(false);
+  const [filters, setFilters] = React.useState({ category: "", position: member.position, level: "" });
+  const [filtersOpen, setFiltersOpen] = React.useState(true);
   const catalogActive = (D.goalCatalog || []).filter(g => !g.archived);
+  const categories = [...new Set(catalogActive.map(g => g.category).filter(Boolean))];
   const positions = [...new Set(catalogActive.flatMap(g => g.positions || []))];
-  const toolbarFilterCount = (filters.position ? 1 : 0) + (filters.level ? 1 : 0);
+  const toolbarFilterCount = (filters.category ? 1 : 0) + (filters.position ? 1 : 0) + (filters.level ? 1 : 0);
   const needle = q.trim().toLowerCase();
+
   const list = catalogActive
     .filter(g => {
       if (needle && !(g.title.toLowerCase().includes(needle)
         || g.category.toLowerCase().includes(needle)
         || (g.positions || []).some(p => p.toLowerCase().includes(needle)))) return false;
-      if (category && g.category !== category) return false;
+      if (filters.category && g.category !== filters.category) return false;
       if (filters.position && !(g.positions || []).includes(filters.position)) return false;
       if (filters.level && g.level !== filters.level) return false;
       return true;
     })
-    // Цели под должность сотрудника, чей план сейчас открыт, — выше остальных: их
-    // руководителю нужно найти быстрее всего, а порядок внутри каждой группы не важен.
+    // Цели под должность сотрудника — выше остальных, даже если фильтр по должности снят
+    // (например, руководитель специально смотрит на весь каталог целиком).
     .sort((a, b) => ((a.positions || []).includes(member.position) ? 0 : 1) - ((b.positions || []).includes(member.position) ? 0 : 1));
 
   return (
@@ -760,7 +766,7 @@ function GoalCatalogPickerModal({ member, onClose, onPick }) {
             <span className="sk-row sk-gap-1" style={{ alignItems: "center" }}>
               Фильтры{toolbarFilterCount ? " · " + toolbarFilterCount : ""}
               {toolbarFilterCount > 0 && (
-                <span onClick={(e) => { e.stopPropagation(); setFilters({ position: "", level: "" }); }}
+                <span onClick={(e) => { e.stopPropagation(); setFilters({ category: "", position: "", level: "" }); }}
                   style={{ display: "inline-flex", opacity: 0.6, marginLeft: 2 }}>
                   <IconX size={14} />
                 </span>
@@ -768,21 +774,18 @@ function GoalCatalogPickerModal({ member, onClose, onPick }) {
             </span>
           </Button>
         </div>
-        <div className="sk-row sk-gap-2" style={{ flexWrap: "wrap" }}>
-          <CatalogCategoryPill label="Все категории" active={!category} onClick={() => setCategory("")} />
-          {(D.goalCategories || []).map(c => (
-            <CatalogCategoryPill key={c} label={c} active={category === c} onClick={() => setCategory(category === c ? "" : c)} />
-          ))}
-        </div>
         {filtersOpen && (
           <div className="sk-row sk-gap-2" style={{ flexWrap: "wrap" }}>
+            <FilterChip label="Категория" options={categories.map(v => ({ value: v, label: v }))}
+              value={filters.category} onChange={(v) => setFilters(f => ({ ...f, category: v }))} />
             <FilterChip label="Должность" options={positions.map(v => ({ value: v, label: v }))}
               value={filters.position} onChange={(v) => setFilters(f => ({ ...f, position: v }))} />
             <FilterChip label="Уровень" options={(D.goalLevels || []).map(v => ({ value: v, label: v }))}
               value={filters.level} onChange={(v) => setFilters(f => ({ ...f, level: v }))} />
           </div>
         )}
-        <div className="sk-col sk-gap-2">
+
+        <div className="sk-col sk-gap-2" style={{ paddingTop: 8 }}>
           {list.length ? list.map(g => (
             <CatalogGoalRow key={g.id} goal={g} onClick={() => onPick(g)} />
           )) : (
@@ -838,16 +841,6 @@ function FilterChip({ label, options, value, onChange }) {
         </div>
       )}
     </div>
-  );
-}
-function CatalogCategoryPill({ label, active, onClick }) {
-  return (
-    <button onClick={onClick} className="sk-clickable" style={{
-      height: 30, padding: "0 12px", borderRadius: "var(--sk-radius-full)", flexShrink: 0,
-      border: active ? "none" : "1px solid var(--sk-stroke)",
-      background: active ? "var(--sk-surface-secondary)" : "var(--sk-surface-page)",
-      color: "var(--sk-text-primary)", font: active ? "var(--sk-label-4)" : "var(--sk-label-4-regular)", whiteSpace: "nowrap",
-    }}>{label}</button>
   );
 }
 function CatalogGoalRow({ goal, onClick }) {
