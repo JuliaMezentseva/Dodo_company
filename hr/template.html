@@ -915,8 +915,8 @@ function GoalsSection({ owner, deadlineDays, reviewRequired, reviewDeadlineDays,
 
           <div className="sk-col sk-gap-3" style={{ padding: 16, borderRadius: "var(--sk-radius-3)", background: "var(--sk-surface-secondary)" }}>
             <div className="sk-row" style={{ justifyContent: "space-between", alignItems: "center" }}>
-              <span className="sk-title-5">Руководитель должен проверить и опубликовать цели</span>
-              <Switch checked={reviewRequired} onChange={onReviewRequiredChange} style={{ transform: "scale(1.3)", transformOrigin: "right center" }} />
+              <span className="sk-label-3">Руководитель должен проверить и опубликовать цели</span>
+              <Switch checked={reviewRequired} onChange={onReviewRequiredChange} />
             </div>
             {reviewRequired && (
               <div className="sk-row" style={{ justifyContent: "space-between", alignItems: "center" }}>
