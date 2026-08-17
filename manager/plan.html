@@ -1088,7 +1088,9 @@ function AIExpectationsStep({ member, plan, text, setText, demo, toggleDemo, pic
         {/* Иконки способов ввода — внутри поля, у правого нижнего края, как в привычных
             AI-чатах (ChatGPT, Telegram и т.п.), а не отдельной колонкой сбоку от поля. */}
         <div className="ai-expect-textarea" onClick={fillOnFirstClick} style={{ position: "relative" }}>
-          <Textarea rows={3} value={text}
+          {/* resize="none" — иначе нативная ручка изменения размера браузера сидит в том же
+              правом нижнем углу, что и иконка изображения, и накладывается на неё. */}
+          <Textarea rows={3} value={text} resize="none"
             onChange={(e) => setText(e.target.value || "")}
             textareaStyle={{ paddingRight: 8, paddingBottom: 48 }}
             placeholder="Например: хочу, чтобы к концу адаптации сотрудник сам вёл клиентов…" />
@@ -1184,6 +1186,10 @@ function AIDraftStep({ member, plan, draft, setDraft }) {
 
       <div className="sk-col sk-gap-2">
         <div className="sk-label-3">Шаги для достижения цели</div>
+        {/* Input внутри плашки-шага рисует свою собственную обводку (inset box-shadow) —
+            получалась обводка в обводке. Гасим внутреннюю, оставляем только внешнюю
+            (у плашки), фокус всё равно виден по подсветке самого текста при клике. */}
+        <style>{".ai-step-row > label > span:first-of-type { box-shadow: none !important; background: transparent !important; }"}</style>
         <div className="sk-col sk-gap-2">
           {draft.steps.map((s, i) => {
             // Тот же нейтральный кружок-номер, что и в дровере цели (см. NUMBER_BADGE), внутри
@@ -1191,7 +1197,7 @@ function AIDraftStep({ member, plan, draft, setDraft }) {
             // читается как элемент внутри неё, а не отдельно висящий рядом с полем ввода.
             const badge = NUMBER_BADGE.not_started;
             return (
-              <div key={i} className="sk-row sk-gap-2" style={{
+              <div key={i} className="ai-step-row sk-row sk-gap-2" style={{
                 alignItems: "center", padding: "10px 12px", border: "1px solid var(--sk-stroke)",
                 borderRadius: "var(--sk-radius-3)", background: "var(--sk-surface-page)",
               }}>
