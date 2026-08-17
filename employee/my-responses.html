@@ -15,19 +15,25 @@
 <body>
 <div id="root"></div>
 <script type="text/babel">
-const { Card } = window.SkillazCoreDesignSystem_bf9566;
-const { AppShell, StatusTag, Icons } = window.Site;
+const { Card, Tag } = window.SkillazCoreDesignSystem_bf9566;
+const { AppShell, Icons } = window.Site;
 const { IconArrowLeft, IconMapPin, IconBriefcase } = Icons;
 const D = window.SITE_DATA;
 
+// Статус отклика в ATS не синхронизируется в этот контур — единственное, что система
+// знает достоверно, это факт отправки и дата. Вместо выдуманного статуса — тег
+// "Отправлен", а для закрытых вакансий отдельный тег вместо него (это уже есть локально).
 function ResponseRow({ r }) {
   const v = D.vacancies.find(x => x.id === r.vacancyId);
   if (!v) return null;
+  const closed = v.status === "closed";
+  const [hovered, setHovered] = React.useState(false);
   return (
-    <a href={"vacancy.html?id=" + v.id} style={{ textDecoration: "none" }}>
-      <Card bordered style={{ cursor: "pointer" }}>
+    <a href={"vacancy.html?id=" + v.id} style={{ textDecoration: "none" }}
+      onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}>
+      <Card bordered style={{ cursor: "pointer", boxShadow: hovered ? "inset 0 0 0 1.5px var(--sk-stroke-accent)" : "inset 0 0 0 1px var(--sk-stroke)" }}>
         <div className="sk-row" style={{ justifyContent: "space-between", alignItems: "flex-start" }}>
-          <div className="sk-col sk-gap-1">
+          <div className="sk-col sk-gap-1" style={{ opacity: closed ? 0.6 : 1 }}>
             <div className="sk-label-2">{v.title}</div>
             <div className="sk-row sk-gap-2 sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>
               <IconBriefcase size={14} />{v.department}
@@ -35,7 +41,7 @@ function ResponseRow({ r }) {
             </div>
             <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Отклик отправлен {r.date}</div>
           </div>
-          <StatusTag status={r.status} />
+          <Tag size="s" hue={closed ? "neutral" : "positive"}>{closed ? "Вакансия закрыта" : "Отправлен"}</Tag>
         </div>
       </Card>
     </a>
@@ -49,7 +55,7 @@ function Page() {
       breadcrumb={<a href="vacancies.html" className="sk-row sk-gap-1" style={{ color: "var(--sk-text-secondary)" }}><IconArrowLeft size={14} /> Вакансии</a>}>
       <div className="sk-col sk-gap-2">
         <div className="sk-title-4">Мои отклики</div>
-        <div className="sk-muted">Отклики на внутренние вакансии и их текущий статус. Дальнейшая обработка — на стороне рекрутера.</div>
+        <div className="sk-muted">Вакансии, на которые вы откликнулись. Дальнейшая обработка и обратная связь — на стороне рекрутера.</div>
       </div>
       <div className="sk-col sk-gap-3">
         {responses.length === 0 && (
