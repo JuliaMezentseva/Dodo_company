@@ -763,7 +763,7 @@ function AIFlowStepper({ activeIndex }) {
           <div className="sk-row sk-gap-2" style={{ alignItems: "center", flexShrink: 0 }}>
             <span style={{
               width: 24, height: 24, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center",
-              background: i <= activeIndex ? "var(--sk-special-strong)" : "var(--sk-surface-secondary)",
+              background: i <= activeIndex ? "var(--sk-surface-dark)" : "var(--sk-surface-secondary)",
               color: i <= activeIndex ? "var(--sk-text-contrast)" : "var(--sk-text-tertiary)", font: "var(--sk-label-4)",
             }}>{i < activeIndex ? <IconCheck size={13} /> : i + 1}</span>
             <span className="sk-muted" style={{ font: "var(--sk-label-3-regular)", color: i === activeIndex ? "var(--sk-text-secondary)" : "var(--sk-text-tertiary)" }}>{label}</span>
@@ -843,22 +843,17 @@ function AIExpectationsStep({ member, plan, text, setText, demo, toggleDemo, pic
   }
   return (
     <div className="sk-col sk-gap-4">
+      {/* Факты о сотруднике — прямо в реплике AI, а не отдельной карточкой ниже: один блок
+          вместо двух (вариант "слитный" из сравнения макетов). */}
       <AIBanner icon={<IconSparklesSolid size={14} color="var(--sk-icon-special)" />}>
+        {/* Имя — в именительном падеже и в начале фразы, а не после предлога: member.name
+            хранится без склонения, а "для {member.name}" даёт грамматически неверное
+            "для Никита Гаврилов" вместо "для Никиты Гаврилова". */}
         <div className="sk-label-3-regular" style={{ color: "var(--sk-text-primary)" }}>
-          Я помогу сформулировать цель, описание и шаги. Просто расскажите о своих ожиданиях — остальное сделаю сам.
+          <span style={{ fontWeight: 500 }}>{member.name}</span>, {member.position} · до {plan.dateEnd}.
+          Сформулирую цель — просто расскажите о своих ожиданиях, остальное сделаю сам.
         </div>
       </AIBanner>
-
-      <div className="sk-col sk-gap-2">
-        <div className="sk-label-3">Уже знаю о сотруднике</div>
-        {/* Без аватара — руководитель открывает это окно уже из плана конкретного сотрудника,
-            фото тут не несёт новой информации, только два факта, которые реально нужны AI. */}
-        <div className="sk-col sk-gap-1" style={{ padding: 12, background: "var(--sk-surface-secondary)", borderRadius: "var(--sk-radius-3)" }}>
-          <div className="sk-label-3">{member.name}</div>
-          <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{member.position} · {member.department}</div>
-          <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Период адаптации до {plan.dateEnd}</div>
-        </div>
-      </div>
 
       <div className="sk-col sk-gap-4">
         <div className="sk-col sk-gap-1">
@@ -1050,15 +1045,9 @@ function AIGoalAssistantModal({ member, plan, onClose, onCreate }) {
           <Button mode="secondary" icon={<IconRepeat size={15} />} onClick={() => setStep("loading")}>Сформировать заново</Button>
         </div>
       ),
-      // Фиолетовая, а не голубая — принимаем результат именно AI-черновика, поэтому кнопка
-      // завершает фирменный фиолетовый акцент этого экрана (см. AIBanner / нумерация шагов).
-      // Override только пока кнопка активна — иначе перекроет и серый disabled-стиль ДС.
-      primary: (
-        <Button variant="accent" disabled={!draftValid} onClick={() => { onCreate(draft); setStep("success"); }}
-          style={draftValid ? { background: "var(--sk-special-strong)", color: "var(--sk-text-contrast)" } : undefined}>
-          Добавить в план
-        </Button>
-      ),
+      // Чёрная, как и "Сформировать цель" на первом шаге — целевые кнопки сценария
+      // нейтральные, фиолетовый остаётся только за репликой AI (см. AIBanner).
+      primary: <Button disabled={!draftValid} onClick={() => { onCreate(draft); setStep("success"); }}>Добавить в план</Button>,
     };
   } else if (step === "success") {
     footerProps = { primary: <Button onClick={onClose} style={{ width: "100%" }}>Вернуться к плану адаптации</Button> };
