@@ -302,7 +302,9 @@ function StepBlock({ index, title, isLast, children }) {
         {!isLast && <div style={{ width: 1, flex: 1, minHeight: 24, background: "var(--sk-stroke-divider)", margin: "4px 0" }} />}
       </div>
       <div className="sk-col sk-gap-3" style={{ flex: 1, minWidth: 0, paddingBottom: isLast ? 0 : 20 }}>
-        <span className="sk-label-3">{title}</span>
+        <div style={{ minHeight: 28, display: "flex", alignItems: "center" }}>
+          <span className="sk-title-5">{title}</span>
+        </div>
         {children}
       </div>
     </div>
@@ -843,7 +845,7 @@ function GoalsSection({ owner, deadlineDays, reviewRequired, reviewDeadlineDays,
 
           <StepBlock index={2} title="Нужна ли проверка руководителем?" isLast>
             <div className="sk-row" style={{ justifyContent: "space-between", alignItems: "center" }}>
-              <span className="sk-label-3">Публиковать цели только после проверки руководителем</span>
+              <span className="sk-label-3">Руководитель должен проверить и опубликовать цели</span>
               <Switch checked={reviewRequired} onChange={onReviewRequiredChange} />
             </div>
             {reviewRequired && (
