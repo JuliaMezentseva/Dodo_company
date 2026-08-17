@@ -536,8 +536,8 @@ function ManagerGoalRow({ goal, plan, highlighted, onOpenGoal, onOpenSubgoal, on
   return (
     <div className="sk-col sk-gap-3" onClick={onOpenGoal} style={{
       cursor: "pointer", padding: "14px 16px", borderRadius: "var(--sk-radius-3)", background: "var(--sk-surface-page)",
-      border: "1px solid " + (highlighted ? "var(--violet-violet-35)" : "var(--sk-stroke)"),
-      boxShadow: highlighted ? "0 0 0 3px var(--sk-special-secondary)" : "none",
+      border: "1px solid " + (highlighted ? "var(--sk-accent)" : "var(--sk-stroke)"),
+      boxShadow: highlighted ? "0 0 0 3px var(--sk-accent-secondary)" : "none",
       transition: "box-shadow .4s ease, border-color .4s ease",
     }}>
       <div className="sk-row sk-gap-3" style={{ justifyContent: "space-between", alignItems: "flex-start" }}>
@@ -756,17 +756,18 @@ function parseRuShortDate(str) {
 
 // Компактная иконка-переключатель дополнительного способа ввода (голос/файл/изображение) —
 // не отдельный большой сценарий, просто демонстрационное состояние по клику (см. ТЗ п.6, 24).
-// Фиолетовый/сиреневый — основной акцент этого окна, в покое бледная лиловая подложка, при
-// включении заливка сплошная — так видно, что именно попало к AI.
+// Серые — это утилитарные способы ввода, а не голос AI, акцентный голубой оставляем только
+// за собственно AI-элементами (баннер, бейдж, "AI учёл"). Тёмная заливка при включении вместо
+// смены оттенка — состояние "включено" видно и без цвета, плюс чип с вложением ниже.
 function InputSourceIcon({ icon: Icon, active, label, onClick }) {
   return (
     <Tooltip content={label}>
       <button type="button" onClick={onClick} className="sk-clickable" style={{
         width: 32, height: 32, borderRadius: "50%", border: "none",
-        background: active ? "var(--violet-violet-35)" : "var(--sk-special-secondary)",
+        background: active ? "var(--sk-surface-dark)" : "var(--sk-surface-secondary)",
         display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
       }}>
-        <Icon size={15} color={active ? "var(--sk-text-contrast)" : "var(--violet-violet-35)"} />
+        <Icon size={15} color={active ? "var(--sk-text-contrast)" : "var(--sk-icon-secondary)"} />
       </button>
     </Tooltip>
   );
@@ -782,8 +783,8 @@ function DemoAttachmentChip({ icon: Icon, label, sub, onRemove }) {
     }}>
       <div style={{
         width: 26, height: 26, borderRadius: "var(--sk-radius-2)", flexShrink: 0,
-        background: "var(--sk-special-secondary)", display: "flex", alignItems: "center", justifyContent: "center",
-      }}><Icon size={14} color="var(--violet-violet-35)" /></div>
+        background: "var(--sk-surface-secondary)", display: "flex", alignItems: "center", justifyContent: "center",
+      }}><Icon size={14} color="var(--sk-icon-secondary)" /></div>
       <div className="sk-col" style={{ gap: 0, minWidth: 0, flex: 1 }}>
         <div className="sk-label-4" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{label}</div>
         {sub && <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{sub}</div>}
@@ -804,8 +805,8 @@ function AIExpectationsStep({ member, plan, text, setText, demo, toggleDemo }) {
   }
   return (
     <div className="sk-col sk-gap-4">
-      <div style={{ padding: 14, background: "var(--sk-special-secondary)", borderRadius: "var(--sk-radius-3)" }}>
-        <div className="sk-label-3-regular" style={{ color: "var(--violet-violet-35)" }}>
+      <div style={{ padding: 14, background: "var(--sk-accent-secondary)", borderRadius: "var(--sk-radius-3)" }}>
+        <div className="sk-label-3-regular" style={{ color: "var(--sk-text-accent)" }}>
           Я помогу сформулировать цель, описание и шаги. Просто расскажите о своих ожиданиях — остальное сделаю сам.
         </div>
       </div>
@@ -834,7 +835,7 @@ function AIExpectationsStep({ member, plan, text, setText, demo, toggleDemo }) {
             текста поля, стилизуется только через CSS-псевдоэлемент, inline-style сюда не дотянуться. */}
         <style>{".ai-expect-textarea textarea::placeholder { color: var(--sk-text-tertiary); font-size: 13px; }"}</style>
         <div className="ai-expect-textarea" onClick={fillOnFirstClick}>
-          <Textarea rows={4} value={text}
+          <Textarea rows={3} value={text}
             onChange={(e) => setText(e.target.value || "")}
             placeholder="Например: хочу, чтобы к концу адаптации сотрудник сам вёл клиентов, проводил встречи без моей помощи и правильно фиксировал результаты в CRM." />
         </div>
@@ -873,7 +874,7 @@ function AIGeneratingStep({ onDone }) {
       </div>
       <div className="sk-row sk-gap-2">
         {AI_LOADING_STAGES.map((s, i) => (
-          <span key={i} style={{ width: 6, height: 6, borderRadius: "50%", background: i <= stageIdx ? "var(--violet-violet-35)" : "var(--sk-stroke)" }} />
+          <span key={i} style={{ width: 6, height: 6, borderRadius: "50%", background: i <= stageIdx ? "var(--sk-accent)" : "var(--sk-stroke)" }} />
         ))}
       </div>
     </div>
@@ -890,15 +891,15 @@ function AIDraftStep({ member, plan, draft, setDraft, considered }) {
     <div className="sk-col sk-gap-5">
       {/* Тёплое подтверждение вместо сухого "AI структурировал..." — сразу сообщает главное:
           результат готов и его можно смело редактировать (см. отзыв про эмоциональность).
-          Фиолетовый/сиреневый — не зелёный, чтобы совпадать с остальной палитрой окна. */}
-      <div className="sk-row sk-gap-3" style={{ padding: 14, background: "var(--sk-special-secondary)", borderRadius: "var(--sk-radius-3)", alignItems: "flex-start" }}>
+          Голубой — единый акцент всего окна (кроме полосы шагов сверху — она намеренно
+          осталась фиолетовой, см. AIFlowStepper). */}
+      <div className="sk-row sk-gap-3" style={{ padding: 14, background: "var(--sk-accent-secondary)", borderRadius: "var(--sk-radius-3)", alignItems: "flex-start" }}>
         <span style={{
           width: 32, height: 32, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center",
           background: "var(--sk-surface-page)",
-        }}><IconCheck size={16} color="var(--violet-violet-35)" /></span>
+        }}><IconCheck size={16} color="var(--sk-icon-accent)" /></span>
         <div className="sk-col sk-gap-1">
           <div className="sk-label-3">Готово! Проверьте результат и скорректируйте перед добавлением в план</div>
-          <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>AI структурировал ваши ожидания в цель, описание и шаги — ничего не зафиксировано, всё можно поправить.</div>
         </div>
       </div>
 
@@ -908,20 +909,21 @@ function AIDraftStep({ member, plan, draft, setDraft, considered }) {
 
       <div className="sk-col sk-gap-2">
         <div className="sk-label-3">Шаги для достижения цели</div>
-        <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>AI сформировал последовательность шагов, которые помогут достичь цели.</div>
         <div className="sk-col sk-gap-2">
           {draft.steps.map((s, i) => (
             <div key={i} className="sk-row sk-gap-2" style={{ alignItems: "center" }}>
+              {/* Полупрозрачная заливка (secondary-токен) вместо сплошной — те же токены,
+                  что у пилюль/тегов по всему прототипу, вместо плотного цвета с белой цифрой. */}
               <span style={{
                 width: 22, height: 22, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center",
-                background: "var(--violet-violet-35)", color: "var(--sk-text-contrast)", font: "var(--sk-label-4)",
+                background: "var(--sk-accent-secondary)", color: "var(--sk-text-accent)", font: "var(--sk-label-4)",
               }}>{i + 1}</span>
               <Input value={s} onChange={(e) => updateStep(i, e.target.value || "")} style={{ flex: 1 }} />
               <button className="sk-link-btn" onClick={() => removeStep(i)}><IconTrash size={15} color="var(--sk-icon-secondary)" /></button>
             </div>
           ))}
         </div>
-        <button className="sk-link-btn sk-label-3-regular" onClick={addStep} style={{ alignSelf: "flex-start", color: "var(--violet-violet-35)" }}>
+        <button className="sk-link-btn sk-label-3-regular" onClick={addStep} style={{ alignSelf: "flex-start", color: "var(--sk-text-accent)" }}>
           <span className="sk-row sk-gap-1"><IconPlusSm size={16} />Добавить шаг</span>
         </button>
       </div>
@@ -932,7 +934,7 @@ function AIDraftStep({ member, plan, draft, setDraft, considered }) {
 
       <div className="sk-col sk-gap-2" style={{ padding: 14, background: "var(--sk-surface-secondary)", borderRadius: "var(--sk-radius-3)" }}>
         <div className="sk-row sk-gap-2" style={{ alignItems: "center" }}>
-          <IconSparkles size={15} color="var(--violet-violet-35)" />
+          <IconSparkles size={15} color="var(--sk-icon-accent)" />
           <span className="sk-label-4">При формировании цели AI учёл:</span>
         </div>
         <div className="sk-col sk-gap-1" style={{ paddingLeft: 22 }}>
@@ -965,15 +967,13 @@ function AIGoalAssistantModal({ member, plan, onClose, onCreate }) {
     ...(demo.voice || demo.file || demo.image ? ["приложенные материалы"] : []),
   ];
 
-  const AI_TITLE = <span className="sk-row sk-gap-2" style={{ alignItems: "center" }}><IconSparkles size={17} color="var(--violet-violet-35)" />Сформируем цель с AI</span>;
+  const AI_TITLE = <span className="sk-row sk-gap-2" style={{ alignItems: "center" }}><IconSparkles size={17} color="var(--sk-icon-accent)" />Сформируем цель с AI</span>;
   const TITLE_BY_STEP = { input: AI_TITLE, loading: AI_TITLE, draft: "Черновик цели", success: null };
-  // У кнопки в ДС нет готового фиолетового варианта (только neutral/accent/gray/positive/
-  // negative) — заливаем инлайн-стилем поверх, тот же приём, что у "Оценить выполнение".
-  // Стиль применяем только когда кнопка активна, иначе он перекроет серый disabled-вид.
-  const violetBtnStyle = { background: "var(--violet-violet-35)", color: "var(--sk-text-contrast)" };
 
   let footerProps = {};
   if (step === "input") {
+    // "Сформировать цель" — чёрная (нейтральная primary-кнопка ДС), а не акцентная: это
+    // единственная кнопка на экране, поэтому не нуждается в дополнительном выделении цветом.
     footerProps = {
       secondary: <Button mode="secondary" onClick={onClose}>Отменить</Button>,
       primary: <Button disabled={!hasSource} icon={<IconSparkles size={16} />} onClick={() => setStep("loading")}>Сформировать цель</Button>,
@@ -987,7 +987,7 @@ function AIGoalAssistantModal({ member, plan, onClose, onCreate }) {
           <Button mode="secondary" icon={<IconRepeat size={15} />} onClick={() => setStep("loading")}>Сформировать заново</Button>
         </div>
       ),
-      primary: <Button disabled={!draftValid} onClick={() => { onCreate(draft); setStep("success"); }} style={draftValid ? violetBtnStyle : undefined}>Добавить в план</Button>,
+      primary: <Button variant="accent" disabled={!draftValid} onClick={() => { onCreate(draft); setStep("success"); }}>Добавить в план</Button>,
     };
   } else if (step === "success") {
     footerProps = { primary: <Button onClick={onClose} style={{ width: "100%" }}>Вернуться к плану адаптации</Button> };
