@@ -78,7 +78,11 @@ const IconUserX = mkIcon(<><circle cx="9" cy="8.3" r="3.3" stroke="currentColor"
 // добавлено для сценария "Создание цели с AI-помощником" (роль Руководитель) — компактные
 // иконки дополнительных способов передать информацию (голос, изображение) рядом с полем ввода.
 const IconMic = mkIcon(<><rect x="9" y="3.5" width="6" height="11" rx="3" stroke="currentColor" strokeWidth="2" /><path d="M6 11.5a6 6 0 0 0 12 0M12 17.5v3.2M9 20.7h6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></>);
-const IconImage = mkIcon(<><rect x="3.5" y="4.5" width="17" height="15" rx="2.2" stroke="currentColor" strokeWidth="2" /><circle cx="8.5" cy="9.5" r="1.5" stroke="currentColor" strokeWidth="2" /><path d="m5 17 4.5-4.7c.7-.7 1.6-.7 2.3 0L13 13.5l3-3.2c.7-.7 1.6-.7 2.3 0L21 13.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></>);
+// Стандартная геометрия иконки "изображение" (как в Feather Icons) — рамка, солнце,
+// одна гора в угол; предыдущая рука рисованная версия выходила за правый край рамки
+// (path до x=21 при рамке шириной до x=20.5) и на жирной обводке смотрелась как
+// "полоски" вылезающие сбоку. Тут всё внутри рамки по построению.
+const IconImage = mkIcon(<><rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="2" /><circle cx="8.5" cy="8.5" r="1.5" stroke="currentColor" strokeWidth="2" /><path d="M21 15l-5-5L5 21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></>);
 function IconCopyLocal2({ size = 16, color = "currentColor" }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" style={{ color, flexShrink: 0 }}>
