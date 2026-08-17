@@ -311,7 +311,7 @@ const GOALS_OWNER_OPTIONS = [
 function GoalsOwnerPicker({ owner, onChange }) {
   const active = GOALS_OWNER_OPTIONS.find((o) => o.id === owner);
   return (
-    <div className="sk-col sk-gap-2" style={{ paddingBottom: 16, marginBottom: 4, borderBottom: "1px solid var(--sk-stroke)" }}>
+    <div className="sk-col sk-gap-2">
       <span className="sk-label-3" style={{ color: "var(--sk-text-primary)" }}>Кто создает цели?</span>
       <SegmentedControl size="m"
         items={GOALS_OWNER_OPTIONS.map((o) => ({ id: o.id, label: o.label }))}
@@ -782,7 +782,7 @@ function GoalsSection({ owner, deadlineDays, reviewRequired, reviewDeadlineDays,
   }
 
   return (
-    <div className="sk-col sk-gap-4" style={{ padding: "20px 24px" }}>
+    <div className="sk-col sk-gap-5" style={{ padding: "20px 24px" }}>
       <GoalsOwnerPicker owner={owner} onChange={onOwnerChange} />
 
       {owner === "manager" ? (
@@ -798,7 +798,7 @@ function GoalsSection({ owner, deadlineDays, reviewRequired, reviewDeadlineDays,
             style={{ width: 88 }} />
         </div>
       ) : (
-        <div className="sk-col sk-gap-4">
+        <div className="sk-col sk-gap-5">
           <div className="sk-col sk-gap-3">
             <StepHeader index={1} title="Создайте цели" />
 
@@ -835,24 +835,17 @@ function GoalsSection({ owner, deadlineDays, reviewRequired, reviewDeadlineDays,
             )}
           </div>
 
-          <Divider />
-
           <div className="sk-col sk-gap-3">
             <StepHeader index={2} title="Нужна ли проверка руководителем?" />
             <Alert hue="accent">
-              Если да — включите проверку ниже: руководитель сможет доработать их и опубликовать сотруднику сам.
+              Если включить — руководитель сможет доработать цели и опубликовать их сотруднику сам. Если оставить выключенным — цели публикует администратор.
             </Alert>
 
-            <div className="sk-col sk-gap-2" style={{ padding: 14, borderRadius: "var(--sk-radius-3)", border: "1px solid var(--sk-stroke)" }}>
+            <div className="sk-col sk-gap-2">
               <div className="sk-row" style={{ justifyContent: "space-between", alignItems: "center" }}>
                 <span className="sk-label-3">Руководитель должен проверить и опубликовать цели</span>
                 <Switch checked={reviewRequired} onChange={onReviewRequiredChange} />
               </div>
-              <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>
-                {reviewRequired
-                  ? "Администратор готовит основу, а руководитель может изменить цели, добавить новые и опубликовать сотруднику."
-                  : "Администратор полностью готовит цели в шаблоне."}
-              </span>
               {reviewRequired && (
                 <div className="sk-row" style={{ justifyContent: "space-between", alignItems: "center", paddingTop: 4 }}>
                   <span className="sk-label-3-regular">Срок доработки и публикации целей руководителем (дней)</span>
