@@ -17,7 +17,7 @@
 <script type="text/babel">
 const { Card, Tag, Input, Button, Checkbox } = window.SkillazCoreDesignSystem_bf9566;
 const { AppShell, Icons } = window.Site;
-const { IconSearch, IconMapPin, IconBriefcase, IconCheck, IconLink2, IconX, IconChevronDown } = Icons;
+const { IconSearch, IconMapPin, IconBriefcase, IconCheck, IconFilter, IconX, IconChevronDown } = Icons;
 const D = window.SITE_DATA;
 
 // Локальные иконки в стилистике общего набора (mkIcon: viewBox 24, strokeWidth 1.5, currentColor).
@@ -264,7 +264,7 @@ function Page() {
         <div className="sk-row sk-gap-2" style={{ alignItems: "center", flexWrap: "wrap" }}>
           <Input size="s" icon={<IconSearch size={20} />} placeholder="По названию, должности или подразделению"
             value={q} onChange={(e) => setQ(e.target.value || "")} style={{ width: 460, flexShrink: 0 }} />
-          <Button mode="secondary" icon={<IconLink2 size={16} color="var(--sk-icon-primary)" />} onClick={() => setFiltersOpen((o) => !o)}
+          <Button mode="secondary" icon={<IconFilter size={16} color="var(--sk-icon-primary)" />} onClick={() => setFiltersOpen((o) => !o)}
             style={{ background: "var(--sk-surface-page)", border: hasActiveFilters ? "1px solid var(--sk-stroke-accent)" : "1px solid var(--sk-stroke)" }}>
             <span className="sk-row sk-gap-1" style={{ alignItems: "center" }}>
               Фильтры{activeFilterCount ? " · " + activeFilterCount : ""}

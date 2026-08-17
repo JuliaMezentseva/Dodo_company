@@ -75,6 +75,10 @@ const IconRepeat = mkIcon(<><path d="M4 12a8 8 0 0 1 13.5-5.7L20 9" stroke="curr
 const IconColumns = mkIcon(<><rect x="3.5" y="4.5" width="17" height="15" rx="2" stroke="currentColor" strokeWidth="1.5" /><path d="M9.5 4.5v15M14.5 4.5v15" stroke="currentColor" strokeWidth="1.5" /></>);
 const IconInbox = mkIcon(<><path d="M4 12.5h4.2l1.3 2.3h5l1.3-2.3H20" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" /><path d="M5.3 6.5 4 12.5v5a1.6 1.6 0 0 0 1.6 1.6h12.8A1.6 1.6 0 0 0 20 17.5v-5l-1.3-6a1.6 1.6 0 0 0-1.6-1.3H6.9a1.6 1.6 0 0 0-1.6 1.3Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" /></>);
 const IconUserX = mkIcon(<><circle cx="9" cy="8.3" r="3.3" stroke="currentColor" strokeWidth="1.5" /><path d="M3.5 19.2c.8-3.2 2.9-4.9 5.5-4.9.7 0 1.4.1 2 .4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /><path d="M15.5 8.5l5 5M20.5 8.5l-5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /></>);
+// добавлено для сценария "Создание цели с AI-помощником" (роль Руководитель) — компактные
+// иконки дополнительных способов передать информацию (голос, изображение) рядом с полем ввода.
+const IconMic = mkIcon(<><rect x="9" y="3.5" width="6" height="11" rx="3" stroke="currentColor" strokeWidth="1.5" /><path d="M6 11.5a6 6 0 0 0 12 0M12 17.5v3.2M9 20.7h6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /></>);
+const IconImage = mkIcon(<><rect x="3.5" y="4.5" width="17" height="15" rx="2" stroke="currentColor" strokeWidth="1.5" /><circle cx="8.5" cy="9.5" r="1.6" stroke="currentColor" strokeWidth="1.4" /><path d="m5 17 4.5-4.7c.7-.7 1.6-.7 2.3 0L13 13.5l3-3.2c.7-.7 1.6-.7 2.3 0L21 13.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></>);
 function IconCopyLocal2({ size = 16, color = "currentColor" }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" style={{ color, flexShrink: 0 }}>
@@ -90,7 +94,7 @@ window.SiteIcons = {
   IconTarget, IconMapPin, IconPhone, IconMail, IconSend, IconUpload, IconX, IconFilter, IconAlertCircle,
   IconGraduationCap, IconGift, IconLayers, IconPlusSm, IconEye, IconPaperclip, IconCalendar, IconUser,
   IconMoreHorizontal, IconEdit, IconTrash, IconFlag, IconSettings, IconClipboard, IconRocket, IconSparkles, IconBookOpen,
-  IconUnlink, IconUserSwitch, IconRepeat, IconColumns, IconInbox, IconUserX, IconCopyLocal2,
+  IconUnlink, IconUserSwitch, IconRepeat, IconColumns, IconInbox, IconUserX, IconCopyLocal2, IconMic, IconImage,
 };
 
 function directionHue(direction) {

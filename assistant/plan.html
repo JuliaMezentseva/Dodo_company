@@ -864,29 +864,6 @@ function CheckpointStatusRow({ label, done }) {
   );
 }
 
-// Тёплая плашка статуса КТ — аналог блока "Обратная связь по итогам" у сотрудника
-// (CheckpointModal в employee/plan.html): вместо сухого чек-листа "кто что заполнил"
-// показываем один итоговый статус с пояснением, что делать дальше. Когда КТ уже завершена,
-// баннер не рендерится вовсе — этот статус уже показан StatusTag'ом в шапке дровера, дублировать не нужно.
-function CheckpointStatusBanner({ done, surveyReady, reportReady }) {
-  if (done) return null;
-  let title, note;
-  if (!surveyReady) { title = "Ожидает сотрудника"; note = "Форма станет доступна для заполнения, как только сотрудник ответит на опрос."; }
-  else if (!reportReady) { title = "Готово к завершению"; note = "Заполните обязательные поля выше, чтобы завершить контрольную точку."; }
-  else { title = "Всё заполнено"; note = "Можно завершить контрольную точку."; }
-  return (
-    <div className="sk-row sk-gap-3" style={{ padding: 14, background: "var(--sk-surface-secondary)", borderRadius: "var(--sk-radius-3)", alignItems: "flex-start" }}>
-      <span style={{ width: 32, height: 32, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "var(--sk-surface-page)" }}>
-        <IconClock size={16} color="var(--sk-icon-secondary)" />
-      </span>
-      <div className="sk-col sk-gap-1">
-        <div className="sk-label-3">{title}</div>
-        <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{note}</div>
-      </div>
-    </div>
-  );
-}
-
 function ManagerCheckpointDrawer({ checkpoint, viewerName, employee, canEdit, onFinish, onAddComment, onClose }) {
   const [employeeSummary, setEmployeeSummary] = React.useState(checkpoint.employeeSummary || "");
   const [internalReport, setInternalReport] = React.useState(checkpoint.internalReport || "");
@@ -1013,9 +990,6 @@ function ManagerCheckpointDrawer({ checkpoint, viewerName, employee, canEdit, on
           )}
         </div>
 
-        <CheckpointStatusBanner done={done} surveyReady={surveyReady} reportReady={reportReady} />
-
-        <Divider />
         <CommentsPanel comments={checkpoint.comments} comment={comment} setComment={setComment}
           onAdd={onAddComment} disabled={false} />
       </div>

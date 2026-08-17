@@ -27,7 +27,7 @@ const D = window.SITE_DATA;
 // о переходе между двумя разными HTML — поэтому свои "табы-ссылки" на <a href>.
 function VacanciesModeTabs({ active }) {
   const items = [
-    { id: "showcase", label: "Вакансии", href: "vacancies-showcase.html" },
+    { id: "showcase", label: "Витрина", href: "vacancies-showcase.html" },
     { id: "manage", label: "Управление вакансиями", href: "vacancies.html" },
   ];
   return (
@@ -336,11 +336,8 @@ function Page() {
 
   return (
     <AppShell role="hr" active="vacancies" base="..">
-      <VacanciesModeTabs active="manage" />
-      <div className="sk-row" style={{ justifyContent: "space-between", alignItems: "flex-start" }}>
-        <div className="sk-col sk-gap-2">
-          <div className="sk-title-4">Управление вакансиями</div>
-        </div>
+      <div className="sk-row" style={{ justifyContent: "space-between", alignItems: "center" }}>
+        <div className="sk-title-4">Вакансии</div>
         <div className="sk-row sk-gap-2">
           <Button mode="secondary" icon={<IconFolderHeart size={16} />} onClick={exportResponsesCsv}>Выгрузить отклики</Button>
           <Tooltip content={<div style={{ maxWidth: 200, whiteSpace: "normal" }}>Импорт из Excel — вне текущей итерации прототипа.</div>}>
@@ -349,9 +346,10 @@ function Page() {
           <Button variant="accent" icon={<IconPlusSm size={16} />} onClick={() => setFormModal({ mode: "create" })}>Создать вакансию</Button>
         </div>
       </div>
+      <VacanciesModeTabs active="manage" />
 
       <div className="sk-row sk-gap-2" style={{ alignItems: "center" }}>
-        <Input icon={<IconSearch size={20} />} placeholder="Поиск по названию или подразделению" value={q} onChange={(e) => setQ(e.target.value || "")} style={{ maxWidth: 420, flex: 1 }} />
+        <Input size="s" icon={<IconSearch size={20} />} placeholder="Поиск по названию или подразделению" value={q} onChange={(e) => setQ(e.target.value || "")} style={{ maxWidth: 420, flex: 1 }} />
         <Button mode="secondary" icon={<Icons.IconFilter size={16} />} onClick={() => setFiltersOpen((o) => !o)}
           style={{ background: "var(--sk-surface-page)", border: "1px solid var(--sk-stroke)" }}>
           Фильтры{hasActiveFilters ? " · " + activeFilterCount : ""}

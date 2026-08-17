@@ -17,14 +17,14 @@
 <script type="text/babel">
 const {
   Card, ProgressCircle, ProgressBar, Tag, Avatar, Divider, Tabs, SegmentedControl, Modal, Drawer, Checkbox, Radio,
-  Textarea, Input, Select, DatePicker, Button, Snackbar, Alert, Tooltip,
+  Textarea, Input, Select, DatePicker, Button, Snackbar, Alert, Tooltip, Loader,
 } = window.SkillazCoreDesignSystem_bf9566;
 const { AppShell, StatusTag, Icons, personPhoto } = window.Site;
 const {
   IconArrowLeft, IconCheck, IconLock, IconClock, IconFileText, IconLink2, IconMessageCircle,
-  IconHelpCircle, IconInfo, IconTarget, IconMapPin, IconPhone, IconMail, IconSend,
+  IconHelpCircle, IconTarget, IconMapPin, IconPhone, IconMail, IconSend,
   IconChevronUp, IconChevronDown, IconX, IconAlertCircle, IconTrash, IconSearch, IconClipboard, IconPlusSm,
-  IconEdit, IconLayers, IconSparkles, IconBookOpen,
+  IconEdit, IconLayers, IconSparkles, IconBookOpen, IconMic, IconImage, IconPaperclip, IconRepeat,
 } = Icons;
 const D = window.SITE_DATA;
 function stripDuePrefix(label) {
@@ -60,26 +60,27 @@ function fmtDate(date) { return date.getDate() + " " + MONTHS[date.getMonth()] +
 
 const ELEMENT_ICON = { article: IconFileText, task: IconCheck, course: IconFileText, survey: IconHelpCircle, file: IconFileText, link: IconLink2, checkpoint: IconTarget };
 const ELEMENT_LABEL = { article: "Статья", task: "Задача", course: "Курс", survey: "Опрос", file: "Файл", link: "Ссылка", checkpoint: "Контрольная точка" };
-const SUBGOAL_ICON = {
-  done: { icon: IconCheck, bg: "var(--sk-positive)", fg: "var(--sk-text-contrast)" },
-  not_done: { icon: IconX, bg: "var(--sk-negative)", fg: "var(--sk-text-contrast)" },
-  pending_review: { icon: IconInfo, bg: "var(--sk-warning)", fg: "var(--sk-text-contrast)" },
-  in_progress: { icon: IconClock, bg: "var(--sk-accent)", fg: "var(--sk-text-contrast)" },
-  returned: { icon: IconInfo, bg: "var(--sk-warning)", fg: "var(--sk-text-contrast)" },
+// Кружок с номером шага теперь всегда нейтральный, независимо от статуса — см. STATUS_ICON.
+const NUMBER_BADGE = {
+  not_started: { bg: "transparent", fg: "var(--sk-text-tertiary)", border: "1.5px solid var(--sk-stroke)" },
 };
 const SUBGOAL_STATUS_LABEL = {
   done: "Выполнено", not_done: "Не выполнено", pending_review: "На проверке",
   in_progress: "В работе", returned: "Возвращена в работу", not_started: "Не начата",
 };
-// Порядковый номер шага виден всегда, независимо от статуса — так видна сквозная нумерация
-// шагов внутри цели, вне зависимости от того, есть ли уже решение по шагу. Кружок с номером
-// всегда нейтральный; статус читается по цветной иконке справа от строки (см. SUBGOAL_ICON).
-const NUMBER_BADGE = {
-  not_started: { bg: "transparent", fg: "var(--sk-text-tertiary)", border: "1.5px solid var(--sk-stroke)" },
+// Кружок с номером шага всегда нейтральный (как у ещё не начатых) — разноцветные кружки
+// плохо считывались вперемешку с номерами. Статус вместо этого читается по цветной иконке
+// справа от строки шага, без цветной подложки.
+const STATUS_ICON = {
+  in_progress: { icon: IconEdit, color: "var(--sk-accent)" },
+  returned: { icon: IconAlertCircle, color: "var(--sk-warning)" },
+  done: { icon: IconCheck, color: "var(--sk-positive)" },
+  not_done: { icon: IconX, color: "var(--sk-negative)" },
+  pending_review: { icon: IconClock, color: "var(--sk-warning)" },
 };
 
 const MIN_TAB_NOTE = "Формальный порог входа в роль. Сотрудник отмечает пункты сам, вашего подтверждения не требуется.";
-const MAX_TAB_NOTE = "Персональный план сотрудника на результат в роли. Открывайте цель, чтобы поставить шаги и проверить подцели.";
+const MAX_TAB_NOTE = "Цели сотрудника на адаптацию. Открывайте цель, чтобы задать шаги и проверять прогресс.";
 const CP_YELLOW = "var(--yellow-yellow-85)";
 const CP_YELLOW_BG = "var(--yellow-yellow-96)";
 const CP_YELLOW_BORDER = "var(--yellow-yellow-80)";
@@ -147,6 +148,8 @@ function Page() {
   const [goalDrawer, setGoalDrawer] = React.useState(null); // { mode: "new" } | { mode: "edit", goalId }
   const [newGoalDraft, setNewGoalDraft] = React.useState({ title: "", description: "", dueDate: new Date(2026, 0, 20), subgoals: [] });
   const [goalMethodModal, setGoalMethodModal] = React.useState(false); // выбор способа создания цели
+  const [aiGoalModal, setAiGoalModal] = React.useState(false); // создание цели с AI-помощником
+  const [highlightGoalId, setHighlightGoalId] = React.useState(null); // подсветка только что добавленной AI цели в списке
   const [subgoalMethodModal, setSubgoalMethodModal] = React.useState(null); // { context: "draft" } | { context: "goal", goalId } — выбор способа добавления шага
   const [subgoalModal, setSubgoalModal] = React.useState(null); // { context: "draft" } | { context: "goal", goalId }
   const [subgoalDrawer, setSubgoalDrawer] = React.useState(null); // { goalId, subgoalId }
@@ -177,6 +180,19 @@ function Page() {
       status: "not_started", subgoals,
     }] }));
     return id;
+  }
+  // Черновик из AI-помощника — тот же addGoal, просто шаги приходят строками (без своих
+  // дат/проверяющих: это шаги к общей цели, а не отдельные подцели, см. ТЗ п.2 и п.16),
+  // поэтому каждому шагу подставляем срок и проверяющего самой цели.
+  function addAIGoal(draft) {
+    const id = addGoal({
+      title: draft.title, description: draft.description, dueDate: draft.dueDate,
+      subgoals: draft.steps.filter(s => s.trim()).map(s => ({
+        title: s.trim(), description: "", dueDate: draft.dueDate, reviewer: D.manager.name, checklistRefs: [],
+      })),
+    });
+    setHighlightGoalId(id);
+    window.setTimeout(() => setHighlightGoalId(cur => cur === id ? null : cur), 4000);
   }
   function updateGoal(goalId, patch) {
     setPlan(prev => ({ ...prev, goals: prev.goals.map(g => g.id !== goalId ? g : { ...g, ...patch }) }));
@@ -352,7 +368,7 @@ function Page() {
                   )}
                   <div className="sk-col sk-gap-4">
                     {plan.goals.map(g => (
-                      <ManagerGoalRow key={g.id} goal={g} plan={plan}
+                      <ManagerGoalRow key={g.id} goal={g} plan={plan} highlighted={g.id === highlightGoalId}
                         onOpenGoal={() => setGoalDrawer({ mode: "edit", goalId: g.id })}
                         onOpenSubgoal={(sgId) => setSubgoalDrawer({ goalId: g.id, subgoalId: sgId })}
                         onOpenMaterials={(sgId) => setChecklistPicker({ goalId: g.id, subgoalId: sgId })}
@@ -379,7 +395,15 @@ function Page() {
             setGoalMethodModal(false);
             setNewGoalDraft({ title: "", description: "", dueDate: new Date(2026, 0, 20), subgoals: [] });
             setGoalDrawer({ mode: "new" });
-          }} />
+          }}
+          onAI={() => { setGoalMethodModal(false); setAiGoalModal(true); }} />
+      )}
+
+      {/* ---- Окно AI-помощника создания цели ---- */}
+      {aiGoalModal && (
+        <AIGoalAssistantModal member={member} plan={plan}
+          onClose={() => setAiGoalModal(false)}
+          onCreate={addAIGoal} />
       )}
 
       {/* ---- Дровер цели (создание/просмотр) ---- */}
@@ -502,32 +526,46 @@ function Page() {
 }
 
 // ---------------- Строка цели в основном списке ----------------
-function ManagerGoalRow({ goal, plan, onOpenGoal, onOpenSubgoal, onOpenMaterials, onDeleteGoal }) {
+// Карточки целей изначально свёрнуты — виден только заголовок, статус и прогресс, без
+// списка шагов; шаги открываются по клику на шеврон (тот же паттерн, что у сотрудника).
+function ManagerGoalRow({ goal, plan, highlighted, onOpenGoal, onOpenSubgoal, onOpenMaterials, onDeleteGoal }) {
   const { done, total, pct } = goalProgress(goal);
   const statusVal = deriveGoalStatus(goal);
   const isDone = statusVal === "done";
+  const [stepsOpen, setStepsOpen] = React.useState(false);
   return (
-    <div className="sk-col sk-gap-3" onClick={onOpenGoal} style={{ cursor: "pointer", padding: 14, border: "1px solid var(--sk-stroke)", borderRadius: "var(--sk-radius-3)", background: "var(--sk-surface-page)" }}>
+    <div className="sk-col sk-gap-3" onClick={onOpenGoal} style={{
+      cursor: "pointer", padding: "14px 16px", borderRadius: "var(--sk-radius-3)", background: "var(--sk-surface-page)",
+      border: "1px solid " + (highlighted ? "var(--violet-violet-35)" : "var(--sk-stroke)"),
+      boxShadow: highlighted ? "0 0 0 3px var(--sk-special-secondary)" : "none",
+      transition: "box-shadow .4s ease, border-color .4s ease",
+    }}>
       <div className="sk-row sk-gap-3" style={{ justifyContent: "space-between", alignItems: "flex-start" }}>
-        <div className="sk-col sk-gap-1" style={{ flex: 1, minWidth: 0 }}>
-          <div className="sk-title-5" style={{ color: isDone ? "var(--sk-text-secondary)" : "var(--sk-text-primary)", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{goal.title || "Без названия"}</div>
+        <div className="sk-col sk-gap-2" style={{ flex: 1, minWidth: 0 }}>
+          <div className="sk-label-2" style={{ color: isDone ? "var(--sk-text-secondary)" : "var(--sk-text-primary)", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{goal.title || "Без названия"}</div>
           {!isDone && (
-            <div className="sk-row sk-gap-3" style={{ alignItems: "center", marginTop: 4 }}>
-              <ProgressBar value={pct} style={{ width: 140 }} hue="positive" />
-              <span className="sk-label-3">{pct}%</span>
-              <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)", whiteSpace: "nowrap" }}>{done} из {total} · {stripDuePrefix(goal.dueLabel) || "срок не задан"}</span>
-            </div>
+            <React.Fragment>
+              <div className="sk-row sk-gap-2" style={{ alignItems: "center", marginTop: 4 }}>
+                <ProgressBar value={pct} style={{ width: 120 }} hue="positive" />
+                <span className="sk-label-4">{pct}%</span>
+                <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)", whiteSpace: "nowrap" }}>{done} из {total}</span>
+              </div>
+              <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>до {stripDuePrefix(goal.dueLabel) || "срок не задан"}</span>
+            </React.Fragment>
           )}
         </div>
-        <div className="sk-row sk-gap-2" style={{ flexShrink: 0 }} onClick={(e) => e.stopPropagation()}>
+        <div className="sk-row sk-gap-2" style={{ flexShrink: 0, alignItems: "center" }} onClick={(e) => e.stopPropagation()}>
           {plan.employeeStarted && <StatusTag status={statusVal} size="m" />}
           {!plan.employeeStarted && (
             <button className="sk-link-btn" onClick={onDeleteGoal} style={{ color: "var(--sk-icon-secondary)" }} title="Удалить цель"><IconTrash size={16} /></button>
           )}
+          <button className="sk-link-btn" onClick={() => setStepsOpen(o => !o)} style={{ color: "var(--sk-icon-secondary)" }}>
+            {stepsOpen ? <IconChevronUp size={16} /> : <IconChevronDown size={16} />}
+          </button>
         </div>
       </div>
-      {!isDone && (
-        <div className="sk-col sk-gap-2" onClick={(e) => e.stopPropagation()}>
+      {stepsOpen && (
+        <div className="sk-col sk-gap-3" style={{ marginTop: 4 }} onClick={(e) => e.stopPropagation()}>
           {goal.subgoals.map((sg, i) => <ManagerSubgoalRow key={sg.id} subgoal={sg} index={i} goalDueLabel={goal.dueLabel} plan={plan} onOpen={() => onOpenSubgoal(sg.id)} onOpenMaterials={() => onOpenMaterials(sg.id)} />)}
           {!goal.subgoals.length && <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Подцели ещё не добавлены</div>}
         </div>
@@ -558,13 +596,13 @@ function MaterialsBadge({ count, published, onClick }) {
 
 function ManagerSubgoalRow({ subgoal, index, goalDueLabel, plan, onOpen, onOpenMaterials }) {
   const isDone = subgoal.status === "done";
-  const cfg = SUBGOAL_ICON[subgoal.status];
   const badge = NUMBER_BADGE.not_started;
+  const statusIcon = STATUS_ICON[subgoal.status];
   const matCount = (subgoal.checklistRefs || []).length;
   const ownDue = stripDuePrefix(subgoal.dueLabel);
   const showOwnDue = !isDone && ownDue && ownDue !== stripDuePrefix(goalDueLabel);
   return (
-    <div className="sk-row sk-gap-3" onClick={onOpen} style={{ cursor: "pointer", justifyContent: "space-between", alignItems: "center", padding: 10, border: "1px solid var(--sk-stroke)", borderRadius: "var(--sk-radius-3)", background: "var(--sk-surface-page)" }}>
+    <div className="sk-row sk-gap-3" onClick={onOpen} style={{ cursor: "pointer", justifyContent: "space-between", alignItems: "center", padding: "12px 14px", border: "1px solid var(--sk-stroke)", borderRadius: "var(--sk-radius-3)", background: "var(--sk-surface-page)" }}>
       <div className="sk-row sk-gap-2" style={{ flex: 1, minWidth: 0, alignItems: "center" }}>
         <span style={{
           width: 20, height: 20, borderRadius: "50%", flexShrink: 0, background: badge.bg, color: badge.fg,
@@ -578,12 +616,12 @@ function ManagerSubgoalRow({ subgoal, index, goalDueLabel, plan, onOpen, onOpenM
         </div>
       </div>
       <div className="sk-row sk-gap-2" style={{ flexShrink: 0, alignItems: "center" }}>
-        {cfg && (
+        {statusIcon && (
           <span title={SUBGOAL_STATUS_LABEL[subgoal.status]} style={{
-            width: 20, height: 20, borderRadius: "50%", flexShrink: 0, background: cfg.bg,
+            width: 20, height: 20, borderRadius: "50%", flexShrink: 0, background: statusIcon.color,
             display: "flex", alignItems: "center", justifyContent: "center",
           }}>
-            <cfg.icon size={11} color={cfg.fg} />
+            <statusIcon.icon size={11} color="var(--sk-text-contrast)" />
           </span>
         )}
         <MaterialsBadge count={matCount} published={plan.goalsPublished} onClick={onOpenMaterials} />
@@ -595,9 +633,11 @@ function ManagerSubgoalRow({ subgoal, index, goalDueLabel, plan, onOpen, onOpenM
 // ---------------- Плитка выбора способа (переиспользуется в модалках цели/шага) ----------------
 // variant="special" — акцентный вариант для варианта "С AI-помощником": светло-фиолетовая
 // подложка плитки, тёмно-фиолетовая иконка — визуально выделяет AI-сценарий среди прочих
-// способов. disabled НЕ приглушает плитку через opacity — варианты "Из каталога целей" и
-// "С AI-помощником" полностью видимы и читаемы, просто не кликабельны (это не "скоро будет",
-// а осознанно нереализованные в этой итерации способы).
+// способов. disabled НЕ приглушает плитку через opacity — она полностью видима и читаема,
+// просто не кликабельна (это не "скоро будет", а осознанно нереализованный в этой итерации
+// способ). "С AI-помощником" в модалке создания цели теперь кликабелен (см.
+// AIGoalAssistantModal); в модалке добавления шага и "Из каталога целей" — по-прежнему нет,
+// это отдельный, не затронутый этой итерацией сценарий.
 function MethodTile({ icon: Icon, title, variant, disabled, onClick }) {
   const special = variant === "special";
   return (
@@ -636,14 +676,14 @@ function MethodTile({ icon: Icon, title, variant, disabled, onClick }) {
 }
 
 // ---------------- Модалка: выбор способа создания цели ----------------
-function GoalMethodModal({ onClose, onManual }) {
+function GoalMethodModal({ onClose, onManual, onAI }) {
   return (
     <Modal open title="Как создать цель?" onClose={onClose} size="l"
       secondary={<Button mode="secondary" onClick={onClose}>Отменить</Button>}>
       <div className="sk-row sk-gap-3" style={{ alignItems: "stretch" }}>
         <MethodTile icon={IconEdit} title="Вручную" onClick={onManual} />
         <MethodTile icon={IconLayers} title="Из каталога целей" disabled />
-        <MethodTile icon={IconSparkles} title="С AI-помощником" variant="special" disabled />
+        <MethodTile icon={IconSparkles} title="С AI-помощником" variant="special" onClick={onAI} />
       </div>
     </Modal>
   );
@@ -657,6 +697,306 @@ function SubgoalMethodModal({ onClose, onManual }) {
       <div className="sk-row sk-gap-3" style={{ alignItems: "stretch" }}>
         <MethodTile icon={IconEdit} title="Вручную" onClick={onManual} />
         <MethodTile icon={IconSparkles} title="С AI-помощником" variant="special" disabled />
+      </div>
+    </Modal>
+  );
+}
+
+// ---------------- AI-помощник создания цели (сценарий "С AI-помощником") ----------------
+// Один Modal с тремя внутренними состояниями (input → loading → draft, плюс финальный
+// success) вместо чата или отдельных окон — руководитель один раз рассказывает своими
+// словами, чего хочет от сотрудника, AI сразу собирает цель + шаги + срок, а дальше
+// руководитель только проверяет и правит готовый черновик прямо в карточке.
+// Демо-текст ожиданий и результат — заранее заданы (это sales-demo, не живой AI), но текст
+// заполняется по клику в поле ввода, а результат считается из контекста реального сотрудника
+// (member/plan), чтобы черновик всегда совпадал с тем, чей план сейчас открыт.
+const AI_EXPECTATIONS_DEMO_TEXT = "Хочу, чтобы к концу адаптации сотрудник сам вёл клиентов, проводил встречи без моей помощи и правильно фиксировал результаты в CRM. Сначала пусть посмотрит, как я это делаю, потом проведёт несколько встреч вместе со мной, а затем попробует самостоятельно.";
+const AI_EXPECTATIONS_EXAMPLES = ["освоить работу с CRM", "самостоятельно вести клиентов", "научиться проводить презентации"];
+const AI_LOADING_STAGES = ["Анализируем ваши ожидания", "Учитываем информацию о сотруднике", "Формируем цель и шаги"];
+// Три крупных стадии всего сценария (не путать с AI_LOADING_STAGES — теми тремя короткими
+// фразами внутри состояния "формируем", это другой, более мелкий уровень). Полоска сверху
+// сразу показывает руководителю, где он сейчас и сколько осталось, без блужданий по окну.
+const AI_FLOW_STEPS = ["Ожидания", "Формулировка цели", "Результат"];
+function AIFlowStepper({ activeIndex }) {
+  return (
+    <div className="sk-row sk-gap-2" style={{ alignItems: "center" }}>
+      {AI_FLOW_STEPS.map((label, i) => (
+        <React.Fragment key={i}>
+          <div className="sk-row sk-gap-1" style={{ alignItems: "center", flexShrink: 0 }}>
+            <span style={{
+              width: 18, height: 18, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center",
+              background: i <= activeIndex ? "var(--violet-violet-35)" : "var(--sk-surface-secondary)",
+              color: i <= activeIndex ? "var(--sk-text-contrast)" : "var(--sk-text-tertiary)", font: "var(--sk-label-4)",
+            }}>{i < activeIndex ? <IconCheck size={11} /> : i + 1}</span>
+            <span className="sk-label-4" style={{ color: i === activeIndex ? "var(--sk-text-primary)" : "var(--sk-text-tertiary)" }}>{label}</span>
+          </div>
+          {i < AI_FLOW_STEPS.length - 1 && <div style={{ flex: 1, height: 1, background: "var(--sk-stroke)" }} />}
+        </React.Fragment>
+      ))}
+    </div>
+  );
+}
+const AI_DRAFT_RESULT = {
+  title: "Самостоятельно вести клиентов и проводить встречи с ними",
+  description: "К концу периода адаптации самостоятельно проводить встречи с клиентами, использовать установленный сценарий встречи и фиксировать результаты и дальнейшие шаги в CRM.",
+  steps: [
+    "Изучить процесс подготовки и проведения клиентских встреч",
+    "Провести несколько встреч совместно с руководителем",
+    "Провести первые встречи самостоятельно под контролем руководителя",
+    "Самостоятельно фиксировать результаты встреч и дальнейшие шаги в CRM",
+  ],
+};
+function parseRuShortDate(str) {
+  const m = /^(\d{2})\.(\d{2})\.(\d{2})$/.exec(str || "");
+  if (!m) return new Date();
+  return new Date(2000 + parseInt(m[3], 10), parseInt(m[2], 10) - 1, parseInt(m[1], 10));
+}
+
+// Компактная иконка-переключатель дополнительного способа ввода (голос/файл/изображение) —
+// не отдельный большой сценарий, просто демонстрационное состояние по клику (см. ТЗ п.6, 24).
+// В покое — нейтрально-серые (не отвлекают, не спорят с чёрной кнопкой и фиолетовым акцентом
+// AI выше), фиолетовыми становятся только когда включены — так видно, что именно попало к AI.
+function InputSourceIcon({ icon: Icon, active, label, onClick }) {
+  return (
+    <Tooltip content={label}>
+      <button type="button" onClick={onClick} className="sk-clickable" style={{
+        width: 32, height: 32, borderRadius: "50%", border: "none",
+        background: active ? "var(--sk-special-secondary)" : "var(--sk-surface-secondary)",
+        display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+      }}>
+        <Icon size={15} color={active ? "var(--violet-violet-35)" : "var(--sk-icon-secondary)"} />
+      </button>
+    </Tooltip>
+  );
+}
+
+// Чип демонстрационного вложения (голос/файл/изображение) — по виду похож на вложение
+// комментария (см. CommentsPanel), чтобы не изобретать новый визуальный паттерн.
+function DemoAttachmentChip({ icon: Icon, label, sub, onRemove }) {
+  return (
+    <div className="sk-row sk-gap-2" style={{
+      alignItems: "center", padding: "8px 10px", border: "1px solid var(--sk-stroke)",
+      borderRadius: "var(--sk-radius-2)", background: "var(--sk-surface-page)", maxWidth: 280,
+    }}>
+      <div style={{
+        width: 26, height: 26, borderRadius: "var(--sk-radius-2)", flexShrink: 0,
+        background: "var(--sk-special-secondary)", display: "flex", alignItems: "center", justifyContent: "center",
+      }}><Icon size={14} color="var(--violet-violet-35)" /></div>
+      <div className="sk-col" style={{ gap: 0, minWidth: 0, flex: 1 }}>
+        <div className="sk-label-4" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{label}</div>
+        {sub && <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{sub}</div>}
+      </div>
+      <button className="sk-link-btn" onClick={onRemove}><IconX size={14} color="var(--sk-icon-secondary)" /></button>
+    </div>
+  );
+}
+
+// ---------------- Состояние 1: рассказ руководителя своими словами ----------------
+// Три коротких блока вместо стены текста: (1) чем поможет AI — одной фразой от его лица,
+// (2) что он уже знает о сотруднике без участия руководителя, (3) что нужно рассказать самому.
+// Цвет — только фиолетовый (голос AI) и серый (нейтральный контент), никакого синего:
+// вперемешку с фиолетовым это читалось пёстро (см. отзыв "перегружено и аляписто").
+function AIExpectationsStep({ member, plan, text, setText, demo, toggleDemo }) {
+  function fillOnFirstClick() {
+    if (!text.trim()) setText(AI_EXPECTATIONS_DEMO_TEXT);
+  }
+  return (
+    <div className="sk-col sk-gap-4">
+      <div style={{ padding: 14, background: "var(--sk-special-secondary)", borderRadius: "var(--sk-radius-3)" }}>
+        <div className="sk-label-3-regular" style={{ color: "var(--violet-violet-35)" }}>
+          Я помогу сформулировать цель, описание и шаги. Просто расскажите о своих ожиданиях — остальное сделаю сам.
+        </div>
+      </div>
+
+      <div className="sk-col sk-gap-2">
+        <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Уже знаю о сотруднике</div>
+        <div className="sk-row sk-gap-3" style={{ padding: 12, background: "var(--sk-surface-secondary)", borderRadius: "var(--sk-radius-3)", alignItems: "center" }}>
+          <Avatar src={personPhoto(member.name)} name={member.name} size={36} />
+          <div className="sk-col" style={{ gap: 0 }}>
+            <div className="sk-label-3">{member.name}</div>
+            <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{member.position} · период адаптации до {plan.dateEnd}</div>
+          </div>
+        </div>
+      </div>
+
+      <div className="sk-col sk-gap-2">
+        <div className="sk-label-3">Что нужно от вас</div>
+        <div onClick={fillOnFirstClick}>
+          <Textarea label="Что вы хотите, чтобы сотрудник освоил или сделал по итогам адаптации?" rows={5} value={text}
+            onChange={(e) => setText(e.target.value || "")}
+            placeholder="Например: хочу, чтобы к концу адаптации сотрудник сам вёл клиентов, проводил встречи без моей помощи и правильно фиксировал результаты в CRM. Сначала пусть посмотрит, как я это делаю, потом проведёт несколько встреч вместе со мной, а затем попробует самостоятельно." />
+        </div>
+        <div className="sk-row sk-gap-2">
+          <InputSourceIcon icon={IconMic} label="Голосовой ввод" active={demo.voice} onClick={() => toggleDemo("voice")} />
+          <InputSourceIcon icon={IconPaperclip} label="Прикрепить файл" active={demo.file} onClick={() => toggleDemo("file")} />
+          <InputSourceIcon icon={IconImage} label="Добавить изображение" active={demo.image} onClick={() => toggleDemo("image")} />
+        </div>
+
+        {(demo.voice || demo.file || demo.image) && (
+          <div className="sk-row sk-gap-2" style={{ flexWrap: "wrap" }}>
+            {demo.voice && <DemoAttachmentChip icon={IconMic} label="Голосовое сообщение записано" sub="0:18 · демо" onRemove={() => toggleDemo("voice")} />}
+            {demo.file && <DemoAttachmentChip icon={IconFileText} label="ожидания_по адаптации.pdf" sub="240 КБ · демо" onRemove={() => toggleDemo("file")} />}
+            {demo.image && <DemoAttachmentChip icon={IconImage} label="скриншот_CRM.png" sub="1,1 МБ · демо" onRemove={() => toggleDemo("image")} />}
+          </div>
+        )}
+
+        <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Например: {AI_EXPECTATIONS_EXAMPLES.join(", ")}.</div>
+      </div>
+    </div>
+  );
+}
+
+// ---------------- Состояние "AI формирует цель" — короткая, динамичная имитация анализа ----------------
+function AIGeneratingStep({ onDone }) {
+  const [stageIdx, setStageIdx] = React.useState(0);
+  React.useEffect(() => {
+    const isLast = stageIdx >= AI_LOADING_STAGES.length - 1;
+    const t = window.setTimeout(() => (isLast ? onDone() : setStageIdx((i) => i + 1)), 750);
+    return () => window.clearTimeout(t);
+  }, [stageIdx]);
+  return (
+    <div className="sk-col sk-gap-4" style={{ alignItems: "center", textAlign: "center", padding: "40px 16px" }}>
+      <Loader size={40} />
+      <div className="sk-col sk-gap-1">
+        <div className="sk-label-2">AI формирует цель…</div>
+        <div className="sk-muted">{AI_LOADING_STAGES[stageIdx]}</div>
+      </div>
+      <div className="sk-row sk-gap-2">
+        {AI_LOADING_STAGES.map((s, i) => (
+          <span key={i} style={{ width: 6, height: 6, borderRadius: "50%", background: i <= stageIdx ? "var(--violet-violet-35)" : "var(--sk-stroke)" }} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ---------------- Состояние 2: черновик цели — редактируется прямо в карточке, без
+// перехода в отдельный редактор (см. ТЗ п.19) ----------------
+function AIDraftStep({ member, plan, draft, setDraft, considered }) {
+  function updateStep(i, val) { setDraft((d) => ({ ...d, steps: d.steps.map((s, ix) => (ix === i ? val : s)) })); }
+  function removeStep(i) { setDraft((d) => ({ ...d, steps: d.steps.filter((_, ix) => ix !== i) })); }
+  function addStep() { setDraft((d) => ({ ...d, steps: [...d.steps, ""] })); }
+  return (
+    <div className="sk-col sk-gap-5">
+      {/* Тёплое подтверждение вместо сухого "AI структурировал..." — сразу сообщает главное:
+          результат готов и его можно смело редактировать (см. отзыв про эмоциональность). */}
+      <div className="sk-row sk-gap-3" style={{ padding: 14, background: "var(--sk-positive-secondary)", borderRadius: "var(--sk-radius-3)", alignItems: "flex-start" }}>
+        <span style={{
+          width: 32, height: 32, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center",
+          background: "var(--sk-surface-page)",
+        }}><IconCheck size={16} color="var(--sk-icon-positive)" /></span>
+        <div className="sk-col sk-gap-1">
+          <div className="sk-label-3">Готово! Проверьте результат и скорректируйте перед добавлением в план</div>
+          <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>AI структурировал ваши ожидания в цель, описание и шаги — ничего не зафиксировано, всё можно поправить.</div>
+        </div>
+      </div>
+
+      <Input label="Цель" required value={draft.title} onChange={(e) => setDraft((d) => ({ ...d, title: e.target.value || "" }))} />
+      <Textarea label="Описание цели" rows={3} maxLength={1000} showCount value={draft.description}
+        onChange={(e) => setDraft((d) => ({ ...d, description: e.target.value || "" }))} />
+
+      <div className="sk-col sk-gap-2">
+        <div className="sk-label-3">Шаги для достижения цели</div>
+        <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>AI сформировал последовательность шагов, которые помогут достичь цели.</div>
+        <div className="sk-col sk-gap-2">
+          {draft.steps.map((s, i) => (
+            <div key={i} className="sk-row sk-gap-2" style={{ alignItems: "center" }}>
+              <span style={{
+                width: 22, height: 22, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center",
+                background: "var(--sk-surface-dark)", color: "var(--sk-text-contrast)", font: "var(--sk-label-4)",
+              }}>{i + 1}</span>
+              <Input value={s} onChange={(e) => updateStep(i, e.target.value || "")} style={{ flex: 1 }} />
+              <button className="sk-link-btn" onClick={() => removeStep(i)}><IconTrash size={15} color="var(--sk-icon-secondary)" /></button>
+            </div>
+          ))}
+        </div>
+        <button className="sk-link-btn sk-label-3-regular" onClick={addStep} style={{ alignSelf: "flex-start", color: "var(--sk-text-accent)" }}>
+          <span className="sk-row sk-gap-1"><IconPlusSm size={16} />Добавить шаг</span>
+        </button>
+      </div>
+
+      <DatePicker label="Срок" required value={draft.dueDate}
+        onChange={(date) => setDraft((d) => ({ ...d, dueDate: date }))}
+        helper="По умолчанию — срок окончания плана адаптации." />
+
+      <div className="sk-col sk-gap-2" style={{ padding: 14, background: "var(--sk-surface-secondary)", borderRadius: "var(--sk-radius-3)" }}>
+        <div className="sk-row sk-gap-2" style={{ alignItems: "center" }}>
+          <IconSparkles size={15} color="var(--violet-violet-35)" />
+          <span className="sk-label-4">При формировании цели AI учёл:</span>
+        </div>
+        <div className="sk-col sk-gap-1" style={{ paddingLeft: 22 }}>
+          {considered.map((c, i) => <div key={i} className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>· {c}</div>)}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ---------------- Оркестратор: input → loading → draft → success ----------------
+function AIGoalAssistantModal({ member, plan, onClose, onCreate }) {
+  const [step, setStep] = React.useState("input"); // input | loading | draft | success
+  const [text, setText] = React.useState("");
+  const [demo, setDemo] = React.useState({ voice: false, file: false, image: false });
+  const [draft, setDraft] = React.useState(null);
+
+  function toggleDemo(key) { setDemo((d) => ({ ...d, [key]: !d[key] })); }
+
+  function buildDraft() {
+    return { title: AI_DRAFT_RESULT.title, description: AI_DRAFT_RESULT.description, steps: [...AI_DRAFT_RESULT.steps], dueDate: parseRuShortDate(plan.dateEnd) };
+  }
+
+  const hasSource = text.trim().length > 0 || demo.voice || demo.file || demo.image;
+  const considered = [
+    "информацию о сотруднике — " + member.name,
+    "должность и функцию — " + member.position,
+    "период адаптации — до " + plan.dateEnd,
+    "ваши ожидания из описания выше",
+    ...(demo.voice || demo.file || demo.image ? ["приложенные материалы"] : []),
+  ];
+
+  const AI_TITLE = <span className="sk-row sk-gap-2" style={{ alignItems: "center" }}><IconSparkles size={17} color="var(--violet-violet-35)" />Сформируем цель с AI</span>;
+  const TITLE_BY_STEP = { input: AI_TITLE, loading: AI_TITLE, draft: "Черновик цели", success: null };
+
+  let footerProps = {};
+  if (step === "input") {
+    footerProps = {
+      secondary: <Button mode="secondary" onClick={onClose}>Отменить</Button>,
+      primary: <Button disabled={!hasSource} icon={<IconSparkles size={16} />} onClick={() => setStep("loading")}>Сформировать цель</Button>,
+    };
+  } else if (step === "draft") {
+    footerProps = {
+      secondary: (
+        <div className="sk-row sk-gap-2">
+          <Button mode="tertiary" onClick={onClose}>Отмена</Button>
+          <Button mode="secondary" icon={<IconRepeat size={15} />} onClick={() => setStep("loading")}>Сформировать заново</Button>
+        </div>
+      ),
+      primary: <Button disabled={!draft.title.trim()} onClick={() => { onCreate(draft); setStep("success"); }}>Добавить в план</Button>,
+    };
+  } else if (step === "success") {
+    footerProps = { primary: <Button onClick={onClose} style={{ width: "100%" }}>Вернуться к плану адаптации</Button> };
+  }
+
+  const flowIndex = step === "input" ? 0 : step === "loading" ? 1 : 2;
+
+  return (
+    <Modal open title={TITLE_BY_STEP[step]} onClose={onClose} size="l" {...footerProps}>
+      <div className="sk-col sk-gap-4">
+        {step !== "success" && <AIFlowStepper activeIndex={flowIndex} />}
+        {step === "input" && (
+          <AIExpectationsStep member={member} plan={plan} text={text} setText={setText} demo={demo} toggleDemo={toggleDemo} />
+        )}
+        {step === "loading" && <AIGeneratingStep onDone={() => { setDraft(buildDraft()); setStep("draft"); }} />}
+        {step === "draft" && draft && <AIDraftStep member={member} plan={plan} draft={draft} setDraft={setDraft} considered={considered} />}
+        {step === "success" && (
+          <div className="sk-col sk-gap-2" style={{ alignItems: "center", textAlign: "center", padding: "24px 0" }}>
+            <div style={{ width: 44, height: 44, borderRadius: "50%", background: "var(--sk-positive-secondary)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <IconCheck size={20} color="var(--sk-text-positive)" />
+            </div>
+            <div className="sk-label-2">Цель добавлена в план адаптации</div>
+            <div className="sk-muted">Цель и шаги для её достижения сохранены для {member.name.split(" ")[0]}.</div>
+          </div>
+        )}
       </div>
     </Modal>
   );
@@ -732,8 +1072,8 @@ function GoalDrawer({ goal, plan, editable, onClose, onChange, onAddSubgoal, onO
         <div className="sk-col sk-gap-2">
           <div className="sk-label-3">Шаги для выполнения <span style={{ color: "var(--sk-text-secondary)" }}>{done}/{total}</span></div>
           {goal.subgoals.map((sg, i) => {
-            const cfg = SUBGOAL_ICON[sg.status];
             const badge = NUMBER_BADGE.not_started;
+            const statusIcon = STATUS_ICON[sg.status];
             return (
               <div key={sg.id} className="sk-row sk-gap-3" style={{ justifyContent: "space-between", padding: 10, border: "1px solid var(--sk-stroke)", borderRadius: "var(--sk-radius-2)" }}>
                 <div className="sk-row sk-gap-3" style={{ flex: 1, alignItems: "center", cursor: "pointer" }} onClick={() => onOpenSubgoal(sg.id)}>
@@ -749,12 +1089,12 @@ function GoalDrawer({ goal, plan, editable, onClose, onChange, onAddSubgoal, onO
                   </div>
                 </div>
                 <div className="sk-row sk-gap-2" style={{ alignItems: "center" }}>
-                  {cfg && (
+                  {statusIcon && (
                     <span title={SUBGOAL_STATUS_LABEL[sg.status]} style={{
-                      width: 20, height: 20, borderRadius: "50%", flexShrink: 0, background: cfg.bg,
+                      width: 20, height: 20, borderRadius: "50%", flexShrink: 0, background: statusIcon.color,
                       display: "flex", alignItems: "center", justifyContent: "center",
                     }}>
-                      <cfg.icon size={11} color={cfg.fg} />
+                      <statusIcon.icon size={11} color="var(--sk-text-contrast)" />
                     </span>
                   )}
                   <MaterialsBadge count={(sg.checklistRefs || []).length} published={plan.goalsPublished} onClick={() => onOpenMaterials(sg.id)} />
@@ -992,34 +1332,18 @@ function DrawerTabs({ items, active, onChange }) {
   );
 }
 
-const ASSESSMENT_DECISION_LABEL = { done: "Выполнено", returned: "На доработку", not_done: "Не выполнено" };
+const ASSESSMENT_DECISION_LABEL = { done: "Шаг выполнен", returned: "На доработке", not_done: "Шаг не выполнен" };
 const ASSESSMENT_DECISION_HUE = { done: "positive", returned: "warning", not_done: "negative" };
 
-// ---------------- Содержимое вкладки "Оценочный лист": сначала сам шаблон (что будут
-// оценивать — видно ещё до первой проверки), затем история решений по нему, от новых к старым. ----------------
-function AssessmentTabContent({ checklist, history }) {
+// ---------------- Содержимое вкладки "История оценок" — только прошлые раунды решений,
+// от новых к старым. Сам оценочный лист (шаблон критериев) — отдельным блоком в теле
+// дровера, а не здесь, чтобы вкладка не смешивала "что будут оценивать" и "что решили". ----------------
+function AssessmentTabContent({ history }) {
   const rounds = (history || []).slice().reverse();
   return (
     <div className="sk-col sk-gap-4">
-      <div className="sk-col sk-gap-2">
-        <span className="sk-row sk-gap-1" style={{ alignItems: "center" }}>
-          <span className="sk-label-3">Оценочный лист</span>
-          <AssessmentHintTooltip hint={checklist.hint} />
-        </span>
-        <span className="sk-label-4" style={{ color: "var(--sk-text-secondary)" }}>{assessmentTemplateName(checklist.title)}</span>
-        <div className="sk-col sk-gap-1" style={{ padding: "10px 14px", borderLeft: "3px solid var(--sk-accent)" }}>
-          {(checklist.criteria || []).map(c => (
-            <div key={c.id} className="sk-row sk-gap-2" style={{ alignItems: "flex-start", padding: "4px 0" }}>
-              <span style={{ width: 4, height: 4, borderRadius: "50%", background: "var(--sk-icon-secondary)", marginTop: 8, flexShrink: 0 }} />
-              <span className="sk-label-4-regular">{c.label}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-
       {rounds.length > 0 ? (
         <div className="sk-col sk-gap-3">
-          <div className="sk-label-3">История оценок</div>
           {rounds.map((h, i) => (
             <div key={i} className="sk-col sk-gap-2" style={{ padding: 12, border: "1px solid var(--sk-stroke)", borderRadius: "var(--sk-radius-3)" }}>
               <div className="sk-row sk-gap-2" style={{ justifyContent: "space-between", alignItems: "center" }}>
@@ -1193,11 +1517,9 @@ function SubgoalDrawer({ plan, goal, subgoal, onClose, onChange, onOpenChecklist
   ];
   // Быстрое действие проверяющего — маленькие кнопки в шапке дровера, а не крупные в теле.
   // Подписаны словами (не только иконкой) — статусные названия решения понятны без наведения.
-  // Сплошная заливка (mode по умолчанию "primary") — больше акцента на том, что предстоит сделать.
-  // Оценить выполнение — отдельный, "внеплановый" акцент (оранжевый), нативного варианта для
-  // него нет в ДС, поэтому цвет задан через inline-override поверх стандартной кнопки.
+  // Тон везде приглушённый (mode="secondary"), как у статусов — без сплошной заливки.
   const headerAction = editable ? null
-    : (needsAssessment && isReview) ? <Button size="s" onClick={() => setAssessmentOpen(true)} style={{ background: "var(--sk-warning)", color: "var(--sk-text-contrast)" }}>Оценить</Button>
+    : (needsAssessment && isReview) ? <Button size="s" onClick={() => setAssessmentOpen(true)} style={{ background: "var(--sk-warning)", color: "var(--sk-text-contrast)" }}>Оценить выполнение</Button>
     : (isReview && !needsAssessment) ? (
       <div className="sk-row sk-gap-1">
         <Button size="xs" variant="positive" onClick={() => setPendingAction("done")}>Выполнен</Button>
@@ -1223,10 +1545,7 @@ function SubgoalDrawer({ plan, goal, subgoal, onClose, onChange, onOpenChecklist
           </React.Fragment>
         ) : (
           <React.Fragment>
-            <div className="sk-col sk-gap-1">
-              <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{goal.title}</span>
-              <div className="sk-label-2" style={{ color: "var(--sk-text-primary)" }}>{subgoal.title}</div>
-            </div>
+            <div className="sk-label-2" style={{ color: "var(--sk-text-primary)" }}>{subgoal.title}</div>
             {subgoal.description && <div className="sk-label-3-regular">{subgoal.description}</div>}
 
             {!isReview && canMarkNotDone && (
@@ -1242,6 +1561,27 @@ function SubgoalDrawer({ plan, goal, subgoal, onClose, onChange, onOpenChecklist
                 </ParamRow>
               </div>
             </CollapsibleSection>
+
+            {needsAssessment && (
+              <CollapsibleSection
+                title={<span className="sk-row sk-gap-1" style={{ alignItems: "center" }}>Оценочный лист<AssessmentHintTooltip hint={subgoal.assessmentChecklist.hint} /></span>}
+                defaultOpen={false}>
+                <div className="sk-col sk-gap-2">
+                  <span className="sk-label-4" style={{ color: "var(--sk-text-secondary)" }}>{assessmentTemplateName(subgoal.assessmentChecklist.title)}</span>
+                  <div className="sk-col sk-gap-1" style={{ padding: "10px 14px", borderLeft: "3px solid var(--sk-accent)" }}>
+                    {/* Невыбранный disabled-чекбокс вместо точки-буллита читается понятнее ("это будут
+                        отмечать"), а текст целиком серый — сразу видно, что это шаблон для справки,
+                        а не то, что можно как-то отметить прямо здесь (см. AssessmentModal). */}
+                    {(subgoal.assessmentChecklist.criteria || []).map(c => (
+                      <div key={c.id} className="sk-row sk-gap-2" style={{ alignItems: "flex-start", padding: "4px 0" }}>
+                        <Checkbox checked={false} disabled />
+                        <span className="sk-label-4-regular" style={{ color: "var(--sk-text-secondary)" }}>{c.label}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </CollapsibleSection>
+            )}
           </React.Fragment>
         )}
 
@@ -1278,7 +1618,7 @@ function SubgoalDrawer({ plan, goal, subgoal, onClose, onChange, onOpenChecklist
           <CommentsPanel comments={subgoal.comments} comment={comment} setComment={setComment} onAdd={onAddComment} disabled={false} />
         )}
         {drawerTab === "assessment" && needsAssessment && (
-          <AssessmentTabContent checklist={subgoal.assessmentChecklist} history={subgoal.assessmentHistory} />
+          <AssessmentTabContent history={subgoal.assessmentHistory} />
         )}
       </div>
     </Drawer>
@@ -1418,34 +1758,12 @@ const RISK_BUTTON_COLORS = {
   negative: { bg: "var(--sk-negative-secondary)", color: "var(--sk-text-negative)", stroke: "var(--sk-text-negative)" },
 };
 
-// Тёплая плашка статуса КТ — аналог блока "Обратная связь по итогам" у сотрудника
-// (CheckpointModal в employee/plan.html): вместо сухого чек-листа "кто что заполнил"
-// показываем один итоговый статус с пояснением, что делать дальше. Когда КТ уже завершена,
-// баннер не рендерится вовсе — этот статус уже показан StatusTag'ом в шапке дровера, дублировать не нужно.
-function CheckpointStatusBanner({ done, surveyReady, reportReady }) {
-  if (done) return null;
-  let title, note;
-  if (!surveyReady) { title = "Ожидает сотрудника"; note = "Форма станет доступна для заполнения, как только сотрудник ответит на опрос."; }
-  else if (!reportReady) { title = "Ожидает проверяющего"; note = "Заполните обязательные поля выше, чтобы завершить контрольную точку."; }
-  else { title = "Всё заполнено"; note = "Можно завершить контрольную точку."; }
-  return (
-    <div className="sk-row sk-gap-3" style={{ padding: 14, background: "var(--sk-surface-secondary)", borderRadius: "var(--sk-radius-3)", alignItems: "flex-start" }}>
-      <span style={{ width: 32, height: 32, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "var(--sk-surface-page)" }}>
-        <IconClock size={16} color="var(--sk-icon-secondary)" />
-      </span>
-      <div className="sk-col sk-gap-1">
-        <div className="sk-label-3">{title}</div>
-        <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{note}</div>
-      </div>
-    </div>
-  );
-}
-
 function ManagerCheckpointDrawer({ checkpoint, viewerName, employee, canEdit, isUpcoming, onFinish, onAddComment, onUpdate, onClose }) {
   const [employeeSummary, setEmployeeSummary] = React.useState(checkpoint.employeeSummary || "");
   const [internalReport, setInternalReport] = React.useState(checkpoint.internalReport || "");
   const [riskLevel, setRiskLevel] = React.useState(checkpoint.riskLevel || "");
   const [comment, setComment] = React.useState("");
+  const [drawerTab, setDrawerTab] = React.useState("comments");
   // Пока точка ещё не наступила, руководитель может донастроить срок/проверяющего/повестку —
   // все три поля редактируются вместе, одним переключением в режим редактирования.
   const [editing, setEditing] = React.useState(false);
@@ -1631,11 +1949,15 @@ function ManagerCheckpointDrawer({ checkpoint, viewerName, employee, canEdit, is
           )}
         </div>
 
-        <CheckpointStatusBanner done={done} surveyReady={surveyReady} reportReady={reportReady} />
-
         <Divider />
-        <CommentsPanel comments={checkpoint.comments} comment={comment} setComment={setComment}
-          onAdd={onAddComment} disabled={false} />
+        <DrawerTabs items={[{
+          id: "comments",
+          label: <span className="sk-label-3">Комментарии <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{(checkpoint.comments || []).length}</span></span>,
+        }]} active={drawerTab} onChange={setDrawerTab} />
+        {drawerTab === "comments" && (
+          <CommentsPanel comments={checkpoint.comments} comment={comment} setComment={setComment}
+            onAdd={onAddComment} disabled={false} />
+        )}
       </div>
     </Drawer>
   );
