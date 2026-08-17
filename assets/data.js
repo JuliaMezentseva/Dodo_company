@@ -955,6 +955,8 @@ window.SITE_DATA = {
       goalsEnabled: false,
       goalsOwner: "manager",
       goalsDeadlineDays: 7,
+      goalsReviewRequired: false,
+      goalsReviewDeadlineDays: 7,
       goals: [],
       stats: { tasks: 12, files: 3, links: 4, courses: 2, surveys: 1 },
       checkpoints: [],
@@ -978,6 +980,8 @@ window.SITE_DATA = {
       goalsEnabled: true,
       goalsOwner: "manager",
       goalsDeadlineDays: 5,
+      goalsReviewRequired: false,
+      goalsReviewDeadlineDays: 7,
       goals: [],
       stats: { tasks: 15, files: 6, links: 8, courses: 3, surveys: 1 },
     },
@@ -1000,6 +1004,8 @@ window.SITE_DATA = {
       goalsEnabled: false,
       goalsOwner: "manager",
       goalsDeadlineDays: 7,
+      goalsReviewRequired: false,
+      goalsReviewDeadlineDays: 7,
       goals: [],
       stats: { tasks: 6, files: 2, links: 3, courses: 1, surveys: 1 },
     },
@@ -1022,6 +1028,8 @@ window.SITE_DATA = {
       goalsEnabled: true,
       goalsOwner: "hr",
       goalsDeadlineDays: 10,
+      goalsReviewRequired: true,
+      goalsReviewDeadlineDays: 7,
       goals: [
         {
           id: "tgoal1",
@@ -1064,6 +1072,8 @@ window.SITE_DATA = {
       goalsEnabled: false,
       goalsOwner: "manager",
       goalsDeadlineDays: 7,
+      goalsReviewRequired: false,
+      goalsReviewDeadlineDays: 7,
       goals: [],
       stats: { tasks: 10, files: 2, links: 2, courses: 1, surveys: 1 },
     },
@@ -1086,6 +1096,8 @@ window.SITE_DATA = {
       goalsEnabled: true,
       goalsOwner: "manager",
       goalsDeadlineDays: 14,
+      goalsReviewRequired: false,
+      goalsReviewDeadlineDays: 7,
       goals: [],
       stats: { tasks: 8, files: 4, links: 5, courses: 2, surveys: 2 },
     },
@@ -1116,6 +1128,8 @@ window.SITE_DATA = {
   window.SITE_DATA.templates.forEach((t) => {
     if (!t.checkpoints) t.checkpoints = [];
     if (!t.goalsOwner) t.goalsOwner = "manager";
+    if (t.goalsReviewRequired === undefined) t.goalsReviewRequired = false;
+    if (!t.goalsReviewDeadlineDays) t.goalsReviewDeadlineDays = 7;
     if (!t.goals) t.goals = [];
   });
 

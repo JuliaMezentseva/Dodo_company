@@ -15,7 +15,7 @@
 <body>
 <div id="root"></div>
 <script type="text/babel">
-const { Card, Tag, Switch, Input, Textarea, Select, DatePicker, Checkbox, SegmentedControl, Tabs, Tooltip, Divider, Button, IconButton, Modal, Drawer } = window.SkillazCoreDesignSystem_bf9566;
+const { Card, Tag, Switch, Input, Textarea, Select, Checkbox, SegmentedControl, Tabs, Tooltip, Divider, Button, IconButton, Modal, Drawer } = window.SkillazCoreDesignSystem_bf9566;
 const { AppShell, Icons } = window.Site;
 const {
   IconInfo, IconTarget, IconCheck, IconClipboard, IconSettings,
@@ -68,33 +68,11 @@ const TEMPLATE_STATUS = {
   archived: { label: "Архивный", hue: "gray" },
 };
 
-// ---------------- Условная дата "до N числа месяца" для срока цели/шага в шаблоне —
-// в шаблоне нет реальной даты начала плана (она появится только при назначении сотруднику),
-// поэтому считаем демо-условно от сегодняшнего дня: сегодня + N дней. ----------------
-const RU_MONTHS_GENITIVE = ["января", "февраля", "марта", "апреля", "мая", "июня", "июля", "августа", "сентября", "октября", "ноября", "декабря"];
-function dueDateLabel(days) {
-  const d = new Date();
-  d.setDate(d.getDate() + (Number(days) || 0));
-  return "до " + d.getDate() + " " + RU_MONTHS_GENITIVE[d.getMonth()];
-}
-
-// Тот же условный отсчёт "от сегодня", что и в dueDateLabel, но в обе стороны —
-// нужен, чтобы поле срока в шаблоне могло быть таким же DatePicker, как у руководителя,
-// сохраняя при этом дни (dueDays) как единственный источник правды под капотом.
-function dayToDate(days) {
-  const d = new Date();
-  d.setHours(0, 0, 0, 0);
-  d.setDate(d.getDate() + (Number(days) || 0));
-  return d;
-}
-function dateToDay(date) {
-  const today = new Date(); today.setHours(0, 0, 0, 0);
-  const picked = new Date(date); picked.setHours(0, 0, 0, 0);
-  return Math.max(1, Math.round((picked - today) / 86400000));
-}
-function fmtDueDate(days) {
-  const d = dayToDate(days);
-  return d.getDate() + " " + RU_MONTHS_GENITIVE[d.getMonth()] + " " + d.getFullYear();
+// Срок цели/шага в шаблоне задаётся днём от начала плана (30-й день, 60-й день), а не
+// календарной датой — у шаблона нет реальной даты старта, она появится только при
+// назначении плана сотруднику (тот же принцип, что и у контрольных точек).
+function dueDayLabel(days) {
+  return (Number(days) || 0) + "-й день";
 }
 
 function SectionNavItem({ item, active, disabled, onClick }) {
@@ -308,19 +286,22 @@ function TemplateCheckpointsSection({ checkpoints, onAdd, onEdit, onDelete }) {
   );
 }
 
-// ---------------- Виджет выбора "Способ настройки целей" — фиксированный вариант (SegmentedControl) ----------------
+// ---------------- Виджет "Кто создает цели?" — фиксированный вариант (SegmentedControl) +
+// подпись с описанием выбранного варианта, вместо отдельного мастера или карточек сценариев. ----------------
 const GOALS_OWNER_OPTIONS = [
-  { id: "hr", label: "Создать сразу в шаблоне", description: "Заполните цели заранее — подходит для типовых ролей" },
-  { id: "manager", label: "Создает руководитель", description: "Руководитель сформулирует цели сотруднику после назначения плана" },
+  { id: "manager", label: "Руководитель", description: "Руководитель создаёт цели в плане сотрудника после назначения" },
+  { id: "hr", label: "Администратор", description: "Администратор готовит цели в шаблоне или индивидуальном плане" },
 ];
 
 function GoalsOwnerPicker({ owner, onChange }) {
+  const active = GOALS_OWNER_OPTIONS.find((o) => o.id === owner);
   return (
     <div className="sk-col sk-gap-2" style={{ paddingBottom: 16, marginBottom: 4, borderBottom: "1px solid var(--sk-stroke)" }}>
-      <span className="sk-label-3" style={{ color: "var(--sk-text-primary)" }}>Способ настройки целей</span>
+      <span className="sk-label-3" style={{ color: "var(--sk-text-primary)" }}>Кто создает цели?</span>
       <SegmentedControl size="m"
         items={GOALS_OWNER_OPTIONS.map((o) => ({ id: o.id, label: o.label }))}
         active={owner} onChange={onChange} style={{ alignSelf: "flex-start" }} />
+      {active && <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{active.description}</span>}
     </div>
   );
 }
@@ -534,8 +515,8 @@ function SubgoalFormModal({ initial, onClose, onCreate }) {
           <Textarea label="Описание" rows={2} maxLength={1000} value={form.description} onChange={(e) => set("description")(e.target.value || "")} />
         </div>
         <div className="sk-row sk-gap-3">
-          <DatePicker label="Дата завершения" required value={dayToDate(form.dueDays)}
-            onChange={(date) => set("dueDays")(dateToDay(date))} style={{ flex: 1 }} />
+          <Input label="Срок (дней от начала плана)" required type="number" min={1} value={form.dueDays}
+            onChange={(e) => set("dueDays")(Math.max(1, Number(e.target.value) || 1))} style={{ flex: 1 }} />
           <Select label="Проверяющий" value={form.reviewer}
             options={[{ value: "Руководитель", label: "Руководитель" }, { value: "Наставник", label: "Наставник" }]}
             onChange={set("reviewer")} style={{ flex: 1 }} />
@@ -575,8 +556,8 @@ function TemplateGoalCreateDrawer({ draft, setDraft, onClose, onCreate, onAddSub
         <Textarea label="Описание" rows={4} maxLength={1000} showCount
           placeholder="Подробнее о цели: как оценивается результат, что поможет успешному достижению"
           value={draft.description} onChange={(e) => setDraft((d) => ({ ...d, description: e.target.value || "" }))} />
-        <DatePicker label="Дата завершения" required value={dayToDate(draft.dueDays)}
-          onChange={(date) => setDraft((d) => ({ ...d, dueDays: dateToDay(date) }))} />
+        <Input label="Срок (дней от начала плана)" required type="number" min={1} value={draft.dueDays}
+          onChange={(e) => setDraft((d) => ({ ...d, dueDays: Math.max(1, Number(e.target.value) || 1) }))} />
 
         <div className="sk-col sk-gap-2">
           <div className="sk-label-3">Шаги для достижения{draft.subgoals.length ? " " + draft.subgoals.length : ""}</div>
@@ -599,7 +580,7 @@ function TemplateGoalCreateDrawer({ draft, setDraft, onClose, onCreate, onAddSub
               }}>{i + 1}</span>
               <div className="sk-col sk-gap-1" style={{ flex: 1, minWidth: 0 }}>
                 <div className="sk-label-4">{sg.title}</div>
-                <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{fmtDueDate(sg.dueDays)}</div>
+                <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{dueDayLabel(sg.dueDays)}</div>
               </div>
               <button className="sk-link-btn" onClick={() => setDraft((d) => ({ ...d, subgoals: d.subgoals.filter((_, ix) => ix !== i) }))}>
                 <IconTrash size={15} color="var(--sk-icon-secondary)" />
@@ -632,7 +613,7 @@ function TemplateSubgoalRow({ index, subgoal, onOpen, dragHandleProps, dragging 
         <div className="sk-col sk-gap-1" style={{ flex: 1, minWidth: 0 }}>
           <span className="sk-label-3-regular">{subgoal.title || "Без названия"}</span>
           <span className="sk-row sk-gap-1 sk-muted" style={{ font: "var(--sk-label-4-regular)", alignItems: "center" }}>
-            <IconCalendar size={13} color="var(--sk-icon-secondary)" />{dueDateLabel(subgoal.dueDays)}
+            <IconCalendar size={13} color="var(--sk-icon-secondary)" />{dueDayLabel(subgoal.dueDays)}
           </span>
         </div>
         {hasMaterials ? (
@@ -665,8 +646,8 @@ function TemplateGoalDrawer({ goal, onClose, onChange, onAddSubgoal, onOpenSubgo
         <Input label="Название" required value={goal.title} onChange={(e) => onChange({ title: e.target.value || "" })} />
         <Textarea label="Описание" rows={3} maxLength={1000} showCount value={goal.description}
           onChange={(e) => onChange({ description: e.target.value || "" })} />
-        <DatePicker label="Дата завершения" required value={dayToDate(goal.dueDays)}
-          onChange={(date) => onChange({ dueDays: dateToDay(date) })} />
+        <Input label="Срок (дней от начала плана)" required type="number" min={1} value={goal.dueDays}
+          onChange={(e) => onChange({ dueDays: Math.max(1, Number(e.target.value) || 1) })} />
 
         <div className="sk-col sk-gap-2">
           <div className="sk-label-3">Шаги для выполнения{goal.subgoals.length ? " " + goal.subgoals.length : ""}</div>
@@ -706,7 +687,7 @@ function TemplateGoalRow({ goal, onOpen, onDelete, onOpenSubgoal, onReorderSubgo
           <div className="sk-col sk-gap-1" style={{ flex: 1, minWidth: 0 }}>
             <div className="sk-title-5">{goal.title || "Без названия"}</div>
             <span className="sk-row sk-gap-1 sk-muted" style={{ font: "var(--sk-label-4-regular)", alignItems: "center" }}>
-              <IconCalendar size={13} color="var(--sk-icon-secondary)" />{dueDateLabel(goal.dueDays)}
+              <IconCalendar size={13} color="var(--sk-icon-secondary)" />{dueDayLabel(goal.dueDays)}
             </span>
           </div>
         </div>
@@ -734,9 +715,11 @@ function TemplateGoalRow({ goal, onOpen, onDelete, onOpenSubgoal, onReorderSubgo
 
 
 // ---------------- Секция "Цели" внутри единого контейнера плана: выбор владельца + условная
-// логика сценария. Плашка "Ожидают настройки" рядом с заголовком, пока Админ не создал ни
-// одной цели в сценарии "Создать сразу в шаблоне" — вместо отдельного предупреждения ниже. ----------------
-function GoalsSection({ owner, deadlineDays, goals, onOwnerChange, onDeadlineChange, onAddGoal, onUpdateGoal, onDeleteGoal }) {
+// логика сценария, раскрывающаяся последовательно — пользователь видит только те поля,
+// которые нужны для выбранной логики (см. GOALS_OWNER_OPTIONS и итоговую таблицу в ТЗ). ----------------
+function GoalsSection({ owner, deadlineDays, reviewRequired, reviewDeadlineDays, goals,
+  onOwnerChange, onDeadlineChange, onReviewRequiredChange, onReviewDeadlineChange,
+  onAddGoal, onUpdateGoal, onDeleteGoal }) {
   const [methodModal, setMethodModal] = React.useState(false);
   const [catalogPicker, setCatalogPicker] = React.useState(false);
   const [goalDraft, setGoalDraft] = React.useState(null);
@@ -788,48 +771,79 @@ function GoalsSection({ owner, deadlineDays, goals, onOwnerChange, onDeadlineCha
       <GoalsOwnerPicker owner={owner} onChange={onOwnerChange} />
 
       {owner === "manager" ? (
-        <div className="sk-col sk-gap-3">
-          <div className="sk-row" style={{ justifyContent: "space-between", alignItems: "center" }}>
-            <div className="sk-row sk-gap-1" style={{ color: "var(--sk-text-primary)" }}>
-              <span className="sk-label-3-regular">Срок постановки целей руководителем после назначения плана (дней)</span>
-              <Tooltip content={<div style={{ maxWidth: 260, whiteSpace: "normal" }}>После назначения плана руководитель получит уведомление о необходимости поставить цели. Цели создаются уже в индивидуальном плане сотрудника.</div>}>
-                <IconHelpCircle size={16} color="var(--sk-icon-secondary)" />
-              </Tooltip>
-            </div>
-            <Input type="number" min={1} max={30} value={deadlineDays}
-              onChange={(e) => onDeadlineChange(Math.max(1, Math.min(30, Number(e.target.value) || 1)))}
-              style={{ width: 88 }} />
+        <div className="sk-row" style={{ justifyContent: "space-between", alignItems: "center" }}>
+          <div className="sk-row sk-gap-1" style={{ color: "var(--sk-text-primary)" }}>
+            <span className="sk-label-3-regular">Срок постановки целей после назначения плана (дней)</span>
+            <Tooltip content={<div style={{ maxWidth: 260, whiteSpace: "normal" }}>Руководитель создаст цели и опубликует их сотруднику в течение указанного срока.</div>}>
+              <IconHelpCircle size={16} color="var(--sk-icon-secondary)" />
+            </Tooltip>
           </div>
+          <Input type="number" min={1} max={30} value={deadlineDays}
+            onChange={(e) => onDeadlineChange(Math.max(1, Math.min(30, Number(e.target.value) || 1)))}
+            style={{ width: 88 }} />
         </div>
-      ) : goals.length === 0 ? (
-        <Card>
-          <div className="sk-col sk-gap-3" style={{ alignItems: "center", textAlign: "center", padding: "24px 16px" }}>
-            <div className="sk-title-5">Сформируйте цели и шаги для их достижения</div>
-            <div className="sk-muted" style={{ maxWidth: 440 }}>Цель — это ожидаемый измеримый результат, с которым сотрудник должен окончить план адаптации</div>
-            <Button variant="accent" onClick={() => setMethodModal(true)}>+ Создать</Button>
-          </div>
-        </Card>
       ) : (
-        <div className="sk-col sk-gap-3">
-          <div className="sk-row sk-gap-2">
-            <Button variant="neutral" size="s" icon={<IconPlusSm size={16} />} onClick={() => setMethodModal(true)}>Создать цель</Button>
+        <div className="sk-col sk-gap-4">
+          <div className="sk-col sk-gap-2">
+            <div className="sk-row" style={{ justifyContent: "space-between", alignItems: "center" }}>
+              <div className="sk-row sk-gap-1" style={{ color: "var(--sk-text-primary)" }}>
+                <span className="sk-label-3">Руководитель должен проверить и опубликовать цели</span>
+                <Tooltip content={<div style={{ maxWidth: 260, whiteSpace: "normal" }}>
+                  {reviewRequired
+                    ? "Цели попадут в индивидуальный план как черновик. Сотрудник увидит их после публикации руководителем."
+                    : "Цели будут перенесены в индивидуальный план и станут доступны сотруднику без дополнительной публикации руководителем."}
+                </div>}>
+                  <IconHelpCircle size={16} color="var(--sk-icon-secondary)" />
+                </Tooltip>
+              </div>
+              <Switch checked={reviewRequired} onChange={onReviewRequiredChange} />
+            </div>
+            <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>
+              {reviewRequired
+                ? "Администратор готовит основу, а руководитель может изменить цели, добавить новые и опубликовать сотруднику."
+                : "Администратор полностью готовит цели в шаблоне."}
+            </span>
+            {reviewRequired && (
+              <div className="sk-row" style={{ justifyContent: "space-between", alignItems: "center", paddingTop: 4 }}>
+                <span className="sk-label-3-regular">Срок доработки и публикации целей руководителем (дней)</span>
+                <Input type="number" min={1} max={30} value={reviewDeadlineDays}
+                  onChange={(e) => onReviewDeadlineChange(Math.max(1, Math.min(30, Number(e.target.value) || 1)))}
+                  style={{ width: 88 }} />
+              </div>
+            )}
           </div>
 
-          <div className="sk-col sk-gap-2">
-            {goals.map((g) => (
-              <TemplateGoalRow key={g.id} goal={g} onOpen={() => setOpenGoalId(g.id)} onDelete={() => onDeleteGoal(g.id)}
-                onOpenSubgoal={(id) => setOpenRowSubgoalId(id)}
-                onReorderSubgoals={(from, to) => {
-                  if (from === null || from === to) return;
-                  onUpdateGoal(g.id, (goal) => {
-                    const list = goal.subgoals.slice();
-                    const [item] = list.splice(from, 1);
-                    list.splice(to, 0, item);
-                    return { ...goal, subgoals: list };
-                  });
-                }} />
-            ))}
-          </div>
+          {goals.length === 0 ? (
+            <Card>
+              <div className="sk-col sk-gap-3" style={{ alignItems: "center", textAlign: "center", padding: "24px 16px" }}>
+                <div className="sk-title-5">Сформируйте цели и шаги для их достижения</div>
+                <div className="sk-muted" style={{ maxWidth: 440 }}>Цель — это ожидаемый измеримый результат, с которым сотрудник должен окончить план адаптации</div>
+                <Button variant="accent" onClick={() => setMethodModal(true)}>+ Добавить цель</Button>
+              </div>
+            </Card>
+          ) : (
+            <div className="sk-col sk-gap-3">
+              <div className="sk-row sk-gap-2">
+                <Button variant="neutral" size="s" icon={<IconPlusSm size={16} />} onClick={() => setMethodModal(true)}>Добавить цель</Button>
+              </div>
+
+              <div className="sk-col sk-gap-2">
+                {goals.map((g) => (
+                  <TemplateGoalRow key={g.id} goal={g} onOpen={() => setOpenGoalId(g.id)} onDelete={() => onDeleteGoal(g.id)}
+                    onOpenSubgoal={(id) => setOpenRowSubgoalId(id)}
+                    onReorderSubgoals={(from, to) => {
+                      if (from === null || from === to) return;
+                      onUpdateGoal(g.id, (goal) => {
+                        const list = goal.subgoals.slice();
+                        const [item] = list.splice(from, 1);
+                        list.splice(to, 0, item);
+                        return { ...goal, subgoals: list };
+                      });
+                    }} />
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -881,8 +895,8 @@ function CheckpointsSection({ checkpoints, onAddCheckpoint, onEditCheckpoint, on
 // ---------------- Настройка плана адаптации — тумблер в одной карточке; когда план включён,
 // ниже появляется ОТДЕЛЬНАЯ карточка со своей обводкой, где табы "Цели" / "Контрольные точки"
 // переключают видимую секцию — так Админ сразу видит обе настройки и переключается без скролла. ----------------
-function GoalsSettingsCard({ template, enabled, owner, deadlineDays, goals, checkpoints,
-  onToggle, onOwnerChange, onDeadlineChange, onAddGoal, onUpdateGoal, onDeleteGoal,
+function GoalsSettingsCard({ template, enabled, owner, deadlineDays, reviewRequired, reviewDeadlineDays, goals, checkpoints,
+  onToggle, onOwnerChange, onDeadlineChange, onReviewRequiredChange, onReviewDeadlineChange, onAddGoal, onUpdateGoal, onDeleteGoal,
   onAddCheckpoint, onEditCheckpoint, onDeleteCheckpoint }) {
   const [tab, setTab] = React.useState("goals");
   const tabs = [
@@ -916,8 +930,10 @@ function GoalsSettingsCard({ template, enabled, owner, deadlineDays, goals, chec
             </div>
             <div style={{ minHeight: 360 }}>
               {tab === "goals" ? (
-                <GoalsSection owner={owner} deadlineDays={deadlineDays} goals={goals}
+                <GoalsSection owner={owner} deadlineDays={deadlineDays}
+                  reviewRequired={reviewRequired} reviewDeadlineDays={reviewDeadlineDays} goals={goals}
                   onOwnerChange={onOwnerChange} onDeadlineChange={onDeadlineChange}
+                  onReviewRequiredChange={onReviewRequiredChange} onReviewDeadlineChange={onReviewDeadlineChange}
                   onAddGoal={onAddGoal} onUpdateGoal={onUpdateGoal} onDeleteGoal={onDeleteGoal} />
               ) : (
                 <CheckpointsSection checkpoints={checkpoints}
@@ -957,6 +973,8 @@ function Page() {
   const [enabled, setEnabled] = React.useState(baseTemplate.goalsEnabled);
   const [owner, setOwner] = React.useState(baseTemplate.goalsOwner || "hr");
   const [deadlineDays, setDeadlineDays] = React.useState(baseTemplate.goalsDeadlineDays);
+  const [reviewRequired, setReviewRequired] = React.useState(baseTemplate.goalsReviewRequired || false);
+  const [reviewDeadlineDays, setReviewDeadlineDays] = React.useState(baseTemplate.goalsReviewDeadlineDays || 7);
   const [goals, setGoals] = React.useState(baseTemplate.goals || []);
   const [checkpoints, setCheckpoints] = React.useState(baseTemplate.checkpoints || []);
   const [deleteConfirm, setDeleteConfirm] = React.useState(false);
@@ -981,7 +999,8 @@ function Page() {
     setCheckpoints((list) => list.filter((c) => c.id !== id));
   }
 
-  const template = { ...baseTemplate, goalsEnabled: enabled, goalsOwner: owner, goalsDeadlineDays: deadlineDays, goals };
+  const template = { ...baseTemplate, goalsEnabled: enabled, goalsOwner: owner, goalsDeadlineDays: deadlineDays,
+    goalsReviewRequired: reviewRequired, goalsReviewDeadlineDays: reviewDeadlineDays, goals };
 
   return (
     <AppShell role="hr" active="hr-templates" base=".."
@@ -997,13 +1016,16 @@ function Page() {
         <div style={{ flex: 1, minWidth: 0 }}>
           {section === "goals" ? (
             <GoalsSettingsCard template={template} enabled={enabled} owner={owner}
-              deadlineDays={deadlineDays} goals={goals} checkpoints={checkpoints}
+              deadlineDays={deadlineDays} reviewRequired={reviewRequired} reviewDeadlineDays={reviewDeadlineDays}
+              goals={goals} checkpoints={checkpoints}
               onToggle={(v) => {
                 setEnabled(v);
                 if (v) setOwner("hr");
               }}
               onOwnerChange={setOwner}
               onDeadlineChange={setDeadlineDays}
+              onReviewRequiredChange={setReviewRequired}
+              onReviewDeadlineChange={setReviewDeadlineDays}
               onAddGoal={addGoal} onUpdateGoal={updateGoal} onDeleteGoal={deleteGoal}
               onAddCheckpoint={addCheckpoint} onEditCheckpoint={editCheckpoint} onDeleteCheckpoint={deleteCheckpoint} />
           ) : section === "checklist" ? (
