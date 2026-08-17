@@ -15,13 +15,22 @@
 <body>
 <div id="root"></div>
 <script type="text/babel">
-const { Card, Tag, Switch, Input, Textarea, Select, Checkbox, SegmentedControl, Tabs, Tooltip, Divider, Button, IconButton, Modal, Drawer, Alert } = window.SkillazCoreDesignSystem_bf9566;
+const { Card, Switch, Input, Textarea, Select, Checkbox, SegmentedControl, Tabs, Tooltip, Divider, Button, IconButton, Modal, Drawer, Alert } = window.SkillazCoreDesignSystem_bf9566;
 const { AppShell, Icons } = window.Site;
 const {
   IconInfo, IconTarget, IconCheck, IconClipboard, IconSettings,
   IconHelpCircle, IconTrash, IconArrowLeft, IconClock, IconFileText, IconLink2, IconGraduationCap, IconMessageCircle,
   IconPlusSm, IconEdit, IconLayers, IconBookOpen, IconCalendar, IconSearch, IconX,
+  IconFilter, IconChevronDown, IconChevronRight, IconSparkles,
 } = Icons;
+
+// Склонение "шаг/шага/шагов" — для строки карточки цели в каталоге (см. GoalCatalogPickerModal).
+function pluralSteps(n) {
+  const mod10 = n % 10, mod100 = n % 100;
+  if (mod10 === 1 && mod100 !== 11) return "шаг";
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) return "шага";
+  return "шагов";
+}
 
 // В наборе иконок ДС нет "ручки" для перетаскивания — добавляем локально, по тому же
 // принципу, что и одноразовые иконки в других файлах (hr/templates.html: IconCopyLocal).
@@ -367,55 +376,141 @@ function GoalMethodModal({ onClose, onManual, onCatalog }) {
   );
 }
 
-// ---------------- Выбор готовой цели из справочника (hr/goals-catalog.html) — поиск +
-// список карточек; выбранная цель превращается в обычный черновик и открывается в
-// TemplateGoalCreateDrawer, чтобы HR мог донастроить её перед сохранением в шаблон.
-// Подцели получают новые id — правки после выбора не задевают исходную запись в каталоге. ----------------
+// ---------------- Выбор готовой цели из справочника (hr/goals-catalog.html) — тот же поиск +
+// фильтры (Категория / Должность / Уровень), что и у руководителя в manager/plan.html
+// (GoalCatalogPickerModal), чтобы каталог не расходился на две разные реализации. В шаблоне
+// нет конкретного сотрудника, поэтому фильтр "Должность" не предзаполняется — Админ выбирает
+// его сам, если хочет сузить список. Выбранная цель превращается в обычный черновик и
+// открывается в TemplateGoalCreateDrawer, чтобы HR мог донастроить её перед сохранением в
+// шаблон. Подцели получают новые id — правки после выбора не задевают исходную запись в каталоге. ----------------
 function GoalCatalogPickerModal({ onClose, onPick }) {
   const D = window.SITE_DATA;
-  const catalog = D.goalCatalog || [];
   const [q, setQ] = React.useState("");
-  const [category, setCategory] = React.useState("");
-  const categories = [...new Set(catalog.map((g) => g.category).filter(Boolean))];
+  const [filters, setFilters] = React.useState({ category: "", position: "", level: "" });
+  const [filtersOpen, setFiltersOpen] = React.useState(false);
+  const catalogActive = (D.goalCatalog || []).filter((g) => !g.archived);
+  const categories = [...new Set(catalogActive.map((g) => g.category).filter(Boolean))];
+  const positions = [...new Set(catalogActive.flatMap((g) => g.positions || []))];
+  const toolbarFilterCount = (filters.category ? 1 : 0) + (filters.position ? 1 : 0) + (filters.level ? 1 : 0);
   const needle = q.trim().toLowerCase();
-  const list = catalog.filter((g) => {
-    if (needle && !(g.title.toLowerCase().includes(needle) || (g.description || "").toLowerCase().includes(needle))) return false;
-    if (category && g.category !== category) return false;
+
+  const list = catalogActive.filter((g) => {
+    if (needle && !(g.title.toLowerCase().includes(needle)
+      || g.category.toLowerCase().includes(needle)
+      || (g.positions || []).some((p) => p.toLowerCase().includes(needle)))) return false;
+    if (filters.category && g.category !== filters.category) return false;
+    if (filters.position && !(g.positions || []).includes(filters.position)) return false;
+    if (filters.level && g.level !== filters.level) return false;
     return true;
   });
 
   return (
     <Modal open title="Выберите цель из каталога" onClose={onClose} size="l" maxHeight="calc(100vh - 64px)"
-      secondary={<Button mode="secondary" onClick={onClose}>Отменить</Button>}
-      options={
-        <div className="sk-row sk-gap-2">
-          <Input icon={<IconSearch size={18} />} placeholder="Поиск по названию" value={q} onChange={(e) => setQ(e.target.value || "")} style={{ flex: 1 }} />
-          <Select placeholder="Все категории" value={category || null} options={categories.map((c) => ({ value: c, label: c }))}
-            onChange={(v) => setCategory(v || "")} style={{ width: 200 }} />
+      secondary={<Button mode="secondary" onClick={onClose}>Отменить</Button>}>
+      <div className="sk-col sk-gap-3">
+        <div className="sk-row sk-gap-2" style={{ flexWrap: "wrap", alignItems: "center" }}>
+          <Input size="s" icon={<IconSearch size={18} />} placeholder="Поиск по названию, категории, должности"
+            value={q} onChange={(e) => setQ(e.target.value || "")} style={{ flex: 1, minWidth: 220 }} />
+          <Button mode="secondary" icon={<IconFilter size={16} />} onClick={() => setFiltersOpen((o) => !o)}
+            style={{ background: "var(--sk-surface-page)", border: toolbarFilterCount ? "1px solid var(--sk-stroke-accent)" : "1px solid var(--sk-stroke)" }}>
+            <span className="sk-row sk-gap-1" style={{ alignItems: "center" }}>
+              Фильтры{toolbarFilterCount ? " · " + toolbarFilterCount : ""}
+              {toolbarFilterCount > 0 && (
+                <span onClick={(e) => { e.stopPropagation(); setFilters({ category: "", position: "", level: "" }); }}
+                  style={{ display: "inline-flex", opacity: 0.6, marginLeft: 2 }}>
+                  <IconX size={14} />
+                </span>
+              )}
+            </span>
+          </Button>
         </div>
-      }>
-      <div className="sk-col sk-gap-2 sk-modal-scroll">
-        {list.map((g) => (
-          <div key={g.id} className="sk-row sk-gap-3 sk-clickable" onClick={() => onPick(g)} style={{
-            justifyContent: "space-between", alignItems: "flex-start", padding: 12,
-            border: "1px solid var(--sk-stroke)", borderRadius: "var(--sk-radius-3)",
-          }}>
-            <div className="sk-col sk-gap-1" style={{ flex: 1, minWidth: 0 }}>
-              <div className="sk-row sk-gap-2" style={{ alignItems: "center" }}>
-                <span className="sk-label-3">{g.title}</span>
-                <Tag size="s" hue="accent">{g.category}</Tag>
-              </div>
-              <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{g.description}</span>
-              <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>
-                Шагов: {g.subgoals.length}{g.department ? " · " + g.department : ""}{(g.positions || []).length ? " · " + g.positions.join(", ") : ""}
-              </span>
-            </div>
-            <Button size="s" mode="secondary" onClick={(e) => { e.stopPropagation(); onPick(g); }}>Выбрать</Button>
+        {filtersOpen && (
+          <div className="sk-row sk-gap-2" style={{ flexWrap: "wrap" }}>
+            <FilterChip label="Категория" options={categories.map((v) => ({ value: v, label: v }))}
+              value={filters.category} onChange={(v) => setFilters((f) => ({ ...f, category: v }))} />
+            <FilterChip label="Должность" options={positions.map((v) => ({ value: v, label: v }))}
+              value={filters.position} onChange={(v) => setFilters((f) => ({ ...f, position: v }))} />
+            <FilterChip label="Уровень" options={(D.goalLevels || []).map((v) => ({ value: v, label: v }))}
+              value={filters.level} onChange={(v) => setFilters((f) => ({ ...f, level: v }))} />
           </div>
-        ))}
-        {!list.length && <div className="sk-muted" style={{ padding: "16px 0", textAlign: "center" }}>Ничего не нашлось</div>}
+        )}
+
+        <div className="sk-col sk-gap-2 sk-modal-scroll" style={{ paddingTop: 8 }}>
+          {list.map((g) => <CatalogGoalRow key={g.id} goal={g} onClick={() => onPick(g)} />)}
+          {!list.length && <div className="sk-muted" style={{ padding: "16px 0", textAlign: "center" }}>Ничего не нашлось — попробуйте изменить запрос или фильтры.</div>}
+        </div>
       </div>
     </Modal>
+  );
+}
+
+// Чип одиночного фильтра (Категория/Должность/Уровень — один выбор, не массив) — идентичен
+// FilterChip из manager/plan.html, чтобы у Админа и руководителя каталог выглядел одинаково.
+function FilterChip({ label, options, value, onChange }) {
+  const [open, setOpen] = React.useState(false);
+  const ref = React.useRef(null);
+  React.useEffect(() => {
+    if (!open) return;
+    const close = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener("mousedown", close);
+    return () => document.removeEventListener("mousedown", close);
+  }, [open]);
+  const selected = options.find((o) => o.value === value);
+  return (
+    <div ref={ref} style={{ position: "relative" }}>
+      <button type="button" onClick={() => setOpen((o) => !o)} className="sk-clickable" style={{
+        display: "inline-flex", alignItems: "center", gap: 6, height: 36, padding: "0 12px",
+        borderRadius: "var(--sk-radius-2)", cursor: "pointer", whiteSpace: "nowrap",
+        border: open ? "1px solid var(--sk-stroke-accent)" : "1px solid var(--sk-stroke)",
+        background: "var(--sk-surface-page)", font: "var(--sk-label-3-regular)", color: "var(--sk-text-primary)",
+      }}>
+        {label}{selected ? ": " + selected.label : ""}
+        {value ? (
+          <span onClick={(e) => { e.stopPropagation(); onChange(""); }} style={{ display: "inline-flex", opacity: 0.55 }}>
+            <IconX size={13} />
+          </span>
+        ) : (
+          <IconChevronDown size={14} style={{ opacity: 0.55 }} />
+        )}
+      </button>
+      {open && (
+        <div style={{
+          position: "absolute", top: "calc(100% + 4px)", left: 0, zIndex: 20, minWidth: 200, maxHeight: 300, overflowY: "auto",
+          background: "var(--sk-surface-page)", borderRadius: "var(--sk-radius-2)", boxShadow: "var(--sk-shadow-m)", padding: 6,
+        }}>
+          {options.map((o) => (
+            <button key={o.value} onClick={() => { onChange(o.value === value ? "" : o.value); setOpen(false); }} style={{
+              display: "block", width: "100%", textAlign: "left", padding: "8px 10px", borderRadius: "var(--sk-radius-2)",
+              border: "none", background: "transparent", cursor: "pointer", font: "var(--sk-label-3-regular)", color: "var(--sk-text-primary)",
+            }}>{o.label}</button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Строка цели в каталоге — идентична CatalogGoalRow из manager/plan.html.
+function CatalogGoalRow({ goal, onClick }) {
+  const stepsCount = (goal.subgoals || []).length;
+  return (
+    <div className="sk-clickable" onClick={onClick} style={{
+      display: "flex", gap: 12, alignItems: "center", padding: "12px 14px",
+      border: "1px solid var(--sk-stroke)", borderRadius: "var(--sk-radius-3)",
+    }}>
+      <span style={{
+        width: 32, height: 32, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center",
+        background: "var(--sk-accent-secondary)", color: "var(--sk-text-accent)",
+      }}><IconTarget size={16} /></span>
+      <div className="sk-col sk-gap-1" style={{ flex: 1, minWidth: 0 }}>
+        <span className="sk-label-3">{goal.title}</span>
+        <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>
+          {goal.category}{goal.level ? " · " + goal.level : ""} · {stepsCount} {pluralSteps(stepsCount)}
+          {(goal.positions || []).length ? " · " + goal.positions.join(", ") : ""}
+        </span>
+      </div>
+      <IconChevronRight size={16} color="var(--sk-icon-secondary)" />
+    </div>
   );
 }
 
