@@ -542,16 +542,18 @@ window.SITE_DATA = {
       risks: [],
     },
     {
-      // Второй, более поздний план Никиты (после newhire) — уже в процессе, с целями и
-      // контрольными точками. Отдельная запись в команде, т.к. D.team не поддерживает
-      // несколько планов на одного человека; ссылается на тот же demo-план D.plans.onboarding.
-      id: "nikita2", name: "Никита Гаврилов", position: "Middle frontend-разработчик",
+      // Второй план в списке — отдельный сотрудник (не Никита, см. ниже), чтобы не
+      // повторять одно и то же имя в двух карточках подряд. Срок плана истёк, все цели
+      // выполнены — план дожидается финального ревью руководителем; ссылается на
+      // demo-план D.plans.finalReview (клон onboarding, а не сам onboarding — тот
+      // остаётся "живым" планом Никиты в роли "Сотрудник", см. конец файла).
+      id: "svetlana", name: "Светлана Морозова", position: "Middle frontend-разработчик",
       department: "Команда «Главная страница»",
       planKind: "Адаптация", planTitle: "Адаптация для новичка: middle frontend-разработчик",
-      dateStart: "01.03.26", dateEnd: "30.05.26", daysLeftLabel: "ещё 47 дн.",
-      progressPct: 33, progressBasis: "по целям", status: "in_progress",
-      planId: "onboarding",
-      action: { type: "checkin", label: "Пройти контрольную точку", due: "4 мая" },
+      dateStart: "01.11.25", dateEnd: "10.03.26", daysLeftLabel: "",
+      progressPct: 100, progressBasis: "по целям", status: "on_review",
+      planId: "finalReview",
+      action: { type: "review", label: "Провести итоговое ревью", due: "10 мар" },
       helper: "Дмитрий Волков",
       risks: [],
     },
@@ -1846,6 +1848,59 @@ window.SITE_DATA = {
   window.SITE_DATA.hrDemo = {
     reviewEmployee: { name: "Тимур Асанов", position: "Data-аналитик", department: "Департамент аналитики" },
   };
+
+  // ---- План "На финальном ревью" (демо для роли "Руководитель", team.svetlana) ----
+  // Клонируем структуру onboarding (тот же приём, что и выше для plans.review), а не
+  // переиспользуем сам plans.onboarding — он остаётся "живым" планом Никиты в роли
+  // "Сотрудник", мутировать его нельзя. Срок плана истёк, все цели и подцели, этапы
+  // базового плана и контрольные точки выполнены — руководителю остаётся принять решение
+  // (см. manager/plan.html, ReviewDecisionModal): завершить успешно/неуспешно или
+  // вернуть в работу.
+  const finalReviewPlan = JSON.parse(JSON.stringify(window.SITE_DATA.plans.onboarding));
+  finalReviewPlan.id = "finalReview";
+  finalReviewPlan.status = "on_review";
+  finalReviewPlan.statusLabel = "На финальном ревью";
+  finalReviewPlan.dateStart = "01.11.25";
+  finalReviewPlan.dateEnd = "10.03.26";
+  finalReviewPlan.stages.forEach((s) => {
+    s.status = "completed";
+    s.dueLabel = "Этап завершён";
+    s.items.forEach((it) => { it.done = true; });
+  });
+  finalReviewPlan.goals.forEach((g) => {
+    g.status = "done";
+    g.subgoals.forEach((sg) => { sg.status = "done"; });
+  });
+  // У cp1 в onboarding уже заполнены реалистичные ответы/отчёт — донаполняем cp2/cp3
+  // (в onboarding они ещё "pending", с пустыми ответами) тем же способом, вместо пустых
+  // done-точек, которые ReviewDecisionModal и ManagerCheckpointDrawer показывали бы пустыми.
+  const finalReviewCheckpointFill = {
+    cp2: {
+      employeeSummary: "Обсудили итоги второго месяца — вышла на плановую нагрузку, код-ревью проходит без критических замечаний.",
+      internalReport: "Показатели по спринтам в норме, first-pass rate растёт. Готова переходить к финальному этапу без рисков.",
+      riskLevel: "low",
+      answers: [4, 4, "Сложностей не возникает, план понятен."],
+    },
+    cp3: {
+      employeeSummary: "Подвели итоги адаптации — цели достигнуты, план завершён.",
+      internalReport: "Целевые показатели по Story Points и first-pass rate достигнуты два спринта подряд, критических багов нет. Рекомендую подтвердить успешное прохождение адаптации.",
+      riskLevel: "none",
+      answers: [5, 5, "Всё понятно, спасибо за поддержку на всех этапах."],
+    },
+  };
+  Object.keys(finalReviewPlan.checkpoints).forEach((id) => {
+    const cp = finalReviewPlan.checkpoints[id];
+    cp.status = "done";
+    const fill = finalReviewCheckpointFill[id];
+    if (fill) {
+      cp.surveySubmitted = true;
+      cp.employeeSummary = fill.employeeSummary;
+      cp.internalReport = fill.internalReport;
+      cp.riskLevel = fill.riskLevel;
+      cp.survey.forEach((q, i) => { q.answer = fill.answers[i]; });
+    }
+  });
+  window.SITE_DATA.plans.finalReview = finalReviewPlan;
 
   // ---- Роль "Кандидат" — свой пребординговый план ----
   // Отдельный объект, а не window.SITE_DATA.plans.preboarding: тот принадлежит уже

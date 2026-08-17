@@ -185,7 +185,7 @@ function Page() {
     });
   }
   function openAction(item) {
-    if (item.employeeId === "nikita" || item.employeeId === "alexey" || item.employeeId === "darya") {
+    if (item.employeeId === "nikita" || item.employeeId === "alexey" || item.employeeId === "darya" || item.employeeId === "svetlana") {
       const tabParam = item.type === "goal" ? "&tab=max" : "";
       window.location.href = "plan.html?employee=" + item.employeeId + tabParam; return;
     }
@@ -333,7 +333,10 @@ function Page() {
             <div className="sk-row sk-gap-3" style={{ flexWrap: "wrap" }}>
               <Input icon={<IconSearch size={20} />} placeholder="Поиск" value={planSearch} onChange={(e) => setPlanSearch(e.target.value || "")} style={{ flex: 1, minWidth: 200 }} />
               <Select placeholder="Статус" value={planStatusFilter || null}
-                options={[{ value: "not_started", label: "Не начат" }, { value: "in_progress", label: "В работе" }, { value: "completed", label: "Завершён" }]}
+                options={[
+                  { value: "not_started", label: "Не начат" }, { value: "in_progress", label: "В работе" },
+                  { value: "on_review", label: "На финальном ревью" }, { value: "completed", label: "Завершён" },
+                ]}
                 onChange={(v) => setPlanStatusFilter(v || "")} style={{ width: 200 }} />
             </div>
             <div className="sk-col sk-gap-4">
@@ -427,7 +430,7 @@ function PlanRow({ m, onOpen }) {
           </div>
           {m.action && (
             <Button size="s" variant="accent" mode="primary"
-              icon={m.action.type === "goal" ? <IconTarget size={14} /> : <IconLink2 size={14} />}
+              icon={React.createElement((TYPE_META[m.action.type] || {}).icon || IconLink2, { size: 14 })}
               onClick={(e) => { e.stopPropagation && e.stopPropagation(); onOpen(); }}>
               {m.action.label}{m.action.due !== "—" ? " до " + m.action.due : ""}
             </Button>

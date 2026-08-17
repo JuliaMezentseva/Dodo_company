@@ -170,6 +170,7 @@ function Page() {
   const [deleteSubgoal, setDeleteSubgoal] = React.useState(null);
   const [taskModal, setTaskModal] = React.useState(null);
   const [cpModal, setCpModal] = React.useState(null);
+  const [reviewModal, setReviewModal] = React.useState(false);
 
   function showToast(msg) {
     setToast(msg);
@@ -305,6 +306,27 @@ function Page() {
     showToast("Контрольная точка обновлена");
   }
 
+  // ---------------- Финальное ревью плана (см. ReviewDecisionModal) ----------------
+  // "returned" переоткрывает план с новым сроком и без вердикта; "done"/"failed" —
+  // финальные решения, сохраняем их в reviewResult, чтобы показать в RightPanel.
+  function decideReview(verdict, { comment, newDueDate }) {
+    if (verdict === "returned") {
+      setPlan(prev => ({
+        ...prev, status: "in_progress", statusLabel: "В процессе", dateEnd: fmtDate(newDueDate), reviewResult: null,
+        reviewHistory: [...(prev.reviewHistory || []), { verdict, comment, date: "Сегодня", by: D.manager.name }],
+      }));
+      showToast("План возвращён в работу с новым сроком");
+    } else {
+      setPlan(prev => ({
+        ...prev, status: verdict === "done" ? "completed" : "failed",
+        statusLabel: verdict === "done" ? "Завершён" : "Завершён неуспешно",
+        reviewResult: { verdict, comment, date: "Сегодня", by: D.manager.name },
+      }));
+      showToast(verdict === "done" ? "План завершён успешно" : "План завершён неуспешно");
+    }
+    setReviewModal(false);
+  }
+
   const totalChecklist = plan.stages.flatMap(s => s.items.filter(i => i.kind !== "checkpoint"));
   const doneChecklist = totalChecklist.filter(i => i.done).length;
   const checklistPct = totalChecklist.length ? Math.round((doneChecklist / totalChecklist.length) * 100) : 0;
@@ -312,6 +334,8 @@ function Page() {
   const goalsPct = plan.goals.length ? Math.round((goalsDoneCount / plan.goals.length) * 100) : 0;
   const overallPct = goalsPct;
   const canPublish = planValidForPublish(plan.goals) && !plan.goalsPublished;
+  const cpList = Object.keys(plan.checkpoints).filter(id => plan.checkpoints[id]).map(id => plan.checkpoints[id]);
+  const cpDoneCount = cpList.filter(c => c.status === "done").length;
 
   const activeGoal = goalDrawer && goalDrawer.goalId ? plan.goals.find(g => g.id === goalDrawer.goalId) : null;
   const activeSubgoalGoal = subgoalDrawer && plan.goals.find(g => g.id === subgoalDrawer.goalId);
@@ -394,7 +418,8 @@ function Page() {
         </div>
 
         <div style={{ width: 320, flexShrink: 0 }}>
-          <RightPanel member={member} plan={plan} overallPct={overallPct} onOpenCheckpoint={setCpModal} showCheckpoints={tab === "max"} />
+          <RightPanel member={member} plan={plan} overallPct={overallPct} onOpenCheckpoint={setCpModal} showCheckpoints={tab === "max"}
+            onOpenReview={() => setReviewModal(true)} />
         </div>
       </div>
 
@@ -545,6 +570,14 @@ function Page() {
           onFinish={(patch) => finishCheckpoint(cpModal, patch)}
           onAddComment={(text) => addCheckpointComment(cpModal, text)}
           onUpdate={(patch) => updateCheckpoint(cpModal, patch)} />
+      )}
+
+      {reviewModal && (
+        <ReviewDecisionModal member={member} plan={plan}
+          goalsDoneCount={goalsDoneCount} goalsTotal={plan.goals.length} goalsPct={goalsPct}
+          checklistPct={checklistPct} cpDoneCount={cpDoneCount} cpTotal={cpList.length}
+          onClose={() => setReviewModal(false)}
+          onDecide={decideReview} />
       )}
 
       {toast && (
@@ -2271,6 +2304,87 @@ function ManagerCheckpointDrawer({ checkpoint, viewerName, employee, canEdit, is
   );
 }
 
+// ---------------- Финальное ревью плана ----------------
+// Компактная сводка + решение руководителя. Сами цели/подцели и контрольные точки
+// руководитель при необходимости раскрывает прямо на странице плана (вкладки "План
+// адаптации"/"Базовые действия", карточка контрольных точек в RightPanel) — они уже
+// доступны для просмотра в режиме "только чтение", т.к. план опубликован и запущен
+// (goalsPublished/employeeStarted = true). Здесь — только сводные цифры и вердикт.
+const REVIEW_INSTRUCTION = "На ревью цели и подцели не редактируются — примите решение по плану в его текущем состоянии. Если статусы целей или подцелей не отражают фактический результат, верните план в работу: сотрудник и проверяющие актуализируют подцели, после чего план снова уйдёт на ревью. Доступны три решения: завершить успешно, завершить неуспешно или вернуть в работу — с обязательным комментарием и новым сроком.";
+const REVIEW_VERDICT_COPY = {
+  done: { title: "Завершить план успешно?", confirmLabel: "Завершить успешно", variant: "positive", mode: "primary" },
+  failed: { title: "Завершить план неуспешно?", confirmLabel: "Завершить неуспешно", variant: "negative", mode: "primary" },
+  returned: { title: "Вернуть план в работу?", confirmLabel: "Вернуть в работу", variant: "gray", mode: "secondary" },
+};
+function ReviewStat({ label, value }) {
+  return (
+    <div className="sk-col sk-gap-1" style={{ flex: "1 1 140px", padding: "10px 12px", border: "1px solid var(--sk-stroke)", borderRadius: "var(--sk-radius-3)" }}>
+      <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{label}</div>
+      <div className="sk-label-2">{value}</div>
+    </div>
+  );
+}
+function ReviewDecisionModal({ member, plan, goalsDoneCount, goalsTotal, goalsPct, checklistPct, cpDoneCount, cpTotal, onClose, onDecide }) {
+  const [verdict, setVerdict] = React.useState(null); // null | "done" | "failed" | "returned"
+  const [comment, setComment] = React.useState("");
+  const [newDueDate, setNewDueDate] = React.useState(new Date(2026, 2, 25));
+
+  const allGoalsDone = goalsTotal > 0 && goalsDoneCount === goalsTotal;
+  // Комментарий обязателен всегда для "вернуть в работу"/"неуспешно", и для "успешно" —
+  // только если остались незавершённые цели (см. ТЗ: решение при незавершённых целях
+  // требует обоснования).
+  const commentRequired = verdict === "returned" || verdict === "failed" || (verdict === "done" && !allGoalsDone);
+  const canConfirm = verdict && (!commentRequired || comment.trim()) && (verdict !== "returned" || newDueDate);
+
+  if (!verdict) {
+    return (
+      <Modal open title="Итоговое ревью плана" onClose={onClose} size="m"
+        secondary={<Button mode="secondary" onClick={onClose}>Закрыть</Button>}>
+        <div className="sk-col sk-gap-4">
+          <Alert hue="neutral" style={{ background: "var(--sk-surface-secondary)" }}>{REVIEW_INSTRUCTION}</Alert>
+          <div className="sk-row sk-gap-3" style={{ flexWrap: "wrap" }}>
+            <ReviewStat label="Цели" value={goalsDoneCount + " из " + goalsTotal + " (" + goalsPct + "%)"} />
+            <ReviewStat label="Базовые действия" value={checklistPct + "%"} />
+            {cpTotal > 0 && <ReviewStat label="Контрольные точки" value={cpDoneCount + " из " + cpTotal} />}
+          </div>
+          <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>
+            Отдельные цели, подцели, контрольные точки и элементы базового плана можно посмотреть прямо на странице плана — закройте окно и раскройте нужный блок.
+          </div>
+          <Divider />
+          <div className="sk-col sk-gap-2">
+            <div className="sk-label-3">Решение по плану</div>
+            <div className="sk-row sk-gap-2" style={{ flexWrap: "wrap" }}>
+              <Button variant="positive" onClick={() => setVerdict("done")}>Завершить успешно</Button>
+              <Button variant="negative" mode="secondary" onClick={() => setVerdict("failed")}>Завершить неуспешно</Button>
+              <Button mode="secondary" variant="gray" onClick={() => setVerdict("returned")}>Вернуть в работу</Button>
+            </div>
+          </div>
+        </div>
+      </Modal>
+    );
+  }
+
+  const copy = REVIEW_VERDICT_COPY[verdict];
+  return (
+    <Modal open title={copy.title} onClose={() => setVerdict(null)} size="s"
+      secondary={<Button mode="secondary" onClick={() => setVerdict(null)}>Назад</Button>}
+      primary={<Button variant={copy.variant} mode={copy.mode} disabled={!canConfirm}
+        onClick={() => onDecide(verdict, { comment: comment.trim(), newDueDate })}>{copy.confirmLabel}</Button>}>
+      <div className="sk-col sk-gap-3">
+        {verdict === "done" && !allGoalsDone && (
+          <Alert hue="warning">В плане есть незавершённые цели — обоснуйте решение комментарием.</Alert>
+        )}
+        <Textarea label="Комментарий" required={commentRequired} helper={commentRequired ? "Обязателен — сотрудник увидит его после решения" : "Необязательно — виден сотруднику"}
+          placeholder={verdict === "returned" ? "Что нужно доработать и почему план возвращается" : "Поясните решение сотруднику"}
+          rows={3} value={comment} onChange={(e) => setComment(e.target.value || "")} />
+        {verdict === "returned" && (
+          <DatePicker label="Новый срок плана" required value={newDueDate} onChange={setNewDueDate} />
+        )}
+      </div>
+    </Modal>
+  );
+}
+
 // ---------------- Общие мелкие блоки (аналогично роли "Сотрудник") ----------------
 function CollapsibleSection({ title, children, defaultOpen = true }) {
   const [open, setOpen] = React.useState(defaultOpen);
@@ -2315,7 +2429,8 @@ function PersonCard({ p }) {
   );
 }
 
-function RightPanel({ member, plan, overallPct, onOpenCheckpoint, showCheckpoints }) {
+const PLAN_STATUS_TAG = { completed: "completed", failed: "failed_plan", on_review: "on_review" };
+function RightPanel({ member, plan, overallPct, onOpenCheckpoint, showCheckpoints, onOpenReview }) {
   const cpOrder = Object.keys(plan.checkpoints);
   const checkpoints = cpOrder.filter(id => plan.checkpoints[id]).map(id => plan.checkpoints[id]);
   const firstPendingIndex = checkpoints.findIndex(c => c.status !== "done");
@@ -2373,12 +2488,21 @@ function RightPanel({ member, plan, overallPct, onOpenCheckpoint, showCheckpoint
         </Card>
       )}
 
-      <Card bordered>
+      <Card bordered style={plan.status === "on_review" ? { border: "1.5px solid " + CP_YELLOW_BORDER, background: CP_YELLOW_BG } : undefined}>
         <div className="sk-col sk-gap-3">
           <div className="sk-label-3">Статус адаптации</div>
-          <StatusTag status={plan.status === "completed" ? "completed" : "in_progress_plan"} style={{ alignSelf: "flex-start" }} />
+          <StatusTag status={PLAN_STATUS_TAG[plan.status] || "in_progress_plan"} style={{ alignSelf: "flex-start" }} />
           <div className="sk-row sk-gap-3" style={{ alignItems: "center" }}><ProgressBar value={overallPct} style={{ flex: 1 }} hue="accent" /><span className="sk-title-5">{overallPct}%</span></div>
           <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{plan.dateStart} – {plan.dateEnd}</div>
+          {plan.status === "on_review" && (
+            <Button size="s" variant="accent" onClick={onOpenReview} style={{ alignSelf: "flex-start" }}>Провести итоговое ревью</Button>
+          )}
+          {plan.reviewResult && (
+            <div className="sk-col sk-gap-1" style={{ marginTop: 4 }}>
+              <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Решение по итогам ревью — {plan.reviewResult.date}, {plan.reviewResult.by}</div>
+              {plan.reviewResult.comment && <div className="sk-label-3-regular">{plan.reviewResult.comment}</div>}
+            </div>
+          )}
         </div>
       </Card>
 
