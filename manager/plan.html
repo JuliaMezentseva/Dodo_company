@@ -747,11 +747,9 @@ function IconSparklesSolid({ size = 16, color = "currentColor" }) {
 function AIBanner({ icon, children }) {
   return (
     <div className="sk-row sk-gap-3" style={{ padding: 14, background: "var(--sk-special-secondary)", borderRadius: "var(--sk-radius-3)", alignItems: "flex-start" }}>
-      <span style={{
-        width: 28, height: 28, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center",
-        background: "var(--sk-surface-page)",
-      }}>{icon}</span>
-      <div style={{ paddingTop: 3 }}>{children}</div>
+      {/* Иконка прямо на фоне плашки, без белого кружка-подложки под ней — легче. */}
+      <span style={{ flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", paddingTop: 2 }}>{icon}</span>
+      <div style={{ paddingTop: 1 }}>{children}</div>
     </div>
   );
 }
@@ -848,7 +846,7 @@ function AIExpectationsStep({ member, plan, text, setText, demo, toggleDemo, pic
     <div className="sk-col sk-gap-4">
       {/* Факты о сотруднике — прямо в реплике AI, а не отдельной карточкой ниже: один блок
           вместо двух (вариант "слитный" из сравнения макетов). */}
-      <AIBanner icon={<IconSparklesSolid size={14} color="var(--sk-icon-special)" />}>
+      <AIBanner icon={<IconSparklesSolid size={18} color="var(--sk-icon-special)" />}>
         {/* Имя — в именительном падеже и в начале фразы, а не после предлога: member.name
             хранится без склонения, а "для {member.name}" даёт грамматически неверное
             "для Никита Гаврилов" вместо "для Никиты Гаврилова". */}
@@ -881,12 +879,12 @@ function AIExpectationsStep({ member, plan, text, setText, demo, toggleDemo, pic
         <div className="ai-expect-textarea" onClick={fillOnFirstClick} style={{ position: "relative" }}>
           <Textarea rows={3} value={text}
             onChange={(e) => setText(e.target.value || "")}
-            textareaStyle={{ paddingRight: 8, paddingBottom: 38 }}
-            placeholder="Например: хочу, чтобы к концу адаптации сотрудник сам вёл клиентов, проводил встречи без моей помощи и правильно фиксировал результаты в CRM." />
+            textareaStyle={{ paddingRight: 8, paddingBottom: 44 }}
+            placeholder="Например: хочу, чтобы к концу адаптации сотрудник сам вёл клиентов…" />
           <div className="sk-row sk-gap-1" style={{ position: "absolute", right: 10, bottom: 10 }} onClick={(e) => e.stopPropagation()}>
-            <InputSourceIcon size={28} icon={IconMic} label="Голосовой ввод" active={demo.voice} onClick={() => toggleDemo("voice")} />
-            <InputSourceIcon size={28} icon={IconPaperclip} label="Прикрепить файл" active={demo.file} onClick={() => toggleDemo("file")} />
-            <InputSourceIcon size={28} icon={IconImage} label="Добавить изображение" active={demo.image} onClick={() => toggleDemo("image")} />
+            <InputSourceIcon size={32} icon={IconMic} label="Голосовой ввод" active={demo.voice} onClick={() => toggleDemo("voice")} />
+            <InputSourceIcon size={32} icon={IconPaperclip} label="Прикрепить файл" active={demo.file} onClick={() => toggleDemo("file")} />
+            <InputSourceIcon size={32} icon={IconImage} label="Добавить изображение" active={demo.image} onClick={() => toggleDemo("image")} />
           </div>
         </div>
 
@@ -965,7 +963,7 @@ function AIDraftStep({ member, plan, draft, setDraft }) {
       {/* Тёплое подтверждение вместо сухого "AI структурировал..." — сразу сообщает главное:
           результат готов и его можно смело редактировать (см. отзыв про эмоциональность).
           Та же AIBanner, что и на шаге ожиданий — оба AI-сообщения в окне выглядят одинаково. */}
-      <AIBanner icon={<IconCheck size={16} color="var(--sk-icon-special)" />}>
+      <AIBanner icon={<IconCheck size={18} color="var(--sk-icon-special)" />}>
         <div className="sk-label-3">Готово! Проверьте результат и скорректируйте перед добавлением в план</div>
       </AIBanner>
 
