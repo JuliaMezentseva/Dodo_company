@@ -262,11 +262,7 @@ function SubgoalRow({ subgoal, goalDueLabel, onOpen, onTakeSubgoal }) {
       </div>
       <div className="sk-row sk-gap-2" style={{ flexShrink: 0, alignItems: "center" }} onClick={(e) => e.stopPropagation()}>
         {isNotStarted ? (
-          <button type="button" onClick={onTakeSubgoal} style={{
-            height: 28, padding: "0 12px", borderRadius: "var(--sk-radius-full)",
-            border: "none", cursor: "pointer", background: "var(--sk-surface-secondary)", color: "var(--sk-text-primary)",
-            font: "var(--sk-label-4)", whiteSpace: "nowrap",
-          }}>Взять в работу</button>
+          <Button size="xs" variant="accent" onClick={onTakeSubgoal}>Взять в работу</Button>
         ) : (
           showOwnDue && <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)", whiteSpace: "nowrap" }}>до {ownDue}</span>
         )}
@@ -288,6 +284,17 @@ function CollapsibleSection({ title, children, defaultOpen = true }) {
   );
 }
 
+// Строка "название параметра — значение": значение стоит сразу рядом с названием,
+// а не растянуто к правому краю (единый вид для всех "Параметры" во всех дроверах).
+function ParamRow({ label, children }) {
+  return (
+    <div className="sk-row sk-gap-3" style={{ alignItems: "center", padding: "8px 0" }}>
+      <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)", minWidth: 124, flexShrink: 0 }}>{label}</span>
+      {children}
+    </div>
+  );
+}
+
 // Дровер цели (read-only для сотрудника): описание, срок и полный список шагов
 // с переходом к каждому — то, что не нужно видеть постоянно в списке. Под каждым
 // шагом, у которого есть привязанные материалы, сразу видно их состояние
@@ -303,21 +310,14 @@ function GoalDrawer({ goal, plan, onClose, onOpenSubgoal, onTakeSubgoal, onToggl
 
         <CollapsibleSection title="Параметры">
           <div className="sk-col">
-            <div className="sk-row" style={{ justifyContent: "space-between", alignItems: "center", padding: "8px 0" }}>
-              <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Прогресс</span>
+            <ParamRow label="Прогресс">
               <div className="sk-row sk-gap-2" style={{ alignItems: "center" }}>
                 <ProgressBar value={pct} style={{ width: 100 }} hue="positive" />
                 <span className="sk-label-4">{pct}%</span>
               </div>
-            </div>
-            <div className="sk-row" style={{ justifyContent: "space-between", padding: "8px 0" }}>
-              <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Статус</span>
-              <StatusTag status={statusVal} />
-            </div>
-            <div className="sk-row" style={{ justifyContent: "space-between", padding: "8px 0" }}>
-              <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Срок</span>
-              <span className="sk-label-4">до {stripDuePrefix(goal.dueLabel)}</span>
-            </div>
+            </ParamRow>
+            <ParamRow label="Статус"><StatusTag status={statusVal} /></ParamRow>
+            <ParamRow label="Срок"><span className="sk-label-4">до {stripDuePrefix(goal.dueLabel)}</span></ParamRow>
           </div>
         </CollapsibleSection>
 
@@ -474,40 +474,36 @@ function SubgoalDrawer({ plan, goal, subgoal, onClose, onSubmit, onAddComment, o
   const commentsCount = (subgoal.comments || []).length;
   const drawerTabItems = [
     { id: "comments", label: <span className="sk-label-3">Комментарии <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{commentsCount}</span></span> },
-    ...(needsAssessment ? [{ id: "assessment", label: <span className="sk-label-3">Оценочный лист</span> }] : []),
+    ...(needsAssessment ? [{ id: "assessment", label: <span className="sk-label-3">История оценок</span> }] : []),
   ];
+  // Быстрое действие — маленькая цветная кнопка в шапке дровера, а не крупная в теле:
+  // цвет подсказывает суть действия (взять в работу — акцентный, отправить — положительный).
+  const headerAction = subgoal.status === "not_started"
+    ? <Button size="s" variant="accent" onClick={onTakeSubgoal}>Взять в работу</Button>
+    : (subgoal.status === "in_progress" || subgoal.status === "returned")
+      ? <Button size="s" variant="positive" onClick={onSubmit}>Отправить на подтверждение</Button>
+      : null;
 
   return (
-    <Drawer open title={goal.title} onClose={onClose} size="s">
+    <Drawer open title={null} onClose={onClose} size="s" headerActions={headerAction}>
       <div className="sk-col sk-gap-4">
-        <div className="sk-label-2" style={{ color: "var(--sk-text-primary)" }}>{subgoal.title}</div>
+        <div className="sk-col sk-gap-1">
+          <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{goal.title}</span>
+          <div className="sk-label-2" style={{ color: "var(--sk-text-primary)" }}>{subgoal.title}</div>
+        </div>
         {subgoal.description && <div className="sk-label-3-regular">{subgoal.description}</div>}
 
-        {/* Быстрое действие — сразу под названием, под рукой, а не в самом низу дровера. */}
-        {subgoal.status === "not_started" && (
-          <Button onClick={onTakeSubgoal} style={{ alignSelf: "flex-start" }}>Взять в работу</Button>
-        )}
-        {(subgoal.status === "in_progress" || subgoal.status === "returned") && (
-          <Button onClick={onSubmit} style={{ alignSelf: "flex-start" }}>Отправить на подтверждение</Button>
-        )}
         {subgoal.status === "pending_review" && (
           <Alert hue="neutral">Ожидает подтверждения от {reviewer}.</Alert>
         )}
 
         <CollapsibleSection title="Параметры">
           <div className="sk-col">
-            <div className="sk-row" style={{ justifyContent: "space-between", padding: "8px 0" }}>
-              <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Статус</span>
-              <StatusTag status={subgoal.status} />
-            </div>
-            <div className="sk-row" style={{ justifyContent: "space-between", padding: "8px 0" }}>
-              <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Срок</span>
-              <span className="sk-label-4">{subgoal.dueLabel}</span>
-            </div>
-            <div className="sk-row" style={{ justifyContent: "space-between", padding: "8px 0" }}>
-              <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Проверяющий</span>
+            <ParamRow label="Статус"><StatusTag status={subgoal.status} /></ParamRow>
+            <ParamRow label="Срок"><span className="sk-label-4">{subgoal.dueLabel}</span></ParamRow>
+            <ParamRow label="Проверяющий">
               <div className="sk-row sk-gap-2"><Avatar src={personPhoto(reviewer)} name={reviewer} size={22} /><span className="sk-label-4">{reviewer}</span></div>
-            </div>
+            </ParamRow>
           </div>
         </CollapsibleSection>
 

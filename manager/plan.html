@@ -689,18 +689,11 @@ function GoalDrawer({ goal, plan, editable, onClose, onChange, onAddSubgoal, onO
             {goal.description && <div className="sk-label-3-regular">{goal.description}</div>}
             <CollapsibleSection title="Параметры">
               <div className="sk-col">
-                <div className="sk-row" style={{ justifyContent: "space-between", padding: "8px 0" }}>
-                  <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Прогресс</span>
+                <ParamRow label="Прогресс">
                   <div className="sk-row sk-gap-2" style={{ width: 140 }}><ProgressBar value={pct} style={{ flex: 1 }} /><span className="sk-label-4">{pct}%</span></div>
-                </div>
-                <div className="sk-row" style={{ justifyContent: "space-between", padding: "8px 0" }}>
-                  <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Статус</span>
-                  <StatusTag status={deriveGoalStatus(goal)} />
-                </div>
-                <div className="sk-row" style={{ justifyContent: "space-between", padding: "8px 0" }}>
-                  <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Дата завершения</span>
-                  <span className="sk-label-4">{goal.dueLabel}</span>
-                </div>
+                </ParamRow>
+                <ParamRow label="Статус"><StatusTag status={deriveGoalStatus(goal)} /></ParamRow>
+                <ParamRow label="Дата завершения"><span className="sk-label-4">{goal.dueLabel}</span></ParamRow>
               </div>
             </CollapsibleSection>
           </React.Fragment>
@@ -1143,16 +1136,29 @@ function SubgoalDrawer({ plan, goal, subgoal, onClose, onChange, onOpenChecklist
       id: "assessment",
       label: (
         <span className="sk-row sk-gap-1" style={{ alignItems: "center" }}>
-          <span className="sk-label-3">Оценочный лист</span>
+          <span className="sk-label-3">История оценок</span>
           {isReview && <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--sk-warning)" }} />}
         </span>
       ),
     }] : []),
   ];
+  // Быстрое действие проверяющего — маленькие цветные кнопки в шапке дровера, а не
+  // крупные в теле: три варианта решения без листа умещаются иконками с подсказками.
+  const headerAction = editable ? null
+    : (needsAssessment && isReview) ? <Button size="s" variant="accent" onClick={() => setAssessmentOpen(true)}>Оценить</Button>
+    : (isReview && !needsAssessment) ? (
+      <div className="sk-row sk-gap-1">
+        <Tooltip content="Подтвердить выполнение шага"><Button size="s" mode="secondary" variant="positive" onClick={() => setPendingAction("done")}><IconCheck size={15} /></Button></Tooltip>
+        <Tooltip content="На доработку"><Button size="s" mode="secondary" variant="gray" onClick={onReturn}><IconEdit size={15} /></Button></Tooltip>
+        <Tooltip content="Шаг не выполнен"><Button size="s" mode="secondary" variant="negative" onClick={() => setPendingAction("not_done")}><IconX size={15} /></Button></Tooltip>
+      </div>
+    )
+    : (!isReview && canMarkNotDone) ? <Button size="s" mode="secondary" variant="negative" onClick={() => setPendingAction("not_done")}>Не выполнен</Button>
+    : null;
 
   return (
     <React.Fragment>
-    <Drawer open title={editable ? undefined : goal.title} onClose={onClose} size="s">
+    <Drawer open title={null} onClose={onClose} size="s" headerActions={headerAction}>
       <div className="sk-col sk-gap-4">
         {editable ? (
           <React.Fragment>
@@ -1165,50 +1171,23 @@ function SubgoalDrawer({ plan, goal, subgoal, onClose, onChange, onOpenChecklist
           </React.Fragment>
         ) : (
           <React.Fragment>
-            <div className="sk-label-2" style={{ color: "var(--sk-text-primary)" }}>{subgoal.title}</div>
+            <div className="sk-col sk-gap-1">
+              <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{goal.title}</span>
+              <div className="sk-label-2" style={{ color: "var(--sk-text-primary)" }}>{subgoal.title}</div>
+            </div>
             {subgoal.description && <div className="sk-label-3-regular">{subgoal.description}</div>}
 
-            {/* Быстрое действие проверяющего — сразу под названием, под рукой, а не в самом низу. */}
-            {needsAssessment && isReview && (
-              <div className="sk-row sk-gap-3" style={{
-                alignItems: "center", justifyContent: "space-between", padding: "12px 14px",
-                background: "var(--sk-accent-secondary)", borderRadius: "var(--sk-radius-3)",
-              }}>
-                <div className="sk-col sk-gap-1">
-                  <div className="sk-label-3" style={{ color: "var(--sk-text-accent)" }}>Оцените результаты</div>
-                  <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Оценить уровень выполнения поможет оценочный лист</div>
-                </div>
-                <Button onClick={() => setAssessmentOpen(true)} style={{ background: "var(--sk-accent)", color: "var(--sk-text-contrast)", flexShrink: 0 }}>Оценить</Button>
-              </div>
-            )}
-            {isReview && !needsAssessment && (
-              <div className="sk-row sk-gap-2" style={{ flexWrap: "wrap" }}>
-                <Button variant="positive" onClick={() => setPendingAction("done")}>Подтвердить выполнение шага</Button>
-                <Button mode="secondary" variant="gray" onClick={onReturn}>На доработку</Button>
-                <Button variant="negative" mode="secondary" onClick={() => setPendingAction("not_done")}>Шаг не выполнен</Button>
-              </div>
-            )}
             {!isReview && canMarkNotDone && (
-              <div className="sk-col sk-gap-2">
-                <Alert hue="neutral">Ожидает подтверждения от {subgoal.reviewer}.</Alert>
-                <Button variant="negative" mode="secondary" onClick={() => setPendingAction("not_done")} style={{ alignSelf: "flex-start" }}>Не выполнен</Button>
-              </div>
+              <Alert hue="neutral">Ожидает подтверждения от {subgoal.reviewer}.</Alert>
             )}
 
             <CollapsibleSection title="Параметры">
               <div className="sk-col">
-                <div className="sk-row" style={{ justifyContent: "space-between", padding: "8px 0" }}>
-                  <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Статус</span>
-                  <StatusTag status={subgoal.status} />
-                </div>
-                <div className="sk-row" style={{ justifyContent: "space-between", padding: "8px 0" }}>
-                  <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Дата завершения</span>
-                  <span className="sk-label-4">{subgoal.dueLabel}</span>
-                </div>
-                <div className="sk-row" style={{ justifyContent: "space-between", padding: "8px 0" }}>
-                  <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Проверяющий</span>
+                <ParamRow label="Статус"><StatusTag status={subgoal.status} /></ParamRow>
+                <ParamRow label="Дата завершения"><span className="sk-label-4">{subgoal.dueLabel}</span></ParamRow>
+                <ParamRow label="Проверяющий">
                   <div className="sk-row sk-gap-2"><Avatar src={personPhoto(subgoal.reviewer)} name={subgoal.reviewer} size={22} /><span className="sk-label-4">{subgoal.reviewer}</span></div>
-                </div>
+                </ParamRow>
               </div>
             </CollapsibleSection>
           </React.Fragment>
@@ -1432,13 +1411,19 @@ function ManagerCheckpointDrawer({ checkpoint, viewerName, employee, canEdit, is
     setEditing(false);
   }
 
+  // Быстрое действие — карандаш редактирования в шапке (виден только пока точка не
+  // наступила и есть право её настраивать), а не текстовая ссылка в теле дровера.
+  const headerAction = (isUpcoming && canEdit && !editing)
+    ? <Tooltip content="Редактировать срок, проверяющего и повестку"><Button size="s" mode="tertiary" onClick={startEditing}><IconEdit size={15} /></Button></Tooltip>
+    : null;
+
   return (
     <Drawer open title={done ? "Промежуточные итоги сотрудника" : (employee ? "Как проходит адаптация — " + employee.name.split(" ")[0] : checkpoint.title)}
-      onClose={onClose} size="m"
+      onClose={onClose} size="m" headerActions={headerAction}
       primary={editing
         ? <Button disabled={!canSaveEdit} onClick={saveEditing} style={{ width: "100%" }}>Сохранить изменения</Button>
         : (!done && canEdit ? <Button disabled={!canFinish} onClick={() => onFinish({ employeeSummary: employeeSummary.trim(), internalReport: internalReport.trim(), riskLevel })} style={{ width: "100%" }}>Завершить контрольную точку</Button> : null)}
-      secondary={editing ? <Button mode="secondary" onClick={() => setEditing(false)}>Отменить</Button> : <Button mode="secondary" onClick={onClose}>Закрыть</Button>}>
+      secondary={editing ? <Button mode="secondary" onClick={() => setEditing(false)}>Отменить</Button> : null}>
       <div className="sk-col sk-gap-5">
         <div className="sk-row" style={{ justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 12 }}>
           {employee ? (
@@ -1466,35 +1451,25 @@ function ManagerCheckpointDrawer({ checkpoint, viewerName, employee, canEdit, is
 
         {done && <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Срок: {checkpoint.dateLabel || checkpoint.date}</div>}
 
-        {/* Срок ещё не подошёл — руководитель может донастроить точку целиком (срок, */}
-        {/* проверяющего, повестку), одна кнопка входит в общий режим редактирования. */}
+        {/* Срок ещё не подошёл — компактная строка вместо блока "Параметры": дата и
+            проверяющий, только если проверяющий не сам смотрящий (иначе это его же имя). */}
         {isUpcoming && !editing && (
-          <button className="sk-link-btn sk-label-3-regular" onClick={startEditing}
-            style={{ alignSelf: "flex-start", color: "var(--sk-text-accent)" }}>
-            <span className="sk-row sk-gap-1" style={{ alignItems: "center" }}><IconEdit size={14} />Редактировать срок, проверяющего и повестку</span>
-          </button>
-        )}
-
-        {isUpcoming && (
-          <CollapsibleSection title="Параметры">
-            {editing ? (
-              <div className="sk-col sk-gap-3">
-                <Input label="Дата проведения" value={dateDraft} onChange={(e) => setDateDraft(e.target.value || "")} />
-                <Select label="Проверяющий" value={reviewerDraft} options={REVIEWER_OPTIONS} onChange={setReviewerDraft} />
-              </div>
-            ) : (
-              <div className="sk-col">
-                <div className="sk-row" style={{ justifyContent: "space-between", padding: "8px 0" }}>
-                  <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Дата проведения</span>
-                  <span className="sk-label-4">{checkpoint.dateLabel || checkpoint.date}</span>
-                </div>
-                <div className="sk-row" style={{ justifyContent: "space-between", padding: "8px 0" }}>
-                  <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Проверяющий</span>
-                  <div className="sk-row sk-gap-2"><Avatar src={personPhoto(checkpoint.reviewer)} name={checkpoint.reviewer} size={22} /><span className="sk-label-4">{checkpoint.reviewer}</span></div>
-                </div>
+          <div className="sk-row sk-gap-3" style={{ alignItems: "center" }}>
+            <span className="sk-label-4">{checkpoint.dateLabel || checkpoint.date}</span>
+            {checkpoint.reviewer !== viewerName && (
+              <div className="sk-row sk-gap-2" style={{ alignItems: "center" }}>
+                <Avatar src={personPhoto(checkpoint.reviewer)} name={checkpoint.reviewer} size={20} />
+                <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{checkpoint.reviewer}</span>
               </div>
             )}
-          </CollapsibleSection>
+          </div>
+        )}
+
+        {isUpcoming && editing && (
+          <div className="sk-col sk-gap-3">
+            <Input label="Дата проведения" value={dateDraft} onChange={(e) => setDateDraft(e.target.value || "")} />
+            <Select label="Проверяющий" value={reviewerDraft} options={REVIEWER_OPTIONS} onChange={setReviewerDraft} />
+          </div>
         )}
 
         <div className="sk-col sk-gap-2" style={{ padding: 16, background: "var(--sk-surface-secondary)", borderRadius: "var(--sk-radius-3)" }}>
@@ -1617,6 +1592,17 @@ function CollapsibleSection({ title, children, defaultOpen = true }) {
         {open ? <IconChevronUp size={16} color="var(--sk-icon-secondary)" /> : <IconChevronDown size={16} color="var(--sk-icon-secondary)" />}
       </div>
       {open && children}
+    </div>
+  );
+}
+
+// Строка "название параметра — значение": значение стоит сразу рядом с названием,
+// а не растянуто к правому краю (единый вид для всех "Параметры" во всех дроверах).
+function ParamRow({ label, children }) {
+  return (
+    <div className="sk-row sk-gap-3" style={{ alignItems: "center", padding: "8px 0" }}>
+      <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)", minWidth: 124, flexShrink: 0 }}>{label}</span>
+      {children}
     </div>
   );
 }
