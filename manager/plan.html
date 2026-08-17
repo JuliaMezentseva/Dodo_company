@@ -23,7 +23,7 @@ const { AppShell, StatusTag, Icons, personPhoto } = window.Site;
 const {
   IconArrowLeft, IconCheck, IconLock, IconClock, IconFileText, IconLink2, IconMessageCircle,
   IconHelpCircle, IconTarget, IconMapPin, IconPhone, IconMail, IconSend,
-  IconChevronUp, IconChevronDown, IconChevronRight, IconX, IconAlertCircle, IconTrash, IconSearch, IconClipboard, IconPlusSm,
+  IconChevronUp, IconChevronDown, IconChevronRight, IconX, IconAlertCircle, IconTrash, IconSearch, IconFilter, IconClipboard, IconPlusSm,
   IconEdit, IconLayers, IconSparkles, IconBookOpen, IconMic, IconImage, IconPaperclip, IconRepeat, IconBriefcase,
 } = Icons;
 const D = window.SITE_DATA;
@@ -437,6 +437,7 @@ function Page() {
         <GoalCreateDrawer draft={newGoalDraft} setDraft={setNewGoalDraft} fromCatalog={draftFromCatalog}
           onClose={() => setGoalDrawer(null)}
           onAddSubgoal={() => setSubgoalMethodModal({ context: "draft" })}
+          onEditSubgoal={(i) => setSubgoalModal({ context: "draft", editIndex: i })}
           onCreate={() => { addGoal(newGoalDraft); setGoalDrawer(null); showToast("Цель создана"); }} />
       )}
       {goalDrawer && goalDrawer.mode === "edit" && activeGoal && (
@@ -724,13 +725,20 @@ function GoalMethodModal({ onClose, onManual, onCatalog, onAI }) {
 function GoalCatalogPickerModal({ member, onClose, onPick }) {
   const [q, setQ] = React.useState("");
   const [category, setCategory] = React.useState("");
+  const [filters, setFilters] = React.useState({ position: "", level: "" });
+  const [filtersOpen, setFiltersOpen] = React.useState(false);
+  const catalogActive = (D.goalCatalog || []).filter(g => !g.archived);
+  const positions = [...new Set(catalogActive.flatMap(g => g.positions || []))];
+  const toolbarFilterCount = (filters.position ? 1 : 0) + (filters.level ? 1 : 0);
   const needle = q.trim().toLowerCase();
-  const list = (D.goalCatalog || [])
-    .filter(g => !g.archived)
+  const list = catalogActive
     .filter(g => {
       if (needle && !(g.title.toLowerCase().includes(needle)
+        || g.category.toLowerCase().includes(needle)
         || (g.positions || []).some(p => p.toLowerCase().includes(needle)))) return false;
       if (category && g.category !== category) return false;
+      if (filters.position && !(g.positions || []).includes(filters.position)) return false;
+      if (filters.level && g.level !== filters.level) return false;
       return true;
     })
     // Цели под должность сотрудника, чей план сейчас открыт, — выше остальных: их
@@ -741,23 +749,92 @@ function GoalCatalogPickerModal({ member, onClose, onPick }) {
     <Modal open title="Выберите цель из каталога" onClose={onClose} size="l" maxHeight="calc(100vh - 64px)"
       secondary={<Button mode="secondary" onClick={onClose}>Отменить</Button>}>
       <div className="sk-col sk-gap-3">
-        <Input size="s" icon={<IconSearch size={18} />} placeholder="Название или должность"
-          value={q} onChange={(e) => setQ(e.target.value || "")} />
+        <div className="sk-row sk-gap-2" style={{ flexWrap: "wrap", alignItems: "center" }}>
+          <Input size="s" icon={<IconSearch size={18} />} placeholder="Поиск по названию, категории, должности"
+            value={q} onChange={(e) => setQ(e.target.value || "")} style={{ flex: 1, minWidth: 220 }} />
+          <Button mode="secondary" icon={<IconFilter size={16} />} onClick={() => setFiltersOpen(o => !o)}
+            style={{ background: "var(--sk-surface-page)", border: toolbarFilterCount ? "1px solid var(--sk-stroke-accent)" : "1px solid var(--sk-stroke)" }}>
+            <span className="sk-row sk-gap-1" style={{ alignItems: "center" }}>
+              Фильтры{toolbarFilterCount ? " · " + toolbarFilterCount : ""}
+              {toolbarFilterCount > 0 && (
+                <span onClick={(e) => { e.stopPropagation(); setFilters({ position: "", level: "" }); }}
+                  style={{ display: "inline-flex", opacity: 0.6, marginLeft: 2 }}>
+                  <IconX size={14} />
+                </span>
+              )}
+            </span>
+          </Button>
+        </div>
         <div className="sk-row sk-gap-2" style={{ flexWrap: "wrap" }}>
           <CatalogCategoryPill label="Все категории" active={!category} onClick={() => setCategory("")} />
           {(D.goalCategories || []).map(c => (
             <CatalogCategoryPill key={c} label={c} active={category === c} onClick={() => setCategory(category === c ? "" : c)} />
           ))}
         </div>
+        {filtersOpen && (
+          <div className="sk-row sk-gap-2" style={{ flexWrap: "wrap" }}>
+            <FilterChip label="Должность" options={positions.map(v => ({ value: v, label: v }))}
+              value={filters.position} onChange={(v) => setFilters(f => ({ ...f, position: v }))} />
+            <FilterChip label="Уровень" options={(D.goalLevels || []).map(v => ({ value: v, label: v }))}
+              value={filters.level} onChange={(v) => setFilters(f => ({ ...f, level: v }))} />
+          </div>
+        )}
         <div className="sk-col sk-gap-2">
           {list.length ? list.map(g => (
             <CatalogGoalRow key={g.id} goal={g} onClick={() => onPick(g)} />
           )) : (
-            <div className="sk-muted" style={{ textAlign: "center", padding: "24px 0" }}>Ничего не нашлось — попробуйте изменить запрос или категорию.</div>
+            <div className="sk-muted" style={{ textAlign: "center", padding: "24px 0" }}>Ничего не нашлось — попробуйте изменить запрос или фильтры.</div>
           )}
         </div>
       </div>
     </Modal>
+  );
+}
+// Чип одиночного фильтра (Должность/Уровень — один выбор, не массив) — тот же паттерн
+// клика-вне-закрывает и визуальный стиль, что и в hr/goals-catalog.html.
+function FilterChip({ label, options, value, onChange }) {
+  const [open, setOpen] = React.useState(false);
+  const ref = React.useRef(null);
+  React.useEffect(() => {
+    if (!open) return;
+    const close = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener("mousedown", close);
+    return () => document.removeEventListener("mousedown", close);
+  }, [open]);
+  const selected = options.find((o) => o.value === value);
+  return (
+    <div ref={ref} style={{ position: "relative" }}>
+      <button type="button" onClick={() => setOpen((o) => !o)} className="sk-clickable" style={{
+        display: "inline-flex", alignItems: "center", gap: 6, height: 36, padding: "0 12px",
+        borderRadius: "var(--sk-radius-2)", cursor: "pointer", whiteSpace: "nowrap",
+        border: open ? "1px solid var(--sk-stroke-accent)" : "1px solid var(--sk-stroke)",
+        background: "var(--sk-surface-page)", font: "var(--sk-label-3-regular)", color: "var(--sk-text-primary)",
+      }}>
+        {label}{selected ? ": " + selected.label : ""}
+        {value ? (
+          <span onClick={(e) => { e.stopPropagation(); onChange(""); }} style={{ display: "inline-flex", opacity: 0.55 }}>
+            <IconX size={13} />
+          </span>
+        ) : (
+          <IconChevronDown size={14} style={{ opacity: 0.55 }} />
+        )}
+      </button>
+      {open && (
+        <div style={{
+          position: "absolute", top: "calc(100% + 4px)", left: 0, zIndex: 20, minWidth: 200, maxHeight: 300, overflowY: "auto",
+          background: "var(--sk-surface-page)", borderRadius: "var(--sk-radius-2)", boxShadow: "var(--sk-shadow-m)", padding: 6,
+        }}>
+          {options.map((o) => (
+            <button key={o.value} onClick={() => { onChange(o.value === value ? "" : o.value); setOpen(false); }} style={{
+              display: "block", width: "100%", textAlign: "left", padding: "8px 10px", borderRadius: "var(--sk-radius-2)",
+              border: "none", cursor: "pointer", font: "var(--sk-label-3-regular)",
+              background: o.value === value ? "var(--sk-surface-secondary)" : "transparent",
+              color: "var(--sk-text-primary)",
+            }}>{o.label}</button>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 function CatalogCategoryPill({ label, active, onClick }) {
@@ -929,16 +1006,16 @@ function goalDraftFromCatalog(goal, plan) {
 
 // Компактная иконка-переключатель дополнительного способа ввода (голос/файл/изображение) —
 // не отдельный большой сценарий, просто демонстрационное состояние по клику (см. ТЗ п.6, 24).
-// Просто чёрная иконка без подложки — без кружка-фона легче, а состояние "включено" и так
-// видно по чипу с вложением ниже.
-function InputSourceIcon({ icon: Icon, active, label, onClick, size = 32 }) {
+// Иконка тёмно-серая (graphite-25), не чистый чёрный — без подложки, без кружка-фона
+// легче, а состояние "включено" и так видно по чипу с вложением ниже.
+function InputSourceIcon({ icon: Icon, active, label, onClick, size = 36 }) {
   return (
     <Tooltip content={label}>
       <button type="button" onClick={onClick} className="sk-clickable" style={{
         width: size, height: size, border: "none", background: "transparent",
         display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
       }}>
-        <Icon size={Math.round(size * 0.47)} color="var(--sk-icon-primary)" />
+        <Icon size={Math.round(size * 0.5)} color="var(--graphite-graphite-25)" />
       </button>
     </Tooltip>
   );
@@ -984,7 +1061,6 @@ function AIExpectationsStep({ member, plan, text, setText, demo, toggleDemo, pic
             а обобщённое существительное после предлога снимает вопрос падежа для любого имени. */}
         <div className="sk-label-3-regular" style={{ color: "var(--sk-text-primary)" }}>
           Сформулирую цель для сотрудника: <span style={{ fontWeight: 500 }}>{member.name}</span>, {member.position}.
-          Просто расскажите о своих ожиданиях, остальное сделаю сам.
         </div>
       </AIBanner>
 
@@ -1011,12 +1087,12 @@ function AIExpectationsStep({ member, plan, text, setText, demo, toggleDemo, pic
         <div className="ai-expect-textarea" onClick={fillOnFirstClick} style={{ position: "relative" }}>
           <Textarea rows={3} value={text}
             onChange={(e) => setText(e.target.value || "")}
-            textareaStyle={{ paddingRight: 8, paddingBottom: 44 }}
+            textareaStyle={{ paddingRight: 8, paddingBottom: 48 }}
             placeholder="Например: хочу, чтобы к концу адаптации сотрудник сам вёл клиентов…" />
           <div className="sk-row sk-gap-1" style={{ position: "absolute", right: 10, bottom: 10 }} onClick={(e) => e.stopPropagation()}>
-            <InputSourceIcon size={32} icon={IconMic} label="Голосовой ввод" active={demo.voice} onClick={() => toggleDemo("voice")} />
-            <InputSourceIcon size={32} icon={IconPaperclip} label="Прикрепить файл" active={demo.file} onClick={() => toggleDemo("file")} />
-            <InputSourceIcon size={32} icon={IconImage} label="Добавить изображение" active={demo.image} onClick={() => toggleDemo("image")} />
+            <InputSourceIcon size={36} icon={IconMic} label="Голосовой ввод" active={demo.voice} onClick={() => toggleDemo("voice")} />
+            <InputSourceIcon size={36} icon={IconPaperclip} label="Прикрепить файл" active={demo.file} onClick={() => toggleDemo("file")} />
+            <InputSourceIcon size={36} icon={IconImage} label="Добавить изображение" active={demo.image} onClick={() => toggleDemo("image")} />
           </div>
         </div>
 
@@ -1220,7 +1296,7 @@ function GoalCreateDrawer({ draft, setDraft, fromCatalog, onClose, onCreate, onA
       secondary={<Button mode="secondary" onClick={onClose}>Отменить</Button>}>
       <div className="sk-col sk-gap-4">
         {fromCatalog && (
-          <Tag size="s" hue="accent" style={{ alignSelf: "flex-start" }}>Из каталога целей</Tag>
+          <Tag size="s" hue="gray" style={{ alignSelf: "flex-start" }}>Черновик</Tag>
         )}
         <Input label="Название" required placeholder="Что сотрудник должен выполнить к окончанию периода адаптации"
           value={draft.title} onChange={(e) => setDraft(d => ({ ...d, title: e.target.value || "" }))} />

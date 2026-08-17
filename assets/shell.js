@@ -48,7 +48,7 @@ const IconLayers = mkIcon(<><path d="M12 3.5 21 8.5 12 13.5 3 8.5Z" stroke="curr
 const IconPlusSm = mkIcon(<path d="M10 4v12M4 10h12" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />, 20);
 const IconChevronUp = mkIcon(<path d="M6 15l6-6 6 6" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />);
 const IconEye = mkIcon(<><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" /><circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="1.5" /></>);
-const IconPaperclip = mkIcon(<path d="M17.5 8.5 9.9 16a3 3 0 1 1-4.2-4.2l7.8-7.8a5 5 0 1 1 7.1 7.1L12.4 19.3a1.5 1.5 0 1 1-2.1-2.1l7.8-7.8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />);
+const IconPaperclip = mkIcon(<path d="M17.5 8.5 9.9 16a3 3 0 1 1-4.2-4.2l7.8-7.8a5 5 0 1 1 7.1 7.1L12.4 19.3a1.5 1.5 0 1 1-2.1-2.1l7.8-7.8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />);
 // добавлено для роли "Руководитель" — в исходном наборе иконок ДС не было календаря и одиночной фигуры пользователя
 const IconCalendar = mkIcon(<><rect x="3.5" y="5.5" width="17" height="15" rx="2" stroke="currentColor" strokeWidth="1.5" /><path d="M3.5 9.5h17M8 3.5v3M16 3.5v3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /></>);
 const IconUser = mkIcon(<><circle cx="12" cy="8.3" r="3.3" stroke="currentColor" strokeWidth="1.5" /><path d="M4.8 19.5c.9-3.4 3.5-5.3 7.2-5.3s6.3 1.9 7.2 5.3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /></>);
@@ -77,8 +77,8 @@ const IconInbox = mkIcon(<><path d="M4 12.5h4.2l1.3 2.3h5l1.3-2.3H20" stroke="cu
 const IconUserX = mkIcon(<><circle cx="9" cy="8.3" r="3.3" stroke="currentColor" strokeWidth="1.5" /><path d="M3.5 19.2c.8-3.2 2.9-4.9 5.5-4.9.7 0 1.4.1 2 .4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /><path d="M15.5 8.5l5 5M20.5 8.5l-5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /></>);
 // добавлено для сценария "Создание цели с AI-помощником" (роль Руководитель) — компактные
 // иконки дополнительных способов передать информацию (голос, изображение) рядом с полем ввода.
-const IconMic = mkIcon(<><rect x="9" y="3.5" width="6" height="11" rx="3" stroke="currentColor" strokeWidth="1.5" /><path d="M6 11.5a6 6 0 0 0 12 0M12 17.5v3.2M9 20.7h6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /></>);
-const IconImage = mkIcon(<><rect x="3.5" y="4.5" width="17" height="15" rx="2" stroke="currentColor" strokeWidth="1.5" /><circle cx="8.5" cy="9.5" r="1.6" stroke="currentColor" strokeWidth="1.4" /><path d="m5 17 4.5-4.7c.7-.7 1.6-.7 2.3 0L13 13.5l3-3.2c.7-.7 1.6-.7 2.3 0L21 13.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></>);
+const IconMic = mkIcon(<><rect x="9" y="3.5" width="6" height="11" rx="3" stroke="currentColor" strokeWidth="2" /><path d="M6 11.5a6 6 0 0 0 12 0M12 17.5v3.2M9 20.7h6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></>);
+const IconImage = mkIcon(<><rect x="3.5" y="4.5" width="17" height="15" rx="2.2" stroke="currentColor" strokeWidth="2" /><circle cx="8.5" cy="9.5" r="1.5" stroke="currentColor" strokeWidth="2" /><path d="m5 17 4.5-4.7c.7-.7 1.6-.7 2.3 0L13 13.5l3-3.2c.7-.7 1.6-.7 2.3 0L21 13.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></>);
 function IconCopyLocal2({ size = 16, color = "currentColor" }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" style={{ color, flexShrink: 0 }}>
