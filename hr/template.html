@@ -253,7 +253,7 @@ function TemplateCheckpointsSection({ checkpoints, onAdd, onEdit, onDelete }) {
           <div className="sk-col sk-gap-3" style={{ alignItems: "center", textAlign: "center", padding: "24px 16px" }}>
             <div className="sk-title-5">Запланируйте регулярные встречи с сотрудником</div>
             <div className="sk-muted" style={{ maxWidth: 440 }}>Контрольные точки помогут фиксировать, как сотрудник справляется и вовремя помочь ему. Рекомендуем добавить 3: на 30 / 60 / 90 дней</div>
-            <Button variant="neutral" onClick={() => setFormModal({ mode: "create" })}>Добавить контрольную точку</Button>
+            <Button variant="accent" onClick={() => setFormModal({ mode: "create" })}>Добавить контрольную точку</Button>
           </div>
         </Card>
       ) : (
@@ -263,7 +263,7 @@ function TemplateCheckpointsSection({ checkpoints, onAdd, onEdit, onDelete }) {
             <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Контрольные точки помогут фиксировать, как сотрудник справляется и вовремя помочь ему. Рекомендуем добавить 3 точки: на 30 / 60 / 90 дней</span>
           </div>
           <div className="sk-row sk-gap-2">
-            <Button variant="neutral" size="s" icon={<IconPlusSm size={16} />} onClick={() => setFormModal({ mode: "create" })}>
+            <Button variant="accent" size="s" icon={<IconPlusSm size={16} />} onClick={() => setFormModal({ mode: "create" })}>
               Добавить контрольную точку
             </Button>
           </div>
@@ -296,8 +296,8 @@ function StepBlock({ index, title, isLast, children }) {
     <div className="sk-row sk-gap-3" style={{ alignItems: "stretch" }}>
       <div className="sk-col" style={{ alignItems: "center", flexShrink: 0 }}>
         <span style={{
-          width: 22, height: 22, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center",
-          background: "var(--sk-accent-secondary)", color: "var(--sk-text-accent)", font: "var(--sk-label-4)",
+          width: 28, height: 28, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center",
+          background: "var(--sk-accent-secondary)", color: "var(--sk-text-accent)", font: "var(--sk-label-3)",
         }}>{index}</span>
         {!isLast && <div style={{ width: 1, flex: 1, minHeight: 24, background: "var(--sk-stroke-divider)", margin: "4px 0" }} />}
       </div>
@@ -819,7 +819,7 @@ function GoalsSection({ owner, deadlineDays, reviewRequired, reviewDeadlineDays,
             ) : (
               <div className="sk-col sk-gap-3">
                 <div className="sk-row sk-gap-2">
-                  <Button variant="neutral" size="s" icon={<IconPlusSm size={16} />} onClick={() => setMethodModal(true)}>Добавить цель</Button>
+                  <Button variant="accent" size="s" icon={<IconPlusSm size={16} />} onClick={() => setMethodModal(true)}>Добавить цель</Button>
                 </div>
 
                 <div className="sk-col sk-gap-2">
@@ -842,24 +842,21 @@ function GoalsSection({ owner, deadlineDays, reviewRequired, reviewDeadlineDays,
           </StepBlock>
 
           <StepBlock index={2} title="Нужна ли проверка руководителем?" isLast>
+            <div className="sk-row" style={{ justifyContent: "space-between", alignItems: "center" }}>
+              <span className="sk-label-3">Публиковать цели только после проверки руководителем</span>
+              <Switch checked={reviewRequired} onChange={onReviewRequiredChange} />
+            </div>
+            {reviewRequired && (
+              <div className="sk-row" style={{ justifyContent: "space-between", alignItems: "center" }}>
+                <span className="sk-label-3-regular">Срок доработки и публикации целей руководителем (дней)</span>
+                <Input type="number" min={1} max={30} value={reviewDeadlineDays}
+                  onChange={(e) => onReviewDeadlineChange(Math.max(1, Math.min(30, Number(e.target.value) || 1)))}
+                  style={{ width: 88 }} />
+              </div>
+            )}
             <Alert hue="accent">
               Если включить — руководитель сможет доработать цели и опубликовать их сотруднику сам. Если оставить выключенным — цели публикует администратор.
             </Alert>
-
-            <div className="sk-col sk-gap-2">
-              <div className="sk-row" style={{ justifyContent: "space-between", alignItems: "center" }}>
-                <span className="sk-label-3">Руководитель должен проверить и опубликовать цели</span>
-                <Switch checked={reviewRequired} onChange={onReviewRequiredChange} />
-              </div>
-              {reviewRequired && (
-                <div className="sk-row" style={{ justifyContent: "space-between", alignItems: "center", paddingTop: 4 }}>
-                  <span className="sk-label-3-regular">Срок доработки и публикации целей руководителем (дней)</span>
-                  <Input type="number" min={1} max={30} value={reviewDeadlineDays}
-                    onChange={(e) => onReviewDeadlineChange(Math.max(1, Math.min(30, Number(e.target.value) || 1)))}
-                    style={{ width: 88 }} />
-                </div>
-              )}
-            </div>
           </StepBlock>
         </div>
       )}
