@@ -973,7 +973,7 @@ function AIGoalAssistantModal({ member, plan, onClose, onCreate }) {
   if (step === "input") {
     footerProps = {
       secondary: <Button mode="secondary" onClick={onClose}>Отменить</Button>,
-      primary: <Button disabled={!hasSource} icon={<IconSparkles size={16} />} onClick={() => setStep("loading")} style={hasSource ? violetBtnStyle : undefined}>Сформировать цель</Button>,
+      primary: <Button disabled={!hasSource} icon={<IconSparkles size={16} />} onClick={() => setStep("loading")}>Сформировать цель</Button>,
     };
   } else if (step === "draft") {
     const draftValid = draft.title.trim().length > 0;
