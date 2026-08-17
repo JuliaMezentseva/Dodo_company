@@ -715,21 +715,24 @@ const AI_LOADING_STAGES = ["Анализируем ваши ожидания", "
 // Три крупных стадии всего сценария (не путать с AI_LOADING_STAGES — теми тремя короткими
 // фразами внутри состояния "формируем", это другой, более мелкий уровень). Полоска сверху
 // сразу показывает руководителю, где он сейчас и сколько осталось, без блужданий по окну.
+// Специально тихая и компактная (мелкий регулярный шрифт, короткие соединители фиксированной
+// ширины вместо flex:1 на всю ширину окна) — это навигационная подсказка, а не контент, и не
+// должна конкурировать с заголовком вопроса ниже (см. отзыв о балансе экрана).
 const AI_FLOW_STEPS = ["Ожидания", "Формулировка цели", "Результат"];
 function AIFlowStepper({ activeIndex }) {
   return (
-    <div className="sk-row sk-gap-2" style={{ alignItems: "center" }}>
+    <div className="sk-row sk-gap-1" style={{ alignItems: "center" }}>
       {AI_FLOW_STEPS.map((label, i) => (
         <React.Fragment key={i}>
           <div className="sk-row sk-gap-1" style={{ alignItems: "center", flexShrink: 0 }}>
             <span style={{
-              width: 18, height: 18, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center",
+              width: 15, height: 15, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center",
               background: i <= activeIndex ? "var(--violet-violet-35)" : "var(--sk-surface-secondary)",
-              color: i <= activeIndex ? "var(--sk-text-contrast)" : "var(--sk-text-tertiary)", font: "var(--sk-label-4)",
-            }}>{i < activeIndex ? <IconCheck size={11} /> : i + 1}</span>
-            <span className="sk-label-4" style={{ color: i === activeIndex ? "var(--sk-text-primary)" : "var(--sk-text-tertiary)" }}>{label}</span>
+              color: i <= activeIndex ? "var(--sk-text-contrast)" : "var(--sk-text-tertiary)", font: "var(--sk-label-4-regular)", fontSize: 9,
+            }}>{i < activeIndex ? <IconCheck size={9} /> : i + 1}</span>
+            <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)", color: i === activeIndex ? "var(--sk-text-secondary)" : "var(--sk-text-tertiary)" }}>{label}</span>
           </div>
-          {i < AI_FLOW_STEPS.length - 1 && <div style={{ flex: 1, height: 1, background: "var(--sk-stroke)" }} />}
+          {i < AI_FLOW_STEPS.length - 1 && <div style={{ width: 24, height: 1, background: "var(--sk-stroke)", flexShrink: 0 }} />}
         </React.Fragment>
       ))}
     </div>
@@ -831,7 +834,7 @@ function AIExpectationsStep({ member, plan, text, setText, demo, toggleDemo }) {
             текста поля, стилизуется только через CSS-псевдоэлемент, inline-style сюда не дотянуться. */}
         <style>{".ai-expect-textarea textarea::placeholder { color: var(--sk-text-tertiary); font-size: 13px; }"}</style>
         <div className="ai-expect-textarea" onClick={fillOnFirstClick}>
-          <Textarea rows={5} value={text}
+          <Textarea rows={4} value={text}
             onChange={(e) => setText(e.target.value || "")}
             placeholder="Например: хочу, чтобы к концу адаптации сотрудник сам вёл клиентов, проводил встречи без моей помощи и правильно фиксировал результаты в CRM." />
         </div>
