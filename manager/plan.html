@@ -675,7 +675,7 @@ function GoalCreateDrawer({ draft, setDraft, onClose, onCreate, onAddSubgoal }) 
 function GoalDrawer({ goal, plan, editable, onClose, onChange, onAddSubgoal, onOpenSubgoal, onOpenMaterials, onDeleteSubgoal }) {
   const { done, total, pct } = goalProgress(goal);
   return (
-    <Drawer open title={editable ? "Цель адаптации" : goal.title} onClose={onClose} size="s">
+    <Drawer open title={editable ? "Цель адаптации" : null} onClose={onClose} size="s">
       <div className="sk-col sk-gap-4">
         {editable ? (
           <React.Fragment>

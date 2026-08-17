@@ -296,8 +296,9 @@ function GoalDrawer({ goal, plan, onClose, onOpenSubgoal, onTakeSubgoal, onToggl
   const { pct } = goalProgress(goal);
   const statusVal = deriveGoalStatus(goal);
   return (
-    <Drawer open title={goal.title} onClose={onClose} size="s">
+    <Drawer open title={null} onClose={onClose} size="s">
       <div className="sk-col sk-gap-4">
+        <div className="sk-label-2" style={{ color: "var(--sk-text-primary)" }}>{goal.title}</div>
         {goal.description && <div className="sk-label-3-regular">{goal.description}</div>}
 
         <CollapsibleSection title="Параметры">
