@@ -1240,9 +1240,6 @@ function AIGoalAssistantModal({ member, plan, onClose, onCreate }) {
 
   const hasSource = text.trim().length > 0 || demo.voice || demo.file || demo.image;
 
-  const AI_TITLE = <span className="sk-row sk-gap-2" style={{ alignItems: "center" }}><IconSparklesSolid size={17} color="var(--sk-icon-special)" />Сформируем цель с AI</span>;
-  const TITLE_BY_STEP = { input: AI_TITLE, loading: AI_TITLE, draft: "Черновик цели", success: null };
-
   let footerProps = {};
   if (step === "input") {
     // "Сформировать цель" — чёрная (нейтральная primary-кнопка ДС), а не акцентная: это
@@ -1269,11 +1266,13 @@ function AIGoalAssistantModal({ member, plan, onClose, onCreate }) {
   }
 
   const flowIndex = step === "input" ? 0 : step === "loading" ? 1 : 2;
+  // Таймлайн — прямо в шапке модалки вместо текстового заголовка: он и так показывает,
+  // на каком шаге сценария руководитель находится, отдельный заголовок дублировал бы это.
+  const modalTitle = step === "success" ? null : <AIFlowStepper activeIndex={flowIndex} />;
 
   return (
-    <Modal open title={TITLE_BY_STEP[step]} onClose={onClose} size="l" {...footerProps}>
+    <Modal open title={modalTitle} onClose={onClose} size="l" {...footerProps}>
       <div className="sk-col sk-gap-4">
-        {step !== "success" && <AIFlowStepper activeIndex={flowIndex} />}
         {step === "input" && (
           <AIExpectationsStep member={member} plan={plan} text={text} setText={setText} demo={demo} toggleDemo={toggleDemo} pickFileSuggestion={pickFileSuggestion} />
         )}
