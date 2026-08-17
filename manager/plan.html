@@ -536,8 +536,8 @@ function ManagerGoalRow({ goal, plan, highlighted, onOpenGoal, onOpenSubgoal, on
   return (
     <div className="sk-col sk-gap-3" onClick={onOpenGoal} style={{
       cursor: "pointer", padding: "14px 16px", borderRadius: "var(--sk-radius-3)", background: "var(--sk-surface-page)",
-      border: "1px solid " + (highlighted ? "var(--violet-violet-35)" : "var(--sk-stroke)"),
-      boxShadow: highlighted ? "0 0 0 3px var(--sk-special-secondary)" : "none",
+      border: "1px solid " + (highlighted ? "var(--sk-accent)" : "var(--sk-stroke)"),
+      boxShadow: highlighted ? "0 0 0 3px var(--sk-accent-secondary)" : "none",
       transition: "box-shadow .4s ease, border-color .4s ease",
     }}>
       <div className="sk-row sk-gap-3" style={{ justifyContent: "space-between", alignItems: "flex-start" }}>
@@ -725,7 +725,7 @@ function AIFlowStepper({ activeIndex }) {
           <div className="sk-row sk-gap-1" style={{ alignItems: "center", flexShrink: 0 }}>
             <span style={{
               width: 18, height: 18, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center",
-              background: i <= activeIndex ? "var(--violet-violet-35)" : "var(--sk-surface-secondary)",
+              background: i <= activeIndex ? "var(--sk-accent)" : "var(--sk-surface-secondary)",
               color: i <= activeIndex ? "var(--sk-text-contrast)" : "var(--sk-text-tertiary)", font: "var(--sk-label-4)",
             }}>{i < activeIndex ? <IconCheck size={11} /> : i + 1}</span>
             <span className="sk-label-4" style={{ color: i === activeIndex ? "var(--sk-text-primary)" : "var(--sk-text-tertiary)" }}>{label}</span>
@@ -754,17 +754,17 @@ function parseRuShortDate(str) {
 
 // Компактная иконка-переключатель дополнительного способа ввода (голос/файл/изображение) —
 // не отдельный большой сценарий, просто демонстрационное состояние по клику (см. ТЗ п.6, 24).
-// В покое — нейтрально-серые (не отвлекают, не спорят с чёрной кнопкой и фиолетовым акцентом
-// AI выше), фиолетовыми становятся только когда включены — так видно, что именно попало к AI.
+// Голубой — основной акцент этого окна (см. ТЗ ДС), в покое бледная подложка, при включении
+// заливка сплошная — так видно, что именно попало к AI.
 function InputSourceIcon({ icon: Icon, active, label, onClick }) {
   return (
     <Tooltip content={label}>
       <button type="button" onClick={onClick} className="sk-clickable" style={{
         width: 32, height: 32, borderRadius: "50%", border: "none",
-        background: active ? "var(--sk-special-secondary)" : "var(--sk-surface-secondary)",
+        background: active ? "var(--sk-accent)" : "var(--sk-accent-secondary)",
         display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
       }}>
-        <Icon size={15} color={active ? "var(--violet-violet-35)" : "var(--sk-icon-secondary)"} />
+        <Icon size={15} color={active ? "var(--sk-text-contrast)" : "var(--sk-icon-accent)"} />
       </button>
     </Tooltip>
   );
@@ -780,8 +780,8 @@ function DemoAttachmentChip({ icon: Icon, label, sub, onRemove }) {
     }}>
       <div style={{
         width: 26, height: 26, borderRadius: "var(--sk-radius-2)", flexShrink: 0,
-        background: "var(--sk-special-secondary)", display: "flex", alignItems: "center", justifyContent: "center",
-      }}><Icon size={14} color="var(--violet-violet-35)" /></div>
+        background: "var(--sk-accent-secondary)", display: "flex", alignItems: "center", justifyContent: "center",
+      }}><Icon size={14} color="var(--sk-icon-accent)" /></div>
       <div className="sk-col" style={{ gap: 0, minWidth: 0, flex: 1 }}>
         <div className="sk-label-4" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{label}</div>
         {sub && <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{sub}</div>}
@@ -793,17 +793,17 @@ function DemoAttachmentChip({ icon: Icon, label, sub, onRemove }) {
 
 // ---------------- Состояние 1: рассказ руководителя своими словами ----------------
 // Три коротких блока вместо стены текста: (1) чем поможет AI — одной фразой от его лица,
-// (2) что он уже знает о сотруднике без участия руководителя, (3) что нужно рассказать самому.
-// Цвет — только фиолетовый (голос AI) и серый (нейтральный контент), никакого синего:
-// вперемешку с фиолетовым это читалось пёстро (см. отзыв "перегружено и аляписто").
+// (2) что он уже знает о сотруднике без участия руководителя, (3) что нужно рассказать самому
+// (один вопрос + серая подсказка под ним, без дублирующего заголовка рядом). Голубой —
+// основной акцент по ДС, единый на всё окно.
 function AIExpectationsStep({ member, plan, text, setText, demo, toggleDemo }) {
   function fillOnFirstClick() {
     if (!text.trim()) setText(AI_EXPECTATIONS_DEMO_TEXT);
   }
   return (
     <div className="sk-col sk-gap-4">
-      <div style={{ padding: 14, background: "var(--sk-special-secondary)", borderRadius: "var(--sk-radius-3)" }}>
-        <div className="sk-label-3-regular" style={{ color: "var(--violet-violet-35)" }}>
+      <div style={{ padding: 14, background: "var(--sk-accent-secondary)", borderRadius: "var(--sk-radius-3)" }}>
+        <div className="sk-label-3-regular" style={{ color: "var(--sk-text-accent)" }}>
           Я помогу сформулировать цель, описание и шаги. Просто расскажите о своих ожиданиях — остальное сделаю сам.
         </div>
       </div>
@@ -814,15 +814,22 @@ function AIExpectationsStep({ member, plan, text, setText, demo, toggleDemo }) {
           <Avatar src={personPhoto(member.name)} name={member.name} size={36} />
           <div className="sk-col" style={{ gap: 0 }}>
             <div className="sk-label-3">{member.name}</div>
-            <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{member.position} · период адаптации до {plan.dateEnd}</div>
+            <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{member.position} · {member.department}</div>
+            <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Период адаптации до {plan.dateEnd}</div>
           </div>
         </div>
       </div>
 
-      <div className="sk-col sk-gap-2">
-        <div className="sk-label-3">Что нужно от вас</div>
+      <div className="sk-col sk-gap-4">
+        <div className="sk-col sk-gap-1">
+          <div className="sk-label-2">Опишите ваши ожидания от результата адаптации</div>
+          <div className="sk-muted">
+            Расскажите своими словами: какие задачи сотрудник должен научиться выполнять самостоятельно, какие навыки
+            освоить или какого результата достичь. Формулировать цель не обязательно — это сделает AI.
+          </div>
+        </div>
         <div onClick={fillOnFirstClick}>
-          <Textarea label="Что вы хотите, чтобы сотрудник освоил или сделал по итогам адаптации?" rows={5} value={text}
+          <Textarea rows={5} value={text}
             onChange={(e) => setText(e.target.value || "")}
             placeholder="Например: хочу, чтобы к концу адаптации сотрудник сам вёл клиентов, проводил встречи без моей помощи и правильно фиксировал результаты в CRM. Сначала пусть посмотрит, как я это делаю, потом проведёт несколько встреч вместе со мной, а затем попробует самостоятельно." />
         </div>
@@ -863,7 +870,7 @@ function AIGeneratingStep({ onDone }) {
       </div>
       <div className="sk-row sk-gap-2">
         {AI_LOADING_STAGES.map((s, i) => (
-          <span key={i} style={{ width: 6, height: 6, borderRadius: "50%", background: i <= stageIdx ? "var(--violet-violet-35)" : "var(--sk-stroke)" }} />
+          <span key={i} style={{ width: 6, height: 6, borderRadius: "50%", background: i <= stageIdx ? "var(--sk-accent)" : "var(--sk-stroke)" }} />
         ))}
       </div>
     </div>
@@ -879,12 +886,13 @@ function AIDraftStep({ member, plan, draft, setDraft, considered }) {
   return (
     <div className="sk-col sk-gap-5">
       {/* Тёплое подтверждение вместо сухого "AI структурировал..." — сразу сообщает главное:
-          результат готов и его можно смело редактировать (см. отзыв про эмоциональность). */}
-      <div className="sk-row sk-gap-3" style={{ padding: 14, background: "var(--sk-positive-secondary)", borderRadius: "var(--sk-radius-3)", alignItems: "flex-start" }}>
+          результат готов и его можно смело редактировать (см. отзыв про эмоциональность).
+          Голубой, не зелёный — зелёный не сочетался с остальной палитрой окна. */}
+      <div className="sk-row sk-gap-3" style={{ padding: 14, background: "var(--sk-accent-secondary)", borderRadius: "var(--sk-radius-3)", alignItems: "flex-start" }}>
         <span style={{
           width: 32, height: 32, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center",
           background: "var(--sk-surface-page)",
-        }}><IconCheck size={16} color="var(--sk-icon-positive)" /></span>
+        }}><IconCheck size={16} color="var(--sk-icon-accent)" /></span>
         <div className="sk-col sk-gap-1">
           <div className="sk-label-3">Готово! Проверьте результат и скорректируйте перед добавлением в план</div>
           <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>AI структурировал ваши ожидания в цель, описание и шаги — ничего не зафиксировано, всё можно поправить.</div>
@@ -903,7 +911,7 @@ function AIDraftStep({ member, plan, draft, setDraft, considered }) {
             <div key={i} className="sk-row sk-gap-2" style={{ alignItems: "center" }}>
               <span style={{
                 width: 22, height: 22, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center",
-                background: "var(--sk-surface-dark)", color: "var(--sk-text-contrast)", font: "var(--sk-label-4)",
+                background: "var(--sk-accent)", color: "var(--sk-text-contrast)", font: "var(--sk-label-4)",
               }}>{i + 1}</span>
               <Input value={s} onChange={(e) => updateStep(i, e.target.value || "")} style={{ flex: 1 }} />
               <button className="sk-link-btn" onClick={() => removeStep(i)}><IconTrash size={15} color="var(--sk-icon-secondary)" /></button>
@@ -921,7 +929,7 @@ function AIDraftStep({ member, plan, draft, setDraft, considered }) {
 
       <div className="sk-col sk-gap-2" style={{ padding: 14, background: "var(--sk-surface-secondary)", borderRadius: "var(--sk-radius-3)" }}>
         <div className="sk-row sk-gap-2" style={{ alignItems: "center" }}>
-          <IconSparkles size={15} color="var(--violet-violet-35)" />
+          <IconSparkles size={15} color="var(--sk-icon-accent)" />
           <span className="sk-label-4">При формировании цели AI учёл:</span>
         </div>
         <div className="sk-col sk-gap-1" style={{ paddingLeft: 22 }}>
@@ -954,14 +962,14 @@ function AIGoalAssistantModal({ member, plan, onClose, onCreate }) {
     ...(demo.voice || demo.file || demo.image ? ["приложенные материалы"] : []),
   ];
 
-  const AI_TITLE = <span className="sk-row sk-gap-2" style={{ alignItems: "center" }}><IconSparkles size={17} color="var(--violet-violet-35)" />Сформируем цель с AI</span>;
+  const AI_TITLE = <span className="sk-row sk-gap-2" style={{ alignItems: "center" }}><IconSparkles size={17} color="var(--sk-icon-accent)" />Сформируем цель с AI</span>;
   const TITLE_BY_STEP = { input: AI_TITLE, loading: AI_TITLE, draft: "Черновик цели", success: null };
 
   let footerProps = {};
   if (step === "input") {
     footerProps = {
       secondary: <Button mode="secondary" onClick={onClose}>Отменить</Button>,
-      primary: <Button disabled={!hasSource} icon={<IconSparkles size={16} />} onClick={() => setStep("loading")}>Сформировать цель</Button>,
+      primary: <Button variant="accent" disabled={!hasSource} icon={<IconSparkles size={16} />} onClick={() => setStep("loading")}>Сформировать цель</Button>,
     };
   } else if (step === "draft") {
     footerProps = {
@@ -971,7 +979,7 @@ function AIGoalAssistantModal({ member, plan, onClose, onCreate }) {
           <Button mode="secondary" icon={<IconRepeat size={15} />} onClick={() => setStep("loading")}>Сформировать заново</Button>
         </div>
       ),
-      primary: <Button disabled={!draft.title.trim()} onClick={() => { onCreate(draft); setStep("success"); }}>Добавить в план</Button>,
+      primary: <Button variant="accent" disabled={!draft.title.trim()} onClick={() => { onCreate(draft); setStep("success"); }}>Добавить в план</Button>,
     };
   } else if (step === "success") {
     footerProps = { primary: <Button onClick={onClose} style={{ width: "100%" }}>Вернуться к плану адаптации</Button> };
