@@ -299,7 +299,7 @@ function TemplateCheckpointsSection({ checkpoints, onAdd, onEdit, onDelete }) {
 // подпись с описанием выбранного варианта, вместо отдельного мастера или карточек сценариев. ----------------
 const GOALS_OWNER_OPTIONS = [
   { id: "manager", label: "Руководитель", description: "Руководитель создаёт цели в плане сотрудника после назначения" },
-  { id: "hr", label: "Администратор" },
+  { id: "hr", label: "Администратор", description: "Администратор готовит цели в шаблоне или индивидуальном плане" },
 ];
 
 function GoalsOwnerPicker({ owner, onChange }) {
@@ -917,7 +917,7 @@ function GoalsSection({ owner, deadlineDays, reviewRequired, reviewDeadlineDays,
             <span className="sk-title-5">Нужна ли проверка руководителем?</span>
             <div className="sk-row" style={{ justifyContent: "space-between", alignItems: "center" }}>
               <span className="sk-label-3">Руководитель должен проверить и опубликовать цели</span>
-              <Switch checked={reviewRequired} onChange={onReviewRequiredChange} />
+              <Switch checked={reviewRequired} onChange={onReviewRequiredChange} style={{ transform: "scale(1.3)", transformOrigin: "right center" }} />
             </div>
             {reviewRequired && (
               <div className="sk-row" style={{ justifyContent: "space-between", alignItems: "center" }}>
@@ -927,7 +927,7 @@ function GoalsSection({ owner, deadlineDays, reviewRequired, reviewDeadlineDays,
                   style={{ width: 88 }} />
               </div>
             )}
-            <Alert hue="accent">
+            <Alert hue="accent" style={{ background: "var(--sk-surface-page)" }}>
               Если включить — руководитель сможет доработать цели и опубликовать их сотруднику сам. Если оставить выключенным — цели публикует администратор.
             </Alert>
           </div>
