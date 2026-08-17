@@ -395,18 +395,17 @@ function CategoryPillsBar({ categories, catalog, active, onSelect }) {
   const remaining = sorted.filter((c) => !shown.includes(c));
 
   // Серый = выбрано (тот же тег, что и в столбце "Категория" таблицы — одинаковый
-  // визуальный язык), белая обводка = не выбрано. Размер — как у Tag size="s" (высота 20,
-  // padding 0 6px, sk-label-4) — единообразно с пилюлями по всему прототипу, например
-  // столбцом "Тип плана" в "Очереди назначения". Текст всегда основной чёрный (не серый) —
-  // тот же принцип, что у EventPill в hr/queue.html: цвет фона несёт состояние "выбрано",
-  // а не приглушённый текст.
+  // визуальный язык), белая обводка = не выбрано. Размер — как у EventPill в "Очереди
+  // назначения" (высота 32, padding 0 14px) — крупнее прежнего Tag-размера, легче
+  // попадать курсором и заметнее над таблицей. Текст всегда основной чёрный (не серый) —
+  // тот же принцип, что у EventPill: цвет фона несёт состояние "выбрано", а не приглушённый текст.
   function pillStyle(isActive) {
     return {
-      height: 20, padding: "0 6px", borderRadius: "var(--sk-radius-full)", cursor: "pointer",
+      height: 32, padding: "0 14px", borderRadius: "var(--sk-radius-full)", cursor: "pointer",
       border: isActive ? "none" : "1px solid var(--sk-stroke)",
       background: isActive ? "var(--sk-surface-secondary)" : "var(--sk-surface-page)",
       color: "var(--sk-text-primary)",
-      font: isActive ? "var(--sk-label-4)" : "var(--sk-label-4-regular)", whiteSpace: "nowrap", flexShrink: 0,
+      font: isActive ? "var(--sk-label-3)" : "var(--sk-label-3-regular)", whiteSpace: "nowrap", flexShrink: 0,
     };
   }
 
