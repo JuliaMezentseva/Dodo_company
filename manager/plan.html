@@ -30,6 +30,13 @@ const D = window.SITE_DATA;
 function stripDuePrefix(label) {
   return (label || "").replace(/^до\s+/i, "");
 }
+// Название шаблона оценочного листа часто начинается с "Оценочный лист: ..." — этот
+// префикс дублирует заголовок секции "Оценочный лист" в дровере, поэтому в подзаголовке
+// показываем только суть названия (например, "Первая консультация покупателя").
+function assessmentTemplateName(title) {
+  const t = (title || "").replace(/^оценочный лист:?\s*/i, "");
+  return t ? t.charAt(0).toUpperCase() + t.slice(1) : t;
+}
 
 function useDeepState(initial) {
   const [state, setState] = React.useState(() => JSON.parse(JSON.stringify(initial)));
@@ -298,7 +305,7 @@ function Page() {
           {tab === "min" && (
             <React.Fragment>
               <Alert hue="neutral" style={{ background: "var(--sk-surface-secondary)" }}>{MIN_TAB_NOTE}</Alert>
-              <div className="sk-title-5">Чек-лист {doneChecklist} из {totalChecklist.length}</div>
+              <div className="sk-title-5">Чек-лист <span style={{ color: "var(--sk-text-secondary)" }}>{doneChecklist} из {totalChecklist.length}</span></div>
               <div className="sk-col sk-gap-4">
                 {plan.stages.map((s, i) => (
                   <ManagerStageBlock key={s.id} stage={s} index={i + 1}
@@ -494,9 +501,9 @@ function ManagerGoalRow({ goal, plan, onOpenGoal, onOpenSubgoal, onOpenMaterials
     <div className="sk-col sk-gap-3" onClick={onOpenGoal} style={{ cursor: "pointer", padding: 14, border: "1px solid var(--sk-stroke)", borderRadius: "var(--sk-radius-3)", background: "var(--sk-surface-page)" }}>
       <div className="sk-row sk-gap-3" style={{ justifyContent: "space-between", alignItems: "flex-start" }}>
         <div className="sk-col sk-gap-1" style={{ flex: 1, minWidth: 0 }}>
-          <div className="sk-title-5" style={{ color: isDone ? "var(--sk-text-secondary)" : "var(--sk-text-primary)" }}>{goal.title || "Без названия"}</div>
+          <div className="sk-title-5" style={{ color: isDone ? "var(--sk-text-secondary)" : "var(--sk-text-primary)", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{goal.title || "Без названия"}</div>
           {!isDone && (
-            <div className="sk-row sk-gap-3" style={{ alignItems: "center" }}>
+            <div className="sk-row sk-gap-3" style={{ alignItems: "center", marginTop: 4 }}>
               <ProgressBar value={pct} style={{ width: 140 }} hue="positive" />
               <span className="sk-label-3">{pct}%</span>
               <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)", whiteSpace: "nowrap" }}>{done} из {total} · {stripDuePrefix(goal.dueLabel) || "срок не задан"}</span>
@@ -649,7 +656,7 @@ function GoalCreateDrawer({ draft, setDraft, onClose, onCreate, onAddSubgoal }) 
           onChange={(date) => setDraft(d => ({ ...d, dueDate: date }))} />
 
         <div className="sk-col sk-gap-2">
-          <div className="sk-label-3">Шаги для достижения{draft.subgoals.length ? " " + draft.subgoals.length : ""}</div>
+          <div className="sk-label-3">Шаги для достижения{draft.subgoals.length ? <span style={{ color: "var(--sk-text-secondary)" }}>{" " + draft.subgoals.length}</span> : ""}</div>
           <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>
             Разбейте цель на подцели — конкретные шаги, которые помогут сотруднику её достичь. Можно добавить сейчас или позже, после создания цели.
           </div>
@@ -700,7 +707,7 @@ function GoalDrawer({ goal, plan, editable, onClose, onChange, onAddSubgoal, onO
         )}
 
         <div className="sk-col sk-gap-2">
-          <div className="sk-label-3">Шаги для выполнения {done}/{total}</div>
+          <div className="sk-label-3">Шаги для выполнения <span style={{ color: "var(--sk-text-secondary)" }}>{done}/{total}</span></div>
           {goal.subgoals.map(sg => {
             const cfg = SUBGOAL_ICON[sg.status];
             return (
@@ -932,7 +939,7 @@ function AssessmentHintTooltip({ hint }) {
 // визуальный паттерн подчёркнутого заголовка, что раньше был "зашит" прямо в CommentsPanel. ----------------
 function DrawerTabs({ items, active, onChange }) {
   return (
-    <div className="sk-row sk-gap-4" style={{ borderBottom: "1px solid var(--sk-stroke)" }}>
+    <div className="sk-row sk-gap-4" style={{ borderBottom: "1px solid var(--sk-stroke)", marginTop: 8 }}>
       {items.map(it => (
         <div key={it.id} className="sk-clickable" onClick={() => onChange(it.id)}
           style={{ paddingBottom: 10, borderBottom: "2px solid " + (active === it.id ? "var(--sk-text-primary)" : "transparent") }}>
@@ -954,11 +961,11 @@ function AssessmentTabContent({ checklist, history }) {
     <div className="sk-col sk-gap-4">
       <div className="sk-col sk-gap-2">
         <div className="sk-row sk-gap-1" style={{ alignItems: "center" }}>
-          <span className="sk-label-3">{checklist.title}</span>
+          <span className="sk-label-3">{assessmentTemplateName(checklist.title)}</span>
           <AssessmentHintTooltip hint={checklist.hint} />
         </div>
         <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Критерии, по которым оценивают выполнение этого шага.</div>
-        <div className="sk-col sk-gap-1" style={{ padding: 12, background: "var(--sk-surface-secondary)", borderRadius: "var(--sk-radius-3)" }}>
+        <div className="sk-col sk-gap-1" style={{ padding: "10px 14px", background: "var(--sk-surface-page)", border: "1px solid var(--sk-stroke)", borderLeft: "3px solid var(--sk-accent)", borderRadius: "var(--sk-radius-3)" }}>
           {(checklist.criteria || []).map(c => (
             <div key={c.id} className="sk-row sk-gap-2" style={{ alignItems: "flex-start", padding: "4px 0" }}>
               <span style={{ width: 4, height: 4, borderRadius: "50%", background: "var(--sk-icon-secondary)", marginTop: 8, flexShrink: 0 }} />
@@ -1193,7 +1200,7 @@ function SubgoalDrawer({ plan, goal, subgoal, onClose, onChange, onOpenChecklist
           </React.Fragment>
         )}
 
-        <CollapsibleSection title={"Полезные материалы" + (links.length ? " " + links.length : "")} defaultOpen={false}>
+        <CollapsibleSection title={<span>Полезные материалы{links.length ? <span style={{ color: "var(--sk-text-secondary)" }}>{" " + links.length}</span> : ""}</span>} defaultOpen={false}>
           <div className="sk-col sk-gap-2" style={{ padding: 12, background: "var(--sk-accent-secondary)", borderRadius: "var(--sk-radius-3)" }}>
             {!links.length && <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Добавьте вспомогательные материалы для выполнения этого шага</div>}
             {links.map(({ item, stage }) => (
@@ -1290,21 +1297,21 @@ function ManagerStageBlock({ stage, index, onOpenItem, onAdd }) {
       <div className={locked ? "sk-row" : "sk-row sk-clickable"} onClick={() => !locked && setOpen(o => !o)}
         style={{
           justifyContent: "space-between", padding: "10px 12px",
-          background: completed ? "var(--sk-positive-secondary)" : current ? "var(--sk-accent-secondary)" : "var(--sk-surface-secondary)",
+          background: "var(--sk-surface-secondary)",
         }}>
         <div className="sk-row sk-gap-3">
           <span style={{
             width: 22, height: 22, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center",
-            background: completed ? "var(--sk-positive)" : current ? "var(--sk-accent)" : "var(--sk-surface-page)",
-            color: completed || current ? "var(--sk-text-contrast)" : "var(--sk-text-tertiary)",
-            border: locked ? "1.5px solid var(--sk-stroke)" : "none", font: "var(--sk-label-4)",
-          }}>{completed ? <IconCheck size={12} /> : locked ? <IconLock size={11} /> : index}</span>
-          <span className="sk-label-3" style={{ color: completed ? "var(--sk-text-positive)" : current ? "var(--sk-text-accent)" : "var(--sk-text-secondary)" }}>{stage.title}</span>
+            background: "transparent", color: "var(--sk-text-tertiary)",
+            border: "1.5px solid var(--sk-stroke)", font: "var(--sk-label-4)",
+          }}>{locked ? <IconLock size={11} /> : index}</span>
+          <span className="sk-label-3" style={{ color: "var(--sk-text-primary)" }}>{stage.title}</span>
         </div>
         <div className="sk-row sk-gap-2" style={{ alignItems: "center" }}>
-          {completed && <span className="sk-label-4" style={{ color: "var(--sk-text-positive)" }}>Завершён</span>}
-          {current && stage.dueLabel && <span className="sk-label-4" style={{ color: "var(--sk-text-accent)" }}>{stage.dueLabel}</span>}
+          {current && stage.dueLabel && <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{stage.dueLabel}</span>}
           {locked && <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{stage.dueLabel}</span>}
+          {completed && <IconCheck size={16} color="var(--sk-positive)" />}
+          {current && <IconClock size={16} color="var(--sk-accent)" />}
           {!locked && (open ? <IconChevronUp size={16} color="var(--sk-icon-secondary)" /> : <IconChevronDown size={16} color="var(--sk-icon-secondary)" />)}
         </div>
       </div>
@@ -1648,7 +1655,7 @@ function RightPanel({ member, plan, overallPct, onOpenCheckpoint, showCheckpoint
       {showCheckpoints && checkpoints.length > 0 && (
         <Card bordered>
           <div className="sk-col sk-gap-3">
-            <div className="sk-label-3">Контрольные точки · {checkpoints.filter(c => c.status === "done").length} из {checkpoints.length}</div>
+            <div className="sk-label-3">Контрольные точки <span style={{ color: "var(--sk-text-secondary)" }}>· {checkpoints.filter(c => c.status === "done").length} из {checkpoints.length}</span></div>
             <div className="sk-col sk-gap-2">
               {checkpoints.map((cp, i) => {
                 const isDone = cp.status === "done";

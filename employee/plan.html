@@ -31,6 +31,13 @@ const D = window.SITE_DATA;
 function stripDuePrefix(label) {
   return (label || "").replace(/^до\s+/i, "");
 }
+// Название шаблона оценочного листа часто начинается с "Оценочный лист: ..." — этот
+// префикс дублирует заголовок секции "Оценочный лист" в дровере, поэтому в подзаголовке
+// показываем только суть названия (например, "Первая консультация покупателя").
+function assessmentTemplateName(title) {
+  const t = (title || "").replace(/^оценочный лист:?\s*/i, "");
+  return t ? t.charAt(0).toUpperCase() + t.slice(1) : t;
+}
 
 function useDeepState(initial) {
   const [state, setState] = React.useState(() => JSON.parse(JSON.stringify(initial)));
@@ -130,21 +137,21 @@ function StageBlock({ stage, index, onOpenItem, onOpenCheckpoint }) {
       <div className={locked ? "sk-row" : "sk-row sk-clickable"} onClick={() => !locked && setOpen((o) => !o)}
         style={{
           justifyContent: "space-between", padding: "10px 12px",
-          background: completed ? "var(--sk-positive-secondary)" : current ? "var(--sk-accent-secondary)" : "var(--sk-surface-secondary)",
+          background: "var(--sk-surface-secondary)",
         }}>
         <div className="sk-row sk-gap-3">
           <span style={{
             width: 22, height: 22, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center",
-            background: completed ? "var(--sk-positive)" : current ? "var(--sk-accent)" : "var(--sk-surface-page)",
-            color: completed || current ? "var(--sk-text-contrast)" : "var(--sk-text-tertiary)",
-            border: locked ? "1.5px solid var(--sk-stroke)" : "none", font: "var(--sk-label-4)",
-          }}>{completed ? <IconCheck size={12} /> : locked ? <IconLock size={11} /> : index}</span>
-          <span className="sk-label-3" style={{ color: completed ? "var(--sk-text-positive)" : current ? "var(--sk-text-accent)" : "var(--sk-text-secondary)" }}>{stage.title}</span>
+            background: "transparent", color: "var(--sk-text-tertiary)",
+            border: "1.5px solid var(--sk-stroke)", font: "var(--sk-label-4)",
+          }}>{locked ? <IconLock size={11} /> : index}</span>
+          <span className="sk-label-3" style={{ color: "var(--sk-text-primary)" }}>{stage.title}</span>
         </div>
         <div className="sk-row sk-gap-2" style={{ alignItems: "center" }}>
-          {completed && <span className="sk-label-4" style={{ color: "var(--sk-text-positive)" }}>Завершён</span>}
-          {current && <span className="sk-label-4" style={{ color: "var(--sk-text-accent)" }}>{stage.dueLabel}</span>}
+          {current && stage.dueLabel && <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{stage.dueLabel}</span>}
           {locked && <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{stage.dueLabel}</span>}
+          {completed && <IconCheck size={16} color="var(--sk-positive)" />}
+          {current && <IconClock size={16} color="var(--sk-accent)" />}
           {!locked && (open ? <IconChevronUp size={16} color="var(--sk-icon-secondary)" /> : <IconChevronDown size={16} color="var(--sk-icon-secondary)" />)}
         </div>
       </div>
@@ -213,8 +220,8 @@ function GoalRow({ goal, plan, onOpenGoal, onOpenSubgoal, onTakeSubgoal }) {
     <div className="sk-col sk-gap-3" onClick={onOpenGoal} style={{ cursor: "pointer", padding: 14, border: "1px solid var(--sk-stroke)", borderRadius: "var(--sk-radius-3)", background: "var(--sk-surface-page)" }}>
       <div className="sk-row sk-gap-3" style={{ justifyContent: "space-between", alignItems: "flex-start" }}>
         <div className="sk-col sk-gap-1" style={{ flex: 1, minWidth: 0 }}>
-          <div className="sk-title-5">{goal.title}</div>
-          <div className="sk-row sk-gap-3" style={{ alignItems: "center" }}>
+          <div className="sk-title-5" style={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{goal.title}</div>
+          <div className="sk-row sk-gap-3" style={{ alignItems: "center", marginTop: 4 }}>
             <ProgressBar value={pct} style={{ width: 140 }} hue="positive" />
             <span className="sk-label-3">{pct}%</span>
             <span className="sk-row sk-gap-1 sk-muted" style={{ font: "var(--sk-label-4-regular)", whiteSpace: "nowrap", alignItems: "center" }}>
@@ -370,7 +377,7 @@ function AssessmentHintTooltip({ hint }) {
 // ---------------- Вкладки внутри дровера подцели (Комментарии / Оценочный лист) ----------------
 function DrawerTabs({ items, active, onChange }) {
   return (
-    <div className="sk-row sk-gap-4" style={{ borderBottom: "1px solid var(--sk-stroke)" }}>
+    <div className="sk-row sk-gap-4" style={{ borderBottom: "1px solid var(--sk-stroke)", marginTop: 8 }}>
       {items.map((it) => (
         <div key={it.id} className="sk-clickable" onClick={() => onChange(it.id)}
           style={{ paddingBottom: 10, borderBottom: "2px solid " + (active === it.id ? "var(--sk-text-primary)" : "transparent") }}>
@@ -426,11 +433,11 @@ function AssessmentTabContent({ checklist, history }) {
     <div className="sk-col sk-gap-4">
       <div className="sk-col sk-gap-2">
         <div className="sk-row sk-gap-1" style={{ alignItems: "center" }}>
-          <span className="sk-label-3">{checklist.title}</span>
+          <span className="sk-label-3">{assessmentTemplateName(checklist.title)}</span>
           <AssessmentHintTooltip hint={checklist.hint} />
         </div>
         <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Критерии, по которым оценивают выполнение этого шага.</div>
-        <div className="sk-col sk-gap-1" style={{ padding: 12, background: "var(--sk-surface-secondary)", borderRadius: "var(--sk-radius-3)" }}>
+        <div className="sk-col sk-gap-1" style={{ padding: "10px 14px", background: "var(--sk-surface-page)", border: "1px solid var(--sk-stroke)", borderLeft: "3px solid var(--sk-accent)", borderRadius: "var(--sk-radius-3)" }}>
           <AssessmentCriteriaPreview criteria={checklist.criteria} />
         </div>
       </div>
@@ -508,7 +515,7 @@ function SubgoalDrawer({ plan, goal, subgoal, onClose, onSubmit, onAddComment, o
         </CollapsibleSection>
 
         {links.length > 0 && (
-          <CollapsibleSection title={"Полезные материалы " + doneCount + "/" + links.length}>
+          <CollapsibleSection title={<span>Полезные материалы <span style={{ color: "var(--sk-text-secondary)" }}>{doneCount}/{links.length}</span></span>}>
             <div className="sk-col sk-gap-2" style={{ padding: 12, background: "var(--sk-surface-secondary)", borderRadius: "var(--sk-radius-3)" }}>
               {links.map(({ item, stage }) => {
                 const Icon = ELEMENT_ICON[item.kind] || IconFileText;
@@ -588,7 +595,7 @@ function CheckpointModal({ checkpoint, onClose, onSubmitSurvey }) {
 
   return (
     <Modal open title="Как проходит Ваша адаптация?" onClose={onClose} size="m"
-      primary={!submitted ? <Button disabled={!canSubmit} onClick={() => setConfirmOpen(true)}>Отправить ответы</Button> : null}
+      primary={!submitted ? <Button variant="accent" disabled={!canSubmit} onClick={() => setConfirmOpen(true)}>Отправить ответы</Button> : null}
       secondary={<Button mode="secondary" onClick={onClose}>Закрыть</Button>}>
       <div className="sk-col sk-gap-5">
         <div className="sk-row" style={{ justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 12 }}>
@@ -714,17 +721,9 @@ function PersonCard({ p }) {
   );
 }
 
-function CheckpointDot({ cp, index, isDone, isCurrent }) {
-  return (
-    <span title={cp.dateLabel || cp.date} style={{
-      width: isCurrent ? 28 : 22, height: isCurrent ? 28 : 22, borderRadius: "50%", flexShrink: 0,
-      display: "flex", alignItems: "center", justifyContent: "center", font: "var(--sk-label-4)",
-      background: isDone ? "var(--sk-surface-dark)" : isCurrent ? CP_YELLOW : "var(--sk-surface-secondary)",
-      color: isDone || isCurrent ? "var(--sk-text-contrast)" : "var(--sk-text-tertiary)",
-    }}>{isDone ? <IconCheck size={12} /> : index + 1}</span>
-  );
-}
-
+// Сотрудник видит только ту контрольную точку, которую нужно пройти прямо сейчас —
+// без ростера всех прошлых/будущих КТ и без порядковых номеров (сколько их всего и на
+// каком месте текущая — не важно для того, что нужно сделать сегодня).
 function RightPanel({ plan, overallPct, checkpoints, onOpenCheckpoint, showCheckpoints }) {
   const cpOrder = Object.keys(checkpoints);
   const cps = cpOrder.filter((id) => checkpoints[id]).map((id) => checkpoints[id]);
@@ -732,31 +731,23 @@ function RightPanel({ plan, overallPct, checkpoints, onOpenCheckpoint, showCheck
   const currentCp = firstPendingIndex >= 0 ? cps[firstPendingIndex] : null;
   return (
     <div className="sk-col sk-gap-5">
-      {showCheckpoints && cps.length > 0 && (
+      {showCheckpoints && currentCp && (
         <Card bordered>
           <div className="sk-col sk-gap-3">
-            <div className="sk-row sk-gap-2" style={{ justifyContent: "space-between", alignItems: "center" }}>
-              <div className="sk-label-3">Контрольные точки</div>
-              <div className="sk-row sk-gap-1">
-                {cps.map((cp, i) => <CheckpointDot key={cp.id} cp={cp} index={i} isDone={cp.status === "done"} isCurrent={i === firstPendingIndex} />)}
+            <div className="sk-label-3">Контрольная точка</div>
+            <div className="sk-clickable" onClick={() => onOpenCheckpoint(currentCp.id)} style={{
+              display: "flex", alignItems: "center", gap: 10, padding: 10, borderRadius: "var(--sk-radius-3)",
+              border: "1.5px solid " + CP_YELLOW_BORDER, background: CP_YELLOW_BG,
+            }}>
+              <div className="sk-col" style={{ gap: 0, flex: 1, minWidth: 0 }}>
+                <div className="sk-label-4">{currentCp.dateLabel || currentCp.date}</div>
+                <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)", whiteSpace: "nowrap" }}>до {currentCp.dueLabelShort || currentCp.dateLabel}</div>
               </div>
+              <button type="button" onClick={() => onOpenCheckpoint(currentCp.id)} style={{
+                height: 32, padding: "0 14px", borderRadius: "var(--sk-radius-full)", border: "none", cursor: "pointer",
+                background: CP_YELLOW, color: "var(--sk-text-contrast)", font: "var(--sk-label-3)", fontWeight: 600, flexShrink: 0,
+              }}>Пройти</button>
             </div>
-            {currentCp && (
-              <div className="sk-clickable" onClick={() => onOpenCheckpoint(currentCp.id)} style={{
-                display: "flex", alignItems: "center", gap: 10, padding: 10, borderRadius: "var(--sk-radius-3)",
-                border: "1.5px solid " + CP_YELLOW_BORDER, background: CP_YELLOW_BG,
-              }}>
-                <div className="sk-col" style={{ gap: 0, flex: 1, minWidth: 0 }}>
-                  <div className="sk-label-4">{currentCp.dateLabel || currentCp.date}</div>
-                  <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)", whiteSpace: "nowrap" }}>до {currentCp.dueLabelShort || currentCp.dateLabel}</div>
-                </div>
-                <button type="button" onClick={() => onOpenCheckpoint(currentCp.id)} style={{
-                  height: 32, padding: "0 14px", borderRadius: "var(--sk-radius-full)", border: "none", cursor: "pointer",
-                  background: CP_YELLOW, color: "var(--sk-text-contrast)", font: "var(--sk-label-3)", fontWeight: 600, flexShrink: 0,
-                }}>Пройти</button>
-              </div>
-            )}
-            {!currentCp && <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Все контрольные точки пройдены</div>}
           </div>
         </Card>
       )}
@@ -919,7 +910,7 @@ function Page() {
           {tab === "min" && (
             <React.Fragment>
               <Alert hue="neutral" style={{ background: "var(--sk-surface-secondary)" }}>{MIN_TAB_NOTE}</Alert>
-              <div className="sk-title-5">Чек-лист {doneChecklist} из {totalChecklist.length}</div>
+              <div className="sk-title-5">Чек-лист <span style={{ color: "var(--sk-text-secondary)" }}>{doneChecklist} из {totalChecklist.length}</span></div>
               <div className="sk-col sk-gap-4">
                 {plan.stages.map((s, i) => (
                   <StageBlock key={s.id} stage={s} index={i + 1}
