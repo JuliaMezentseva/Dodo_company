@@ -67,6 +67,10 @@ const SUBGOAL_ICON = {
   in_progress: { icon: IconClock, bg: "var(--sk-accent)", fg: "var(--sk-text-contrast)" },
   returned: { icon: IconInfo, bg: "var(--sk-warning)", fg: "var(--sk-text-contrast)" },
 };
+const SUBGOAL_STATUS_LABEL = {
+  done: "Выполнено", not_done: "Не выполнено", pending_review: "На проверке",
+  in_progress: "В работе", returned: "Возвращена в работу", not_started: "Не начата",
+};
 
 const MIN_TAB_NOTE = "Формальный порог входа в роль. Сотрудник отмечает пункты сам, вашего подтверждения не требуется.";
 const MAX_TAB_NOTE = "Персональный план сотрудника на результат в роли. Открывайте цель, чтобы поставить шаги и проверить подцели.";
@@ -556,13 +560,17 @@ function ManagerSubgoalRow({ subgoal, goalDueLabel, plan, onOpen, onOpenMaterial
   return (
     <div className="sk-row sk-gap-3" onClick={onOpen} style={{ cursor: "pointer", justifyContent: "space-between", alignItems: "center", padding: 10, border: "1px solid var(--sk-stroke)", borderRadius: "var(--sk-radius-3)", background: "var(--sk-surface-page)" }}>
       <div className="sk-row sk-gap-2" style={{ flex: 1, minWidth: 0, alignItems: "center" }}>
-        {cfg && <span style={{ width: 18, height: 18, borderRadius: "50%", flexShrink: 0, background: cfg.bg, color: cfg.fg, display: "flex", alignItems: "center", justifyContent: "center" }}><cfg.icon size={11} /></span>}
         <div className="sk-col sk-gap-1" style={{ minWidth: 0 }}>
           <div className="sk-label-3-regular" style={{ color: isDone ? "var(--sk-text-secondary)" : "var(--sk-text-primary)" }}>{subgoal.title || "Без названия"}</div>
           {showOwnDue && <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{ownDue}</div>}
         </div>
       </div>
       <div className="sk-row sk-gap-2" style={{ flexShrink: 0, alignItems: "center" }}>
+        {cfg && (
+          <span title={SUBGOAL_STATUS_LABEL[subgoal.status]} className="sk-row" style={{ alignItems: "center" }}>
+            <cfg.icon size={17} color={cfg.bg} />
+          </span>
+        )}
         <MaterialsBadge count={matCount} published={plan.goalsPublished} onClick={onOpenMaterials} />
       </div>
     </div>
@@ -713,13 +721,17 @@ function GoalDrawer({ goal, plan, editable, onClose, onChange, onAddSubgoal, onO
             return (
               <div key={sg.id} className="sk-row sk-gap-3" style={{ justifyContent: "space-between", padding: 10, border: "1px solid var(--sk-stroke)", borderRadius: "var(--sk-radius-2)" }}>
                 <div className="sk-row sk-gap-3" style={{ flex: 1, alignItems: "center", cursor: "pointer" }} onClick={() => onOpenSubgoal(sg.id)}>
-                  {cfg ? <span style={{ width: 18, height: 18, borderRadius: "50%", background: cfg.bg, color: cfg.fg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><cfg.icon size={11} /></span> : <span style={{ width: 18, flexShrink: 0 }} />}
                   <div className="sk-col sk-gap-1">
                     <div className="sk-label-4">{sg.title || "Без названия"}</div>
                     <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{sg.dueLabel || "срок не задан"}</div>
                   </div>
                 </div>
                 <div className="sk-row sk-gap-2" style={{ alignItems: "center" }}>
+                  {cfg && (
+                    <span title={SUBGOAL_STATUS_LABEL[sg.status]} className="sk-row" style={{ alignItems: "center" }}>
+                      <cfg.icon size={17} color={cfg.bg} />
+                    </span>
+                  )}
                   <MaterialsBadge count={(sg.checklistRefs || []).length} published={plan.goalsPublished} onClick={() => onOpenMaterials(sg.id)} />
                   {editable && <button className="sk-link-btn" onClick={() => onDeleteSubgoal(sg.id)}><IconTrash size={15} color="var(--sk-icon-secondary)" /></button>}
                 </div>
