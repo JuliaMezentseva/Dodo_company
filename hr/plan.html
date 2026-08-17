@@ -118,7 +118,7 @@ function StageBlock({ stage, index, onOpenItem, onOpenCheckpoint }) {
       <div className={locked ? "sk-row" : "sk-row sk-clickable"} onClick={() => !locked && setOpen((o) => !o)}
         style={{
           justifyContent: "space-between", padding: "10px 12px",
-          background: completed ? "var(--sk-positive-secondary)" : current ? "var(--sk-accent-secondary)" : "var(--sk-surface-secondary)",
+          background: current ? "var(--sk-accent-secondary)" : "var(--sk-surface-secondary)",
         }}>
         <div className="sk-row sk-gap-3">
           <span style={{
