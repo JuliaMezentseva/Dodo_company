@@ -15,7 +15,7 @@
 <body>
 <div id="root"></div>
 <script type="text/babel">
-const { Card, Tag, Input, Button, Checkbox } = window.SkillazCoreDesignSystem_bf9566;
+const { Card, Tag, Input, Button, Checkbox, Switch, Snackbar } = window.SkillazCoreDesignSystem_bf9566;
 const { AppShell, Icons } = window.Site;
 const { IconSearch, IconMapPin, IconBriefcase, IconCheck, IconFilter, IconX, IconChevronDown } = Icons;
 const D = window.SITE_DATA;
@@ -40,10 +40,75 @@ function IconThumbUp({ size = 24, color = "currentColor", style }) {
   );
 }
 
+function IconBell({ size = 24, color = "currentColor", style }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" style={{ color, flexShrink: 0, ...style }}>
+      <path d="M12 4a6 6 0 0 0-6 6v3.2l-1.4 2.4a.8.8 0 0 0 .7 1.2h13.4a.8.8 0 0 0 .7-1.2L18 13.2V10a6 6 0 0 0-6-6Z"
+        stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
+      <path d="M10 19.5a2 2 0 0 0 4 0" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 function fmtMoney(n) { return n.toLocaleString("ru-RU"); }
 function toOptions(list) { return list.map((v) => ({ value: v, label: v })); }
 
 const emptyFilters = { positions: [], departments: [], experience: [], cities: [], formats: [], employments: [], transitionTypes: [] };
+
+// Подпись бирки подписки в духе "Регион: Москва, Пермь +2" — короткая, без перечисления
+// всех значений сразу, чтобы бирка не растягивалась на всю ширину при большом наборе фильтров.
+const FILTER_LABELS = { positions: "Должность", departments: "Подразделение", experience: "Опыт", cities: "Регион", formats: "Формат", employments: "Занятость", transitionTypes: "Тип перехода" };
+function summarizeFilters(filters) {
+  return Object.keys(FILTER_LABELS)
+    .filter((k) => filters[k].length)
+    .map((k) => `${FILTER_LABELS[k]}: ${filters[k].slice(0, 2).join(", ")}${filters[k].length > 2 ? ` +${filters[k].length - 2}` : ""}`)
+    .join(" · ");
+}
+// Сравнение по набору значений, а не по ссылке/порядку — один и тот же выбор фильтров,
+// собранный в разное время (например через FilterChip toggle), должен давать одну подпись.
+function filtersSignature(filters) {
+  return JSON.stringify(Object.keys(FILTER_LABELS).map((k) => [...filters[k]].sort()));
+}
+
+// Панель подписки на уведомления по текущим фильтрам: тогл сохраняет снимок filters
+// как отдельную подписку (в духе job alert на hh.ru/LinkedIn) — если подписок несколько,
+// они показаны бирками под тоглом, каждую можно снять по отдельности.
+function SubscribeBar({ filters, hasActiveFilters, subscriptions, onSubscribe, onUnsubscribe }) {
+  const sig = filtersSignature(filters);
+  const isOn = hasActiveFilters && subscriptions.some((s) => s.sig === sig);
+  return (
+    <div className="sk-col sk-gap-2">
+      <div className="sk-row sk-gap-3" style={{
+        alignItems: "center", padding: "10px 14px", borderRadius: "var(--sk-radius-2)",
+        border: "1px solid var(--sk-stroke)", background: "var(--sk-surface-secondary)",
+      }}>
+        <IconBell size={18} color="var(--sk-icon-secondary)" />
+        <div className="sk-col" style={{ flex: 1, gap: 2 }}>
+          <div className="sk-label-3-regular">Уведомлять о новых вакансиях по этим фильтрам</div>
+          {!hasActiveFilters && (
+            <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Выберите хотя бы один фильтр, чтобы подписаться</div>
+          )}
+        </div>
+        <Switch checked={isOn} disabled={!hasActiveFilters} onChange={(v) => (v ? onSubscribe(sig, filters) : onUnsubscribe(sig))} />
+      </div>
+      {subscriptions.length > 0 && (
+        <div className="sk-row sk-gap-2" style={{ flexWrap: "wrap" }}>
+          {subscriptions.map((s) => (
+            <span key={s.sig} className="sk-row sk-gap-1" style={{
+              alignItems: "center", padding: "5px 6px 5px 10px", borderRadius: "var(--sk-radius-full)",
+              border: "1px solid var(--sk-stroke)", font: "var(--sk-label-4-regular)", color: "var(--sk-text-secondary)",
+            }}>
+              <IconBell size={12} />{s.summary || "Все вакансии"}
+              <span onClick={() => onUnsubscribe(s.sig)} className="sk-clickable" style={{ display: "inline-flex", opacity: 0.55, padding: 2 }}>
+                <IconX size={12} />
+              </span>
+            </span>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 // Панель направлений — справа от списка вакансий, с собственным поиском по названию
 // направления (тот же паттерн, что и CategorySidebar в hr/goals-catalog.html): так
@@ -217,6 +282,17 @@ function Page() {
   const [direction, setDirection] = React.useState(null); // null = все направления
   const [filters, setFilters] = React.useState(emptyFilters);
   const [filtersOpen, setFiltersOpen] = React.useState(false);
+  const [subscriptions, setSubscriptions] = React.useState([]);
+  const [toast, setToast] = React.useState(null);
+  function showToast(msg) { setToast(msg); window.setTimeout(() => setToast(null), 3200); }
+  function subscribe(sig, f) {
+    setSubscriptions((subs) => [...subs.filter((s) => s.sig !== sig), { sig, summary: summarizeFilters(f) }]);
+    showToast("Готово! Пришлём уведомление на почту и в личный кабинет, как только появится подходящая вакансия.");
+  }
+  function unsubscribe(sig) {
+    setSubscriptions((subs) => subs.filter((s) => s.sig !== sig));
+    showToast("Подписка отключена.");
+  }
 
   // "Моё подразделение" / "Моя должность" закреплены первым пунктом списка — значение
   // совпадает с реальным department/title вакансии, поэтому фильтрация ниже не требует
@@ -280,7 +356,11 @@ function Page() {
           </a>
         </div>
         {filtersOpen && (
-          <FiltersRow filters={filters} onChange={setFilters} positionOptions={positionOptions} departmentOptions={departmentOptions} />
+          <div className="sk-col sk-gap-3">
+            <FiltersRow filters={filters} onChange={setFilters} positionOptions={positionOptions} departmentOptions={departmentOptions} />
+            <SubscribeBar filters={filters} hasActiveFilters={hasActiveFilters} subscriptions={subscriptions}
+              onSubscribe={subscribe} onUnsubscribe={unsubscribe} />
+          </div>
         )}
 
         <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Найдено вакансий: {filtered.length}</div>
@@ -300,6 +380,11 @@ function Page() {
             onSelect={setDirection} total={visibleVacancies.length} />
         </div>
       </div>
+      {toast && (
+        <div style={{ position: "fixed", bottom: 24, left: "50%", transform: "translateX(-50%)", zIndex: 100 }}>
+          <Snackbar>{toast}</Snackbar>
+        </div>
+      )}
     </AppShell>
   );
 }

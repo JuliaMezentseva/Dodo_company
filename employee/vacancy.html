@@ -15,10 +15,30 @@
 <body>
 <div id="root"></div>
 <script type="text/babel">
-const { Card, Tag, TextList, Divider, Modal, Input, Textarea, Button, Avatar, Snackbar, Alert } = window.SkillazCoreDesignSystem_bf9566;
+const { Card, Tag, TextList, Divider, Modal, Input, Textarea, Select, Button, Avatar, Snackbar, Alert } = window.SkillazCoreDesignSystem_bf9566;
 const { AppShell, StatusTag, Icons, directionHue } = window.Site;
 const { IconArrowLeft, IconMapPin, IconMail, IconPhone, IconUpload, IconFileText, IconTarget, IconCheck, IconGift, IconLayers, IconClock, IconPlusSm, IconBriefcase } = Icons;
 const D = window.SITE_DATA;
+
+// Локальная иконка для кнопки "Рекомендовать" — своя, т.к. в общем наборе Icons нет
+// подходящей "человек + плюс" (стилистика та же: viewBox 24, strokeWidth 1.5, currentColor).
+function IconUserPlus({ size = 24, color = "currentColor", style }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" style={{ color, flexShrink: 0, ...style }}>
+      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      <circle cx="9" cy="7" r="4" stroke="currentColor" strokeWidth="1.5" />
+      <path d="M19 8v6M22 11h-6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+const RELATION_OPTIONS = [
+  { value: "colleague_former", label: "Бывший коллега" },
+  { value: "colleague_other_company", label: "Коллега из другой компании" },
+  { value: "friend", label: "Друг / знакомый" },
+  { value: "relative", label: "Родственник" },
+  { value: "other", label: "Другое" },
+];
 
 function fmtMoney(n) { return n.toLocaleString("ru-RU"); }
 function vacancyIdFromUrl() {
@@ -40,6 +60,7 @@ function Page() {
   const closed = vacancy.status === "closed";
   const [responses, setResponses] = React.useState(D.myResponses);
   const [modalOpen, setModalOpen] = React.useState(false);
+  const [recommendOpen, setRecommendOpen] = React.useState(false);
   const [toast, setToast] = React.useState(null);
   const myResponse = responses.find(r => r.vacancyId === vacancy.id);
 
@@ -52,6 +73,11 @@ function Page() {
     setResponses(rs => [...rs, { vacancyId: vacancy.id, date: "12.03.26", status: "response_received" }]);
     setModalOpen(false);
     showToast("Отклик отправлен. Уведомим вас об изменении статуса.");
+  }
+
+  function handleRecommendSubmitted() {
+    setRecommendOpen(false);
+    showToast("Рекомендация отправлена рекрутёру " + vacancy.recruiter.name + ".");
   }
 
   const ApplyCta = ({ block }) => {
@@ -82,7 +108,10 @@ function Page() {
             {!closed && <span className="sk-row sk-gap-1"><IconClock size={15} />{vacancy.postedDate}</span>}
           </div>
         </div>
-        <ApplyCta />
+        <div className="sk-row sk-gap-2">
+          {!closed && <Button mode="secondary" icon={<IconUserPlus size={16} />} onClick={() => setRecommendOpen(true)}>Рекомендовать</Button>}
+          <ApplyCta />
+        </div>
       </div>
 
       {closed && (
@@ -168,6 +197,7 @@ function Page() {
       </div>
 
       {modalOpen && <ApplyModal vacancy={vacancy} onClose={() => setModalOpen(false)} onSubmitted={handleSubmitted} />}
+      {recommendOpen && <RecommendModal vacancy={vacancy} onClose={() => setRecommendOpen(false)} onSubmitted={handleRecommendSubmitted} />}
       {toast && (
         <div style={{ position: "fixed", bottom: 24, left: "50%", transform: "translateX(-50%)", zIndex: 100 }}>
           <Snackbar>{toast}</Snackbar>
@@ -245,6 +275,62 @@ function ApplyModal({ vacancy, onClose, onSubmitted }) {
             </div>
           ) : (
             <div className="sk-clickable" onClick={() => setResume("Резюме_Мезенцева_Юлия.pdf")} style={{
+              border: "1.5px dashed var(--sk-stroke)", borderRadius: "var(--sk-radius-3)", padding: "22px 16px",
+              display: "flex", flexDirection: "column", alignItems: "center", gap: 6, textAlign: "center",
+              background: "var(--sk-surface-secondary)",
+            }}>
+              <IconUpload size={20} color="var(--sk-icon-secondary)" />
+              <div className="sk-label-3-regular">Перетащите файл сюда или <span style={{ color: "var(--sk-text-accent)" }}>выберите на компьютере</span></div>
+              <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>PDF, DOC или DOCX, до 10 МБ</div>
+            </div>
+          )}
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
+function RecommendModal({ vacancy, onClose, onSubmitted }) {
+  const p = D.person;
+  const [city, setCity] = React.useState("");
+  const [phone, setPhone] = React.useState("");
+  const [relation, setRelation] = React.useState(null);
+  const [reason, setReason] = React.useState("");
+  const [resume, setResume] = React.useState(null);
+  const canSubmit = city.trim() && phone.trim() && relation && reason.trim();
+
+  return (
+    <Modal open title={"Рекомендация: " + vacancy.title} onClose={onClose} size="m"
+      secondary={<Button mode="secondary" onClick={onClose}>Отмена</Button>}
+      primary={<Button variant="accent" disabled={!canSubmit} onClick={onSubmitted}>Отправить рекомендацию</Button>}>
+      <div className="sk-col sk-gap-3 sk-modal-scroll">
+        <Alert hue="neutral">Рекомендация уйдёт рекрутёру вакансии. Ваше имя и почта прикрепятся к ней автоматически.</Alert>
+
+        <div className="sk-row sk-gap-3" style={{ alignItems: "center" }}>
+          <Avatar name={p.name} size={36} />
+          <div className="sk-col" style={{ gap: 0 }}>
+            <div className="sk-label-3">{p.name}</div>
+            <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{p.email} · рекомендует на «{vacancy.title}»</div>
+          </div>
+        </div>
+
+        <Input label="Город, в котором проживает кандидат" required value={city} onChange={(e) => setCity(e.target.value || "")} />
+        <Input label="Мобильный телефон кандидата" required placeholder="+7 900 000 00 00" value={phone} onChange={(e) => setPhone(e.target.value || "")} />
+        <Select label="Статус знакомства" required options={RELATION_OPTIONS} value={relation} onChange={setRelation} placeholder="Выберите вариант" />
+        <Textarea label="Причина рекомендации" required placeholder="Почему вы считаете кандидата подходящим?"
+          value={reason} onChange={(e) => setReason((e.target.value || "").slice(0, 500))} rows={3} />
+
+        <div className="sk-col sk-gap-2">
+          <div className="sk-row sk-gap-1"><div className="sk-label-3">Резюме кандидата</div>
+            <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>(необязательно)</span></div>
+          {resume ? (
+            <div className="sk-row sk-gap-2" style={{ padding: "10px 12px", border: "1px solid var(--sk-stroke)", borderRadius: "var(--sk-radius-2)" }}>
+              <IconFileText size={16} color="var(--sk-icon-secondary)" />
+              <span className="sk-label-3-regular" style={{ flex: 1 }}>{resume}</span>
+              <button className="sk-link-btn sk-label-4-regular" onClick={() => setResume(null)}>Удалить</button>
+            </div>
+          ) : (
+            <div className="sk-clickable" onClick={() => setResume("Резюме_кандидата.pdf")} style={{
               border: "1.5px dashed var(--sk-stroke)", borderRadius: "var(--sk-radius-3)", padding: "22px 16px",
               display: "flex", flexDirection: "column", alignItems: "center", gap: 6, textAlign: "center",
               background: "var(--sk-surface-secondary)",
