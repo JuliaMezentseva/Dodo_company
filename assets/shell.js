@@ -40,7 +40,13 @@ const IconMail = mkIcon(<><rect x="3.5" y="5.5" width="17" height="13" rx="2" st
 const IconSend = mkIcon(<path d="M4 12.2 20 4l-6.4 16-3-6.6L4 12.2Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />);
 const IconUpload = mkIcon(<><path d="M12 15.5V4.5M8 8.3 12 4.3l4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /><path d="M4.5 15.5v3a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2v-3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /></>);
 const IconX = mkIcon(<path d="M6 6l12 12M18 6 6 18" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />);
-const IconFilter = mkIcon(<path d="M4 6h16M7 12h10M10 18h4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />);
+// Иконка "Фильтры" по спеке ДС — два слайдер-трека с бегунками (как на hh.ru), а не
+// три убывающие полоски: так однозначнее читается как "настройка фильтров".
+const IconFilter = mkIcon(<>
+  <path d="M4 7.5h8.5M16 7.5h4M4 16.5h4.5M12 16.5h8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+  <circle cx="14" cy="7.5" r="2" stroke="currentColor" strokeWidth="1.6" />
+  <circle cx="10" cy="16.5" r="2" stroke="currentColor" strokeWidth="1.6" />
+</>);
 const IconAlertCircle = mkIcon(<><circle cx="12" cy="12" r="8.5" stroke="currentColor" strokeWidth="1.5" /><path d="M12 7.5v5.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /><circle cx="12" cy="16.3" r="0.9" fill="currentColor" /></>);
 const IconGraduationCap = mkIcon(<><path d="M2.5 9.5 12 5l9.5 4.5-9.5 4.5-9.5-4.5Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" /><path d="M6.5 11.6v4c0 1.4 2.5 2.6 5.5 2.6s5.5-1.2 5.5-2.6v-4" stroke="currentColor" strokeWidth="1.5" /></>);
 const IconGift = mkIcon(<><rect x="4" y="9.5" width="16" height="4" rx="1" stroke="currentColor" strokeWidth="1.5" /><path d="M12 9.5V21M18 13v6.5a1.5 1.5 0 0 1-1.5 1.5h-9A1.5 1.5 0 0 1 6 19.5V13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /><path d="M12 9.5c-1.8 0-3.3-1.1-3.3-2.8S9.8 4 10.8 4.5 12 6.8 12 9.5M12 9.5c1.8 0 3.3-1.1 3.3-2.8S14.2 4 13.2 4.5 12 6.8 12 9.5" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" /></>);

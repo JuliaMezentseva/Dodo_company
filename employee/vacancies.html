@@ -80,10 +80,10 @@ function SubscribeBar({ filters, hasActiveFilters, subscriptions, onSubscribe, o
   return (
     <div className="sk-row sk-gap-2" style={{
       alignItems: "center", flexShrink: 0, padding: "6px 6px 6px 12px", borderRadius: "var(--sk-radius-full)",
-      background: "var(--sk-surface-secondary)", opacity: hasActiveFilters ? 1 : 0.6,
+      background: "var(--sk-surface-tertiary)", opacity: hasActiveFilters ? 1 : 0.6,
     }} title={hasActiveFilters ? undefined : "Выберите фильтр, чтобы подписаться на уведомления"}>
-      <IconBell size={16} color="var(--sk-icon-secondary)" />
-      <div className="sk-label-4-regular" style={{ whiteSpace: "nowrap" }}>Подписаться на уведомления</div>
+      <IconBell size={16} color="var(--sk-icon-primary)" />
+      <div className="sk-label-4-regular" style={{ whiteSpace: "nowrap", color: "var(--sk-text-primary)" }}>Подписаться на уведомления</div>
       <Switch checked={isOn} disabled={!hasActiveFilters} onChange={(v) => (v ? onSubscribe(sig, filters) : onUnsubscribe(sig))} />
     </div>
   );
