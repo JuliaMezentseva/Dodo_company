@@ -15,15 +15,44 @@
 <body>
 <div id="root"></div>
 <script type="text/babel">
-const { Card, Tag } = window.SkillazCoreDesignSystem_bf9566;
+const { Card, Tag, Divider } = window.SkillazCoreDesignSystem_bf9566;
 const { AppShell, Icons } = window.Site;
-const { IconArrowLeft, IconMapPin, IconBriefcase } = Icons;
+const { IconArrowLeft, IconFileText } = Icons;
 const D = window.SITE_DATA;
 
+function fmtMoney(n) { return n.toLocaleString("ru-RU"); }
+
+const RU_MONTHS = ["янв", "фев", "мар", "апр", "май", "июн", "июл", "авг", "сен", "окт", "ноя", "дек"];
+function fmtRuDate(d) {
+  const [day, month, year] = d.split(".");
+  return `${parseInt(day, 10)} ${RU_MONTHS[parseInt(month, 10) - 1]} 20${year}`;
+}
+
+// Чип прикреплённого резюме — по виду похож на чип демо-вложения (см. manager/plan.html),
+// но без кнопки удаления: здесь это просто то, что сотрудник уже отправил.
+function ResumeChip({ name, size }) {
+  return (
+    <div className="sk-row sk-gap-2" style={{
+      alignItems: "center", padding: "8px 10px", border: "1px solid var(--sk-stroke)",
+      borderRadius: "var(--sk-radius-2)", background: "var(--sk-surface-page)", maxWidth: 280,
+    }}>
+      <div style={{
+        width: 26, height: 26, borderRadius: "var(--sk-radius-2)", flexShrink: 0,
+        background: "var(--sk-surface-secondary)", display: "flex", alignItems: "center", justifyContent: "center",
+      }}><IconFileText size={14} color="var(--sk-icon-secondary)" /></div>
+      <div className="sk-col" style={{ gap: 0, minWidth: 0, flex: 1 }}>
+        <div className="sk-label-4" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{name}</div>
+        {size && <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{size}</div>}
+      </div>
+    </div>
+  );
+}
+
 // Статус самого отклика в ATS не синхронизируется — единственное, что система знает
-// достоверно, это факт и дата отправки. Вместо выдуманного статуса — тег "Отправлен",
+// достоверно, это факт и дата отправки. Вместо выдуманного статуса — тег "Отклик отправлен",
 // а для закрытых вакансий вместо него тег о закрытии (это уже есть локально и реально
-// полезно: стоит ли ещё ждать ответа).
+// полезно: стоит ли ещё ждать ответа). Письмо и резюме показываем как есть — это то,
+// что сотрудник сам отправил рекрутёру, и после отправки уже не редактируется.
 function ResponseRow({ r }) {
   const v = D.vacancies.find(x => x.id === r.vacancyId);
   if (!v) return null;
@@ -33,16 +62,25 @@ function ResponseRow({ r }) {
     <a href={"vacancy.html?id=" + v.id} style={{ textDecoration: "none" }}
       onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}>
       <Card bordered style={{ cursor: "pointer", boxShadow: hovered ? "inset 0 0 0 1.5px var(--sk-stroke-accent)" : "inset 0 0 0 1px var(--sk-stroke)" }}>
-        <div className="sk-row" style={{ justifyContent: "space-between", alignItems: "flex-start" }}>
-          <div className="sk-col sk-gap-1" style={{ opacity: closed ? 0.6 : 1 }}>
-            <div className="sk-label-2">{v.title}</div>
-            <div className="sk-row sk-gap-2 sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>
-              <IconBriefcase size={14} />{v.department}
-              <IconMapPin size={14} style={{ marginLeft: 8 }} />{v.city}
+        <div className="sk-col sk-gap-3" style={{ opacity: closed ? 0.7 : 1 }}>
+          <div className="sk-row" style={{ justifyContent: "space-between", alignItems: "flex-start" }}>
+            <div className="sk-col sk-gap-1">
+              <div className="sk-label-2">{v.title}</div>
+              <div className="sk-label-3-regular">
+                {v.salaryFrom && v.salaryTo ? `${fmtMoney(v.salaryFrom)} – ${fmtMoney(v.salaryTo)} ₽` : "По договорённости"}
+              </div>
+              <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{v.city} · {v.department}</div>
             </div>
-            <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Отклик отправлен {r.date}</div>
+            <Tag size="s" hue={closed ? "neutral" : "positive"}>{closed ? "Вакансия закрыта" : "Отклик отправлен"}</Tag>
           </div>
-          <Tag size="s" hue={closed ? "neutral" : "positive"}>{closed ? "Вакансия закрыта" : "Отправлен"}</Tag>
+
+          <Divider />
+
+          <div className="sk-col sk-gap-3">
+            <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Отправлено {fmtRuDate(r.date)}</div>
+            {r.letter && <div className="sk-label-3-regular" style={{ whiteSpace: "pre-line" }}>{r.letter}</div>}
+            {r.resumeFile && <ResumeChip name={r.resumeFile} size={r.resumeSize} />}
+          </div>
         </div>
       </Card>
     </a>

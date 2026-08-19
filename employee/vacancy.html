@@ -16,7 +16,7 @@
 <div id="root"></div>
 <script type="text/babel">
 const { Card, Tag, TextList, Divider, Modal, Input, Textarea, Select, Button, Avatar, Snackbar, Alert } = window.SkillazCoreDesignSystem_bf9566;
-const { AppShell, StatusTag, Icons, directionHue } = window.Site;
+const { AppShell, StatusTag, Icons } = window.Site;
 const { IconArrowLeft, IconMapPin, IconMail, IconPhone, IconUpload, IconFileText, IconTarget, IconCheck, IconGift, IconLayers, IconClock, IconPlusSm, IconBriefcase } = Icons;
 const D = window.SITE_DATA;
 
@@ -69,8 +69,8 @@ function Page() {
     window.setTimeout(() => setToast(null), 3200);
   }
 
-  function handleSubmitted() {
-    setResponses(rs => [...rs, { vacancyId: vacancy.id, date: "12.03.26", status: "response_received" }]);
+  function handleSubmitted(letter, resume) {
+    setResponses(rs => [...rs, { vacancyId: vacancy.id, date: "12.03.26", letter: letter || "", resumeFile: resume, resumeSize: "0,9 Мб" }]);
     setModalOpen(false);
     showToast("Отклик отправлен. Уведомим вас об изменении статуса.");
   }
@@ -96,7 +96,7 @@ function Page() {
       <div className="sk-row" style={{ justifyContent: "space-between", alignItems: "flex-start" }}>
         <div className="sk-col sk-gap-3" style={{ flex: 1 }}>
           <div className="sk-row sk-gap-2" style={{ flexWrap: "wrap", alignItems: "center" }}>
-            <Tag size="s" hue={directionHue(vacancy.direction)}>{vacancy.direction}</Tag>
+            <Tag size="s" hue="gray">{vacancy.transitionType}</Tag>
             {closed
               ? <Tag size="s" hue="neutral">Закрыта</Tag>
               : <Tag size="s" hue="positive" icon={<IconCheck size={12} />}>Идёт поиск</Tag>}
@@ -109,7 +109,7 @@ function Page() {
           </div>
         </div>
         <div className="sk-row sk-gap-2">
-          {!closed && <Button mode="secondary" icon={<IconUserPlus size={16} />} onClick={() => setRecommendOpen(true)}>Рекомендовать</Button>}
+          {!closed && <Button variant="accent" mode="secondary" icon={<IconUserPlus size={16} />} onClick={() => setRecommendOpen(true)}>Рекомендовать</Button>}
           <ApplyCta />
         </div>
       </div>
@@ -224,9 +224,9 @@ function ApplyModal({ vacancy, onClose, onSubmitted }) {
   return (
     <Modal open title={"Отклик: " + vacancy.title} onClose={onClose} size="m"
       secondary={<Button mode="secondary" onClick={onClose}>Отмена</Button>}
-      primary={<Button variant="accent" disabled={!resume} onClick={onSubmitted}>Отправить отклик</Button>}>
+      primary={<Button variant="accent" disabled={!resume} onClick={() => onSubmitted(letter, resume)}>Отправить отклик</Button>}>
       <div className="sk-col sk-gap-3 sk-modal-scroll">
-        <Alert hue="neutral">Личные данные ниже подставлены из вашего профиля — проверьте и поправьте при необходимости. Резюме нужно прикрепить отдельно.</Alert>
+        <Alert hue="accent">Личные данные ниже подставлены из вашего профиля — проверьте и поправьте при необходимости. Резюме нужно прикрепить отдельно.</Alert>
 
         <div className="sk-row sk-gap-3">
           <Input label="Фамилия" value={lastName} onChange={(e) => setLastName(e.target.value || "")} style={{ flex: 1 }} />
@@ -316,7 +316,7 @@ function RecommendModal({ vacancy, onClose, onSubmitted }) {
 
         <Input label="Город, в котором проживает кандидат" required value={city} onChange={(e) => setCity(e.target.value || "")} />
         <Input label="Мобильный телефон кандидата" required placeholder="+7 900 000 00 00" value={phone} onChange={(e) => setPhone(e.target.value || "")} />
-        <Select label="Статус знакомства" required options={RELATION_OPTIONS} value={relation} onChange={setRelation} placeholder="Выберите вариант" />
+        <Select label="Кем вам приходится кандидат?" required options={RELATION_OPTIONS} value={relation} onChange={setRelation} placeholder="Выберите вариант" />
         <Textarea label="Причина рекомендации" required placeholder="Почему вы считаете кандидата подходящим?"
           value={reason} onChange={(e) => setReason((e.target.value || "").slice(0, 500))} rows={3} />
 
