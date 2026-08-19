@@ -278,16 +278,37 @@ function vacanciesHref(base, role) {
   return base + "/stub.html?role=" + role + "&section=vacancies";
 }
 
-function VacanciesButton({ role, base }) {
+// Иконка для кнопки чата с AI-ассистентом в шапке — контур сообщения (как IconMessageCircle)
+// плюс маленькая искра сверху справа, тот же визуальный код "AI", что и IconSparklesSolid.
+const IconChatSparkle = mkIcon(<>
+  <path d="M20 10.5a7.5 7.5 0 1 1-3.3-6.2L20 3l-.9 4.1c.6.9.9 2.1.9 3.4Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
+  <path d="M18 14.5l.5 1.4 1.4.5-1.4.5-.5 1.4-.5-1.4-1.4-.5 1.4-.5Z" fill="currentColor" />
+</>);
+
+// Простая кнопка-ссылка в шапке: иконка + подпись, без заливки (в отличие от старой
+// заполненной пилюли) — под макет с двумя пунктами шапки ("Вакансии", "Чат с AI-ассистентом").
+function HeaderNavButton({ href, onClick, icon, label, color }) {
+  const Tag = onClick ? "button" : "a";
   return (
-    <a href={vacanciesHref(base, role)} style={{
-      display: "inline-flex", alignItems: "center", gap: 8, height: 40, padding: "0 16px 0 14px",
-      borderRadius: "var(--sk-radius-full)", background: "var(--sk-special)",
-      color: "var(--sk-text-contrast)", font: "var(--sk-label-3)",
+    <Tag href={href} onClick={onClick} type={onClick ? "button" : undefined} className="sk-clickable" style={{
+      display: "inline-flex", alignItems: "center", gap: 8, height: 40, padding: 0,
+      background: "none", border: "none", color: color || "var(--sk-text-secondary)", font: "var(--sk-label-3)",
     }}>
-      <IconBriefcase size={18} color="var(--sk-text-contrast)" />
-      Вакансии
-    </a>
+      {icon}
+      {label}
+    </Tag>
+  );
+}
+
+function VacanciesButton({ role, base }) {
+  return <HeaderNavButton href={vacanciesHref(base, role)} icon={<IconBriefcase size={18} />} label="Вакансии" />;
+}
+
+function AiChatHeaderButton() {
+  return (
+    <HeaderNavButton
+      onClick={() => window.__skAiOpenAssistant && window.__skAiOpenAssistant()}
+      icon={<IconChatSparkle size={18} />} label="Чат с AI-ассистентом" color="var(--sk-text-special)" />
   );
 }
 
@@ -319,7 +340,7 @@ function AppHeaderBar({ children, role }) {
       display: "flex", alignItems: "center", gap: 16, height: 64, padding: "0 24px",
       background: "var(--sk-surface-secondary)", flexShrink: 0,
     }}>
-      <div style={{ flex: 1, display: "flex", justifyContent: "flex-end" }}>{children}</div>
+      <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 24 }}>{children}</div>
       <span style={{ position: "relative", display: "inline-flex", color: "var(--sk-icon-secondary)" }}>
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
           <path d="M12 4a6 6 0 0 0-6 6v3.2l-1.4 2.4a.8.8 0 0 0 .7 1.2h13.4a.8.8 0 0 0 .7-1.2L18 13.2V10a6 6 0 0 0-6-6Z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round"></path>
@@ -345,6 +366,7 @@ function AppShell({ role, active, base, breadcrumb, children }) {
         <div className="sk-app-main">
           <AppHeaderBar role={role}>
             {showVacancies && <VacanciesButton role={role} base={base} />}
+            <AiChatHeaderButton />
           </AppHeaderBar>
           <div className="sk-app-content sk-scroll">
             <div className="sk-page-container">
