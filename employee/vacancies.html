@@ -17,7 +17,7 @@
 <script type="text/babel">
 const { Card, Tag, Input, Button, Checkbox, Switch, Snackbar } = window.SkillazCoreDesignSystem_bf9566;
 const { AppShell, Icons } = window.Site;
-const { IconSearch, IconMapPin, IconBriefcase, IconCheck, IconFilter, IconX, IconChevronDown } = Icons;
+const { IconSearch, IconMapPin, IconBriefcase, IconX, IconFilter } = Icons;
 const D = window.SITE_DATA;
 
 // Локальные иконки в стилистике общего набора (mkIcon: viewBox 24, strokeWidth 1.5, currentColor).
@@ -53,11 +53,11 @@ function IconBell({ size = 24, color = "currentColor", style }) {
 function fmtMoney(n) { return n.toLocaleString("ru-RU"); }
 function toOptions(list) { return list.map((v) => ({ value: v, label: v })); }
 
-const emptyFilters = { positions: [], departments: [], experience: [], cities: [], formats: [], employments: [], transitionTypes: [] };
+const emptyFilters = { directions: [], positions: [], departments: [], experience: [], cities: [], formats: [], employments: [], transitionTypes: [] };
 
 // Подпись бирки подписки в духе "Регион: Москва, Пермь +2" — короткая, без перечисления
 // всех значений сразу, чтобы бирка не растягивалась на всю ширину при большом наборе фильтров.
-const FILTER_LABELS = { positions: "Должность", departments: "Подразделение", experience: "Опыт", cities: "Регион", formats: "Формат", employments: "Занятость", transitionTypes: "Тип перехода" };
+const FILTER_LABELS = { directions: "Направление", positions: "Должность", departments: "Подразделение", experience: "Опыт", cities: "Регион", formats: "Формат", employments: "Занятость", transitionTypes: "Тип перехода" };
 function summarizeFilters(filters) {
   return Object.keys(FILTER_LABELS)
     .filter((k) => filters[k].length)
@@ -65,133 +65,77 @@ function summarizeFilters(filters) {
     .join(" · ");
 }
 // Сравнение по набору значений, а не по ссылке/порядку — один и тот же выбор фильтров,
-// собранный в разное время (например через FilterChip toggle), должен давать одну подпись.
+// собранный в разное время, должен давать одну подпись независимо от порядка выбора.
 function filtersSignature(filters) {
   return JSON.stringify(Object.keys(FILTER_LABELS).map((k) => [...filters[k]].sort()));
 }
 
-// Панель подписки на уведомления по текущим фильтрам: тогл сохраняет снимок filters
-// как отдельную подписку (в духе job alert на hh.ru/LinkedIn) — если подписок несколько,
-// они показаны бирками под тоглом, каждую можно снять по отдельности.
+// Подписка на уведомления по текущим фильтрам: компактная пилюля с тоглом (в духе job
+// alert на hh.ru/LinkedIn), сидит в одном ряду с "Найдено вакансий" справа. Тогл сохраняет
+// снимок filters как отдельную подписку — если подписок несколько, они показаны бирками
+// ниже, каждую можно снять по отдельности.
 function SubscribeBar({ filters, hasActiveFilters, subscriptions, onSubscribe, onUnsubscribe }) {
   const sig = filtersSignature(filters);
   const isOn = hasActiveFilters && subscriptions.some((s) => s.sig === sig);
   return (
-    <div className="sk-col sk-gap-2">
-      <div className="sk-row sk-gap-3" style={{
-        alignItems: "center", padding: "10px 14px", borderRadius: "var(--sk-radius-2)",
-        border: "1px solid var(--sk-stroke)", background: "var(--sk-surface-secondary)",
-      }}>
-        <IconBell size={18} color="var(--sk-icon-secondary)" />
-        <div className="sk-col" style={{ flex: 1, gap: 2 }}>
-          <div className="sk-label-3-regular">Уведомлять о новых вакансиях по этим фильтрам</div>
-          {!hasActiveFilters && (
-            <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Выберите хотя бы один фильтр, чтобы подписаться</div>
-          )}
-        </div>
-        <Switch checked={isOn} disabled={!hasActiveFilters} onChange={(v) => (v ? onSubscribe(sig, filters) : onUnsubscribe(sig))} />
-      </div>
-      {subscriptions.length > 0 && (
-        <div className="sk-row sk-gap-2" style={{ flexWrap: "wrap" }}>
-          {subscriptions.map((s) => (
-            <span key={s.sig} className="sk-row sk-gap-1" style={{
-              alignItems: "center", padding: "5px 6px 5px 10px", borderRadius: "var(--sk-radius-full)",
-              border: "1px solid var(--sk-stroke)", font: "var(--sk-label-4-regular)", color: "var(--sk-text-secondary)",
-            }}>
-              <IconBell size={12} />{s.summary || "Все вакансии"}
-              <span onClick={() => onUnsubscribe(s.sig)} className="sk-clickable" style={{ display: "inline-flex", opacity: 0.55, padding: 2 }}>
-                <IconX size={12} />
-              </span>
-            </span>
-          ))}
-        </div>
-      )}
+    <div className="sk-row sk-gap-2" style={{
+      alignItems: "center", flexShrink: 0, padding: "6px 6px 6px 12px", borderRadius: "var(--sk-radius-full)",
+      border: "1px solid var(--sk-stroke)", opacity: hasActiveFilters ? 1 : 0.6,
+    }} title={hasActiveFilters ? undefined : "Выберите фильтр, чтобы подписаться на уведомления"}>
+      <IconBell size={16} color="var(--sk-icon-secondary)" />
+      <div className="sk-label-4-regular" style={{ whiteSpace: "nowrap" }}>Подписаться на уведомления</div>
+      <Switch checked={isOn} disabled={!hasActiveFilters} onChange={(v) => (v ? onSubscribe(sig, filters) : onUnsubscribe(sig))} />
     </div>
   );
 }
 
-// Панель направлений — справа от списка вакансий, с собственным поиском по названию
-// направления (тот же паттерн, что и CategorySidebar в hr/goals-catalog.html): так
-// направления не толпятся в одном ряду с кнопкой "Фильтры" над списком.
-function DirectionSidebar({ directions, counts, active, onSelect, total }) {
-  const [q, setQ] = React.useState("");
-  const needle = q.trim().toLowerCase();
-  const list = needle ? directions.filter((d) => d.toLowerCase().includes(needle)) : directions;
-  function itemStyle(isActive) {
-    return {
-      display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", textAlign: "left",
-      padding: "9px 10px", borderRadius: "var(--sk-radius-2)", border: "none", cursor: "pointer",
-      font: isActive ? "var(--sk-label-3)" : "var(--sk-label-3-regular)",
-      background: isActive ? "var(--sk-surface-secondary)" : "transparent",
-      color: isActive ? "var(--sk-text-primary)" : "var(--sk-text-secondary)",
-    };
-  }
+function SubscriptionsList({ subscriptions, onUnsubscribe }) {
+  if (!subscriptions.length) return null;
   return (
-    <Card bordered style={{ width: 260, flexShrink: 0, padding: 16 }}>
-      <div className="sk-col sk-gap-3">
-        <Input size="s" icon={<IconSearch size={18} />} placeholder="Поиск направления" value={q} onChange={(e) => setQ(e.target.value || "")} />
-        <div className="sk-col sk-gap-1">
-          <button style={itemStyle(!active)} onClick={() => onSelect(null)}>
-            <span>Все направления</span><span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{total}</span>
-          </button>
-          {list.filter((d) => counts[d]).map((d) => (
-            <button key={d} style={itemStyle(active === d)} onClick={() => onSelect(active === d ? null : d)}>
-              <span>{d}</span><span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{counts[d]}</span>
-            </button>
-          ))}
-        </div>
-      </div>
-    </Card>
-  );
-}
-
-function VacancyCard({ vacancy, hasResponse }) {
-  const closed = vacancy.status === "closed";
-  const [hovered, setHovered] = React.useState(false);
-  return (
-    <a href={"vacancy.html?id=" + vacancy.id} style={{ textDecoration: "none" }}
-      onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}>
-      <Card bordered
-        style={{
-          cursor: "pointer", height: "100%",
-          boxShadow: hovered ? "inset 0 0 0 1.5px var(--sk-stroke-accent)" : "inset 0 0 0 1px var(--sk-stroke)",
+    <div className="sk-row sk-gap-2" style={{ flexWrap: "wrap" }}>
+      {subscriptions.map((s) => (
+        <span key={s.sig} className="sk-row sk-gap-1" style={{
+          alignItems: "center", padding: "5px 6px 5px 10px", borderRadius: "var(--sk-radius-full)",
+          border: "1px solid var(--sk-stroke)", font: "var(--sk-label-4-regular)", color: "var(--sk-text-secondary)",
         }}>
-        <div className="sk-col sk-gap-3" style={{ height: "100%" }}>
-          <div className="sk-row" style={{ justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
-            <span style={{ opacity: hasResponse ? 0.55 : 1 }}>
-              <Tag size="s" hue="accent">{vacancy.direction}</Tag>
-            </span>
-            {hasResponse
-              ? <Tag size="s" hue="positive" icon={<IconThumbUp size={13} />}>Уже откликнулись</Tag>
-              : (closed && <Tag size="s" hue="neutral">Закрыта</Tag>)}
-          </div>
-
-          <div className="sk-col sk-gap-1" style={{ flex: 1, opacity: hasResponse ? 0.55 : 1 }}>
-            <div className="sk-label-2">{vacancy.title}</div>
-            <div className="sk-row sk-gap-2 sk-muted" style={{ font: "var(--sk-label-4-regular)", flexWrap: "wrap" }}>
-              <span className="sk-row sk-gap-1"><IconMapPin size={13} />{vacancy.city}</span>
-              <span className="sk-row sk-gap-1"><IconBriefcase size={13} />{vacancy.department}</span>
-            </div>
-          </div>
-
-          <div className="sk-row" style={{ justifyContent: "space-between", alignItems: "center", opacity: hasResponse ? 0.55 : 1 }}>
-            {vacancy.salaryFrom && vacancy.salaryTo ? (
-              <div className="sk-label-3-regular">{fmtMoney(vacancy.salaryFrom)} – {fmtMoney(vacancy.salaryTo)} ₽</div>
-            ) : (
-              <div className="sk-muted" style={{ font: "var(--sk-label-3-regular)" }}>По договорённости</div>
-            )}
-            <span className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>{vacancy.postedDate}</span>
-          </div>
-        </div>
-      </Card>
-    </a>
+          <IconBell size={12} />{s.summary || "Все вакансии"}
+          <span onClick={() => onUnsubscribe(s.sig)} className="sk-clickable" style={{ display: "inline-flex", opacity: 0.55, padding: 2 }}>
+            <IconX size={12} />
+          </span>
+        </span>
+      ))}
+    </div>
   );
 }
 
-// Чип фильтра — клик сразу открывает выпадашку с чекбоксами под чипом (тот же
-// паттерн клика-вне-закрывает и позиционирования, что и у выпадашки "+ направление"
-// в hr/goals-catalog.html). Все чипы показаны сразу под кнопкой "Фильтры" —
-// без промежуточного шага "+ Фильтр".
+// Бирка-саммари рядом с поиском: показывает общее число активных фильтров и разом
+// сбрасывает все — крестик виден только когда есть что сбрасывать. Клик по самой бирке
+// сворачивает/разворачивает ряд чипов ниже; по умолчанию ряд уже развёрнут.
+function FiltersSummaryChip({ count, open, onToggle, onReset }) {
+  const active = count > 0;
+  return (
+    <button type="button" onClick={onToggle} className="sk-clickable" style={{
+      display: "inline-flex", alignItems: "center", gap: 6, height: 40, padding: "0 14px",
+      borderRadius: "var(--sk-radius-form)", cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0,
+      border: `1.5px solid ${active ? "var(--sk-stroke-accent)" : "var(--sk-stroke)"}`,
+      background: "var(--sk-surface-page)", font: "var(--sk-label-3-regular)",
+      color: active ? "var(--sk-text-accent)" : "var(--sk-text-primary)",
+    }}>
+      <IconFilter size={16} />
+      Фильтры{active ? " " + count : ""}
+      {active && (
+        <span onClick={(e) => { e.stopPropagation(); onReset(); }} style={{ display: "inline-flex", opacity: 0.7 }}>
+          <IconX size={14} />
+        </span>
+      )}
+    </button>
+  );
+}
+
+// Единый чип-фильтр — пилюля со значением и крестиком, попап под ней открывает список
+// чекбоксов (плюс поиск для потенциально длинных справочников: Направление, Должность,
+// Подразделение). Для этих трёх первый пункт списка — "Моё …", закреплён и не пропадает
+// при поиске, чтобы им можно было воспользоваться в одно движение.
 function FilterChip({ label, options, value, onChange, searchable }) {
   const [open, setOpen] = React.useState(false);
   const [q, setQ] = React.useState("");
@@ -203,70 +147,127 @@ function FilterChip({ label, options, value, onChange, searchable }) {
     return () => document.removeEventListener("mousedown", close);
   }, [open]);
 
+  const pinned = searchable ? options[0] : null;
+  const rest = searchable ? options.slice(1) : options;
   const needle = q.trim().toLowerCase();
-  const shownOptions = searchable && needle ? options.filter((o) => o.label.toLowerCase().includes(needle)) : options;
+  const pinnedShown = !pinned || !needle || pinned.label.toLowerCase().includes(needle);
+  const restShown = needle ? rest.filter((o) => o.label.toLowerCase().includes(needle)) : rest;
 
-  function toggle(v) {
-    onChange(value.includes(v) ? value.filter((x) => x !== v) : [...value, v]);
-  }
+  function toggle(v) { onChange(value.includes(v) ? value.filter((x) => x !== v) : [...value, v]); }
+
+  const valueLabel = value.length === 1 ? (options.find((o) => o.value === value[0]) || {}).label : null;
 
   return (
     <div ref={ref} style={{ position: "relative" }}>
       <button type="button" onClick={() => setOpen((o) => !o)} className="sk-clickable" style={{
-        display: "inline-flex", alignItems: "center", gap: 6, height: 36, padding: "0 12px",
-        borderRadius: "var(--sk-radius-2)", cursor: "pointer", whiteSpace: "nowrap",
-        border: open ? "1px solid var(--sk-stroke-accent)" : "1px solid var(--sk-stroke)",
-        background: "var(--sk-surface-page)", font: "var(--sk-label-3-regular)", color: "var(--sk-text-primary)",
+        display: "inline-flex", alignItems: "center", gap: 6, height: 40, padding: "0 14px",
+        borderRadius: "var(--sk-radius-form)", cursor: "pointer", whiteSpace: "nowrap",
+        border: `1.5px solid ${value.length ? "var(--sk-stroke-accent)" : "var(--sk-stroke)"}`,
+        background: "var(--sk-surface-page)", font: "var(--sk-label-3-regular)",
+        color: value.length ? "var(--sk-text-accent)" : "var(--sk-text-primary)",
       }}>
-        {label}{value.length ? ": " + value.length : ""}
-        {value.length > 0 ? (
-          <span onClick={(e) => { e.stopPropagation(); onChange([]); }} style={{ display: "inline-flex", opacity: 0.55 }}>
+        {label}
+        {valueLabel && <span style={{ color: "var(--sk-text-secondary)" }}>: {valueLabel}</span>}
+        {value.length > 1 && <span>{value.length}</span>}
+        {value.length > 0 && (
+          <span onClick={(e) => { e.stopPropagation(); onChange([]); }} style={{ display: "inline-flex", opacity: 0.7 }}>
             <IconX size={13} />
           </span>
-        ) : (
-          <IconChevronDown size={14} style={{ opacity: 0.55 }} />
         )}
       </button>
       {open && (
-        <div style={{
-          position: "absolute", top: "calc(100% + 4px)", left: 0, zIndex: 20, minWidth: 240, maxHeight: 300, overflowY: "auto",
-          background: "var(--sk-surface-page)", borderRadius: "var(--sk-radius-2)", boxShadow: "var(--sk-shadow-m)", padding: 6,
+        <div className="sk-col sk-gap-1" style={{
+          position: "absolute", top: "calc(100% + 4px)", left: 0, zIndex: 50, minWidth: 240, maxHeight: 320, overflowY: "auto",
+          background: "var(--sk-surface-page)", borderRadius: "var(--sk-radius-3)", boxShadow: "var(--sk-shadow-m)", padding: 8,
         }}>
           {searchable && (
-            <div style={{ padding: "0 4px 6px" }}>
-              <Input size="s" icon={<IconSearch size={16} />} placeholder="Поиск" value={q} onChange={(e) => setQ(e.target.value || "")} />
+            <div style={{ position: "relative" }}>
+              <IconSearch size={13} style={{ position: "absolute", left: 8, top: "50%", transform: "translateY(-50%)", opacity: 0.45, pointerEvents: "none" }} />
+              <input type="text" autoFocus value={q} onChange={(e) => setQ(e.target.value || "")} placeholder="Поиск" style={{
+                width: "100%", height: 28, padding: "0 8px 0 26px", boxSizing: "border-box", borderRadius: "var(--sk-radius-2)",
+                border: "1px solid var(--sk-stroke)", background: "var(--sk-surface-page)",
+                font: "var(--sk-label-4-regular)", color: "var(--sk-text-primary)", outline: "none", marginBottom: 4,
+              }} />
             </div>
           )}
-          {shownOptions.length ? shownOptions.map((o) => (
-            <label key={o.value} className="sk-row sk-gap-2" style={{
-              padding: "8px 10px", borderRadius: "var(--sk-radius-2)", cursor: "pointer", alignItems: "center",
+          {pinned && pinnedShown && (
+            <label className="sk-row sk-gap-2" style={{
+              padding: "6px 4px", marginBottom: 2, cursor: "pointer", alignItems: "center",
+              borderBottom: "1px solid var(--sk-stroke)",
             }}>
-              <Checkbox checked={value.includes(o.value)} onChange={() => toggle(o.value)} />
-              <span className="sk-label-3-regular">{o.label}</span>
+              <Checkbox checked={value.includes(pinned.value)} onChange={() => toggle(pinned.value)} />
+              <span className="sk-label-4">{pinned.label}</span>
             </label>
-          )) : (
-            <div style={{ padding: "8px 10px", color: "var(--sk-text-secondary)", font: "var(--sk-label-4-regular)" }}>Ничего не найдено</div>
           )}
+          {restShown.length ? restShown.map((o) => (
+            <label key={o.value} className="sk-row sk-gap-2" style={{ padding: "6px 4px", cursor: "pointer", alignItems: "center" }}>
+              <Checkbox checked={value.includes(o.value)} onChange={() => toggle(o.value)} />
+              <span className="sk-label-4-regular">{o.label}</span>
+            </label>
+          )) : (searchable && needle && !pinnedShown && (
+            <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)", padding: "6px 4px" }}>Ничего не найдено</div>
+          ))}
         </div>
       )}
     </div>
   );
 }
 
-// Ряд фильтров под строкой поиска: все доступные фильтры показаны сразу чипами,
-// без промежуточного шага "+ Фильтр" — по умолчанию открыт (filtersOpen=true).
-function FiltersRow({ filters, onChange, positionOptions, departmentOptions }) {
+// Ряд чипов — все фильтры видны сразу (без промежуточного шага "+ Фильтр"), значения
+// сразу показаны на самом чипе, а не спрятаны в закрытом поле сбоку.
+function FiltersChipsRow({ filters, onChange, directionOptions, positionOptions, departmentOptions }) {
   const set = (key) => (v) => onChange((f) => ({ ...f, [key]: v }));
   return (
     <div className="sk-row sk-gap-2" style={{ flexWrap: "wrap" }}>
+      <FilterChip label="Направление" searchable options={directionOptions} value={filters.directions} onChange={set("directions")} />
       <FilterChip label="Должность" searchable options={positionOptions} value={filters.positions} onChange={set("positions")} />
       <FilterChip label="Подразделение" searchable options={departmentOptions} value={filters.departments} onChange={set("departments")} />
       <FilterChip label="Опыт" options={toOptions(D.experienceOptions)} value={filters.experience} onChange={set("experience")} />
-      <FilterChip label="Регион" searchable options={toOptions(D.cities)} value={filters.cities} onChange={set("cities")} />
+      <FilterChip label="Регион" options={toOptions(D.cities)} value={filters.cities} onChange={set("cities")} />
       <FilterChip label="Формат работы" options={toOptions(D.workFormats)} value={filters.formats} onChange={set("formats")} />
       <FilterChip label="Тип занятости" options={toOptions(D.employmentTypes)} value={filters.employments} onChange={set("employments")} />
       <FilterChip label="Тип перехода" options={toOptions(D.transitionTypes)} value={filters.transitionTypes} onChange={set("transitionTypes")} />
     </div>
+  );
+}
+
+function VacancyCard({ vacancy, hasResponse }) {
+  const closed = vacancy.status === "closed";
+  const dim = hasResponse ? 0.55 : 1;
+  const [hovered, setHovered] = React.useState(false);
+  return (
+    <a href={"vacancy.html?id=" + vacancy.id} style={{ textDecoration: "none" }}
+      onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}>
+      <Card bordered
+        style={{
+          cursor: "pointer", height: "100%",
+          boxShadow: hovered ? "inset 0 0 0 1.5px var(--sk-stroke-accent)" : "inset 0 0 0 1px var(--sk-stroke)",
+        }}>
+        <div className="sk-col sk-gap-2" style={{ height: "100%" }}>
+          <div className="sk-row" style={{ justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
+            <div className="sk-label-3" style={{ opacity: dim }}>{vacancy.title}</div>
+            {hasResponse
+              ? <Tag size="s" hue="positive" icon={<IconThumbUp size={13} />}>Уже откликнулись</Tag>
+              : closed
+                ? <Tag size="s" hue="neutral">Закрыта</Tag>
+                : (vacancy.isNew && <Tag size="s" pill style={{ background: "var(--sk-accent)", color: "var(--sk-text-contrast)" }}>Новая</Tag>)}
+          </div>
+
+          <div className="sk-label-3-regular" style={{ opacity: dim }}>
+            {vacancy.salaryFrom && vacancy.salaryTo ? `${fmtMoney(vacancy.salaryFrom)} – ${fmtMoney(vacancy.salaryTo)} ₽` : "По договорённости"}
+          </div>
+
+          <div className="sk-row sk-gap-2" style={{ flexWrap: "wrap", opacity: dim }}>
+            <Tag size="s" hue="gray" pill>{vacancy.transitionType}</Tag>
+          </div>
+
+          <div className="sk-row sk-gap-2 sk-muted" style={{ font: "var(--sk-label-4-regular)", opacity: dim, flexWrap: "wrap" }}>
+            <span className="sk-row sk-gap-1"><IconMapPin size={13} />{vacancy.city}</span>
+            <span className="sk-row sk-gap-1"><IconBriefcase size={13} />{vacancy.department}</span>
+          </div>
+        </div>
+      </Card>
+    </a>
   );
 }
 
@@ -279,9 +280,8 @@ function Page() {
   const respondedIds = React.useMemo(() => new Set(responses.map((r) => r.vacancyId)), [responses]);
 
   const [q, setQ] = React.useState("");
-  const [direction, setDirection] = React.useState(null); // null = все направления
   const [filters, setFilters] = React.useState(emptyFilters);
-  const [filtersOpen, setFiltersOpen] = React.useState(false);
+  const [filtersOpen, setFiltersOpen] = React.useState(true);
   const [subscriptions, setSubscriptions] = React.useState([]);
   const [toast, setToast] = React.useState(null);
   function showToast(msg) { setToast(msg); window.setTimeout(() => setToast(null), 3200); }
@@ -306,17 +306,15 @@ function Page() {
     const rest = [...new Set(visibleVacancies.map((v) => v.title))].filter((t) => t !== D.person.position).sort();
     return [{ value: D.person.position, label: "Моя должность" }, ...toOptions(rest)];
   }, [visibleVacancies]);
-
-  const directionCounts = React.useMemo(() => {
-    const map = {};
-    visibleVacancies.forEach((v) => { map[v.direction] = (map[v.direction] || 0) + 1; });
-    return map;
-  }, [visibleVacancies]);
+  const directionOptions = React.useMemo(() => {
+    const rest = D.directions.filter((d) => d !== D.person.direction);
+    return [{ value: D.person.direction, label: "Моё направление" }, ...toOptions(rest)];
+  }, []);
 
   const needle = q.trim().toLowerCase();
   const filtered = visibleVacancies.filter((v) => {
     if (v.status === "closed") return false;
-    if (direction && v.direction !== direction) return false;
+    if (filters.directions.length && !filters.directions.includes(v.direction)) return false;
     if (filters.positions.length && !filters.positions.includes(v.title)) return false;
     if (filters.departments.length && !filters.departments.includes(v.department)) return false;
     if (filters.experience.length && !filters.experience.includes(v.experience)) return false;
@@ -328,8 +326,8 @@ function Page() {
     return true;
   });
 
-  const activeFilterCount = filters.positions.length + filters.departments.length + filters.experience.length + filters.cities.length
-    + filters.formats.length + filters.employments.length + filters.transitionTypes.length;
+  const activeFilterCount = filters.directions.length + filters.positions.length + filters.departments.length + filters.experience.length
+    + filters.cities.length + filters.formats.length + filters.employments.length + filters.transitionTypes.length;
   const hasActiveFilters = activeFilterCount > 0;
 
   return (
@@ -338,47 +336,34 @@ function Page() {
 
       <div className="sk-col sk-gap-3">
         <div className="sk-row sk-gap-2" style={{ alignItems: "center", flexWrap: "wrap" }}>
-          <Input size="s" icon={<IconSearch size={20} />} placeholder="По названию, должности или подразделению"
-            value={q} onChange={(e) => setQ(e.target.value || "")} style={{ width: 460, flexShrink: 0 }} />
-          <Button mode="secondary" icon={<IconFilter size={16} color="var(--sk-icon-primary)" />} onClick={() => setFiltersOpen((o) => !o)}
-            style={{ background: "var(--sk-surface-page)", border: hasActiveFilters ? "1px solid var(--sk-stroke-accent)" : "1px solid var(--sk-stroke)" }}>
-            <span className="sk-row sk-gap-1" style={{ alignItems: "center" }}>
-              Фильтры{activeFilterCount ? " · " + activeFilterCount : ""}
-              {hasActiveFilters && (
-                <span onClick={(e) => { e.stopPropagation(); setFilters(emptyFilters); }} style={{ display: "inline-flex", opacity: 0.6, marginLeft: 2 }}>
-                  <IconX size={14} />
-                </span>
-              )}
-            </span>
-          </Button>
+          <Input size="s" icon={<IconSearch size={20} />} placeholder="Поиск"
+            value={q} onChange={(e) => setQ(e.target.value || "")} style={{ width: 400, flexShrink: 0 }} />
+          <FiltersSummaryChip count={activeFilterCount} open={filtersOpen} onToggle={() => setFiltersOpen((o) => !o)} onReset={() => setFilters(emptyFilters)} />
           <a href="my-responses.html" style={{ textDecoration: "none", flexShrink: 0 }}>
             <Button style={{ background: "var(--sk-special-secondary)", color: "var(--text-text-special)" }} icon={<IconFolderHeart size={16} />}>Мои отклики{responses.length ? " · " + responses.length : ""}</Button>
           </a>
         </div>
+
         {filtersOpen && (
-          <div className="sk-col sk-gap-3">
-            <FiltersRow filters={filters} onChange={setFilters} positionOptions={positionOptions} departmentOptions={departmentOptions} />
-            <SubscribeBar filters={filters} hasActiveFilters={hasActiveFilters} subscriptions={subscriptions}
-              onSubscribe={subscribe} onUnsubscribe={unsubscribe} />
-          </div>
+          <FiltersChipsRow filters={filters} onChange={setFilters}
+            directionOptions={directionOptions} positionOptions={positionOptions} departmentOptions={departmentOptions} />
         )}
 
-        <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Найдено вакансий: {filtered.length}</div>
-
-        <div className="sk-row" style={{ alignItems: "flex-start", gap: 24 }}>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            {filtered.length === 0 ? (
-              <Card><div className="sk-muted" style={{ textAlign: "center", padding: "24px 0" }}>Ничего не нашлось по заданным условиям.</div></Card>
-            ) : (
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 16 }}>
-                {filtered.map((v) => <VacancyCard key={v.id} vacancy={v} hasResponse={respondedIds.has(v.id)} />)}
-              </div>
-            )}
-          </div>
-
-          <DirectionSidebar directions={D.directions} counts={directionCounts} active={direction}
-            onSelect={setDirection} total={visibleVacancies.length} />
+        <div className="sk-row" style={{ alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
+          <div className="sk-muted" style={{ font: "var(--sk-label-4-regular)" }}>Найдено вакансий: {filtered.length}</div>
+          <SubscribeBar filters={filters} hasActiveFilters={hasActiveFilters} subscriptions={subscriptions}
+            onSubscribe={subscribe} onUnsubscribe={unsubscribe} />
         </div>
+
+        <SubscriptionsList subscriptions={subscriptions} onUnsubscribe={unsubscribe} />
+
+        {filtered.length === 0 ? (
+          <Card><div className="sk-muted" style={{ textAlign: "center", padding: "24px 0" }}>Ничего не нашлось по заданным условиям.</div></Card>
+        ) : (
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 16 }}>
+            {filtered.map((v) => <VacancyCard key={v.id} vacancy={v} hasResponse={respondedIds.has(v.id)} />)}
+          </div>
+        )}
       </div>
       {toast && (
         <div style={{ position: "fixed", bottom: 24, left: "50%", transform: "translateX(-50%)", zIndex: 100 }}>
