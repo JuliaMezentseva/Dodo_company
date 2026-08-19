@@ -233,7 +233,6 @@ function FiltersChipsRow({ filters, onChange, directionOptions, positionOptions,
 
 function VacancyCard({ vacancy, hasResponse }) {
   const closed = vacancy.status === "closed";
-  const dim = hasResponse ? 0.55 : 1;
   const [hovered, setHovered] = React.useState(false);
   return (
     <a href={"vacancy.html?id=" + vacancy.id} style={{ textDecoration: "none" }}
@@ -245,7 +244,7 @@ function VacancyCard({ vacancy, hasResponse }) {
         }}>
         <div className="sk-col sk-gap-2" style={{ height: "100%" }}>
           <div className="sk-row" style={{ justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
-            <div className="sk-label-3" style={{ opacity: dim }}>{vacancy.title}</div>
+            <div className="sk-label-3">{vacancy.title}</div>
             {hasResponse
               ? <Tag size="s" hue="positive" icon={<IconThumbUp size={13} />}>Уже откликнулись</Tag>
               : closed
@@ -253,15 +252,15 @@ function VacancyCard({ vacancy, hasResponse }) {
                 : (vacancy.isNew && <Tag size="s" pill style={{ background: "var(--sk-accent)", color: "var(--sk-text-contrast)" }}>Новая</Tag>)}
           </div>
 
-          <div className="sk-label-3-regular" style={{ opacity: dim }}>
+          <div className="sk-label-3-regular">
             {vacancy.salaryFrom && vacancy.salaryTo ? `${fmtMoney(vacancy.salaryFrom)} – ${fmtMoney(vacancy.salaryTo)} ₽` : "По договорённости"}
           </div>
 
-          <div className="sk-row sk-gap-2" style={{ flexWrap: "wrap", opacity: dim }}>
+          <div className="sk-row sk-gap-2" style={{ flexWrap: "wrap" }}>
             <Tag size="s" hue="gray" pill>{vacancy.transitionType}</Tag>
           </div>
 
-          <div className="sk-row sk-gap-2 sk-muted" style={{ font: "var(--sk-label-4-regular)", opacity: dim, flexWrap: "wrap" }}>
+          <div className="sk-row sk-gap-2 sk-muted" style={{ font: "var(--sk-label-4-regular)", flexWrap: "wrap" }}>
             <span className="sk-row sk-gap-1"><IconMapPin size={13} />{vacancy.city}</span>
             <span className="sk-row sk-gap-1"><IconBriefcase size={13} />{vacancy.department}</span>
           </div>
